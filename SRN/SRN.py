@@ -15,7 +15,7 @@ class SimpleRecurrentNetwork():
     A class representing a simple recurrent network (SRN), as presented
     in Elman (1990).
     """
-    def __init(self, inputLayer, hiddenLayer, outputLayer):
+    def __init__(self, inputLayer, hiddenLayer, outputLayer):
         """
         :param inputLayer: size of the input layer
         :type inputLayer: int
