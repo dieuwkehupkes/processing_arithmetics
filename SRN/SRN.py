@@ -6,8 +6,8 @@
 import numpy as np
 import copy
 import itertools
-from softmax import all
-from sigmoid import all
+from softmax import *
+from sigmoid import *
 
 
 class SimpleRecurrentNetwork():
@@ -77,7 +77,8 @@ class SimpleRecurrentNetwork():
         self.H = np.tanh(self.Wih.dot(self.I) + self.Wch.dot(self.C))
 
         # set values outputLayer
-        self.O = softmax(self.Who.dot(self.H))
+        self.O = sigmoid(self.Who.dot(self.H))
+        # self.O = softmax(self.Who.dot(self.H))
 
         # set values contextLayer to hidden layer
         self.C = self.H
@@ -112,7 +113,8 @@ class SimpleRecurrentNetwork():
 
                     # update weights Who
                     output_error = training_sequence[index+1] - training_example    # compute output error
-                    jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
+                    # jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
+                    jacobian = jacobian_sigmoid(self.O)
                     update_Who = learning_rate * jacobian * self.H * output_error     # compute update (check even of dit goed gaat met de assen e.d.)
 
                     # propagate error back to H
