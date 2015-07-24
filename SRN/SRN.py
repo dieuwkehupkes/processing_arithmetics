@@ -74,20 +74,20 @@ class SimpleRecurrentNetwork():
         else:
             self.I = np.zeros(self.I.size)
 
-        print "context layer", self.C
-
         # set values hiddenLayer
         self.H = sigmoid(self.I.dot(self.Wih) + self.C.dot(self.Wch))
 
         # set values outputLayer
-        # self.O = sigmoid(self.H.dot(self.Who))
-        self.O = softmax(self.Who.dot(self.H))
+        self.O = sigmoid(self.H.dot(self.Who))
+        # self.O = softmax(self.Who.dot(self.H))
 
         # set values contextLayer to hidden layer
         self.C = self.H
 
+        print "input layer: ", self.I
         print "hidden layer: ", self.H
-        exit()
+        print "output layer: ", self.O
+        # exit()
 
 
     def train(self, sequences, learning_rate = 0.1, rounds=1, depth=1):
@@ -102,31 +102,26 @@ class SimpleRecurrentNetwork():
 
             # create new training sequence by shuffling and then unpacking
             training_sequence = [input_state for sequence in sequences for input_state in sequence]
+            training_sequence = [np.array([0.4, -0.7]), np.array([0.1])]
             
             # create arrays to store previous states
             prev_hidden = np.zeros((depth, self.H.size))
             index_hidden = 0
 
-            # loop over training examples
+            # loop through training sequence
             for index in xrange(len(training_sequence)-1):
                     training_example = training_sequence[index]
 
                     self.update(training_example)
-                    prev_hidden[index_hidden] = self.H              # store hidden state
+                    prev_hidden[index_hidden] = self.H              # store hidden state for BPTT
 
-                    # update weights Who
-                    output_error = training_sequence[index+1] - self.O    # compute output error
-                    jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
+                    # Compute error signal output
+                    diff_target = training_sequence[index+1] - self.O    # compute output error
+                    jacobian = jacobian_sigmoid(self.O)
+                    # jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
+                    error_signal = np.dot(diff_target, jacobian)
 
-                    # jacobian = jacobian_sigmoid(self.O)
-                    update_Who = learning_rate * np.outer(self.H, np.dot(output_error, jacobian))
-
-                    print np.all(update_Who - np.array([-0.027674, -0.02700163])[:,np.newaxis] < 0.0001)
-                    # propagate error back to H
-                    temp = jacobian * output_error[:, np.newaxis]
-                    hidden_error = (jacobian * output_error[:, np.newaxis]).dot(self.Who.transpose()).sum(axis=0)
-                    print "hidden error: ", hidden_error
-                    exit()
+                    update_Who = learning_rate * np.outer(self.H, error_signal)
 
                     # set working timelag
                     time_lag = 0
@@ -137,20 +132,18 @@ class SimpleRecurrentNetwork():
 
                     while time_lag <= depth and index >= time_lag:
 
-                        # update Wch
+                        # update Wch & Wih
                         jacobian = jacobian_sigmoid(self.H)
-                        # print "jacobian * error = ", np.dot(hidden_error, jacobian)
-                        print "prev_hidden ", prev_hidden[index_hidden-time_lag]
-                        raw_input()
-                        update = learning_rate * np.outer(prev_hidden[index_hidden-time_lag], np.dot(hidden_error, jacobian))
+                        error_signal = np.dot(np.dot(self.Who, error_signal), jacobian)
+                        print "error signal hidden = ", error_signal
+                        update_Wch += learning_rate * np.outer(prev_hidden[index_hidden-time_lag], error_signal)
 
                         # update Wih
-                        update_Wih += update                        # compute update for Wch
+                        update_Wih += learning_rate * np.outer(self.I, error_signal)
                         print "update weights input to hidden: ", update_Wih
-                        raw_input()
 
                         # propagate error one time step back
-                        hidden_error = (jacobian * hidden_error[:, np.newaxis]).dot(self.Wch.transpose()).sum(axis=0)
+                        error_signal = np.dot(np.dot(self.Wch, error_signal), jacobian)
                         time_lag += 1
 
                     # update weights
