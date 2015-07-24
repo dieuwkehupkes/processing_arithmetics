@@ -78,8 +78,8 @@ class SimpleRecurrentNetwork():
         self.H = sigmoid(self.I.dot(self.Wih) + self.C.dot(self.Wch))
 
         # set values outputLayer
-        self.O = sigmoid(self.H.dot(self.Who))
-        # self.O = softmax(self.Who.dot(self.H))
+        # self.O = sigmoid(self.H.dot(self.Who))
+        self.O = softmax(self.Who.dot(self.H))
 
         # set values contextLayer to hidden layer
         self.C = self.H
@@ -102,7 +102,6 @@ class SimpleRecurrentNetwork():
 
             # create new training sequence by shuffling and then unpacking
             training_sequence = [input_state for sequence in sequences for input_state in sequence]
-            training_sequence = [np.array([0.4, -0.7]), np.array([0.1])]
             
             # create arrays to store previous states
             prev_hidden = np.zeros((depth, self.H.size))
@@ -117,8 +116,8 @@ class SimpleRecurrentNetwork():
 
                     # Compute error signal output
                     diff_target = training_sequence[index+1] - self.O    # compute output error
-                    jacobian = jacobian_sigmoid(self.O)
-                    # jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
+                    # jacobian = jacobian_sigmoid(self.O)
+                    jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
                     error_signal = np.dot(diff_target, jacobian)
 
                     update_Who = learning_rate * np.outer(self.H, error_signal)
