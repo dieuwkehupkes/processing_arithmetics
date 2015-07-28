@@ -29,7 +29,7 @@ class SimpleRecurrentNetwork():
 
         # initialise weights
         self.Wih = np.zeros((inputLayer, hiddenLayer))
-        self.Wch = np.zeros((inputLayer, hiddenLayer))
+        self.Wch = np.zeros((hiddenLayer, hiddenLayer))
         self.Who = np.zeros((hiddenLayer, outputLayer))
 
     def set_input_to_hidden(self, weight_matrix):
@@ -79,14 +79,14 @@ class SimpleRecurrentNetwork():
 
         # set values outputLayer
         # self.O = sigmoid(self.H.dot(self.Who))
-        self.O = softmax(self.Who.dot(self.H))
+        self.O = softmax(self.H.dot(self.Who))
 
         # set values contextLayer to hidden layer
         self.C = self.H
 
-        print "input layer: ", self.I
-        print "hidden layer: ", self.H
-        print "output layer: ", self.O
+        # print "input layer: ", self.I
+        # print "hidden layer: ", self.H
+        # print "output layer: ", self.O
         # exit()
 
 
@@ -129,14 +129,16 @@ class SimpleRecurrentNetwork():
                     update_Wch = np.zeros(self.Wch.shape)
                     update_Wih = np.zeros(self.Wih.shape)
 
+                    # compute first error signal for hidden layer
+                    jacobian = jacobian_sigmoid(self.H)
+                    error_signal = np.dot(np.dot(self.Who, error_signal), jacobian)
+
                     while time_lag <= depth and index >= time_lag:
 
                         # update Wch & Wih
-                        jacobian = jacobian_sigmoid(self.H)
-                        error_signal = np.dot(np.dot(self.Who, error_signal), jacobian)
-                        print "error signal hidden = ", error_signal
                         update_Wch += learning_rate * np.outer(prev_hidden[index_hidden-time_lag], error_signal)
 
+                        print "update weights context to hidden", update_Wch
                         # update Wih
                         update_Wih += learning_rate * np.outer(self.I, error_signal)
                         print "update weights input to hidden: ", update_Wih
