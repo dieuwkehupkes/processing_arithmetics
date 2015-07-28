@@ -59,6 +59,17 @@ class SimpleRecurrentNetwork():
         else:
             self.Wch = weight_matrix
 
+    def initialise_weights(self, min_value, max_value):
+        """
+        Initialise weights randomly between minvalue
+        and maxvalue.
+        """
+        factor = max_value - min_value
+        shift = min_value
+        self.Wih = factor * np.random.rand(self.Wih.shape[0], self.Wih.shape[1]) + shift
+        self.Wch = factor * np.random.rand(self.Wch.shape[0], self.Wch.shape[1]) + shift
+        self.Who = factor * np.random.rand(self.Who.shape[0], self.Who.shape[1]) + shift
+
     def update(self, input=None):
         """
         Update all layers of the network until input
@@ -102,6 +113,7 @@ class SimpleRecurrentNetwork():
 
             # create new training sequence by shuffling and then unpacking
             training_sequence = [input_state for sequence in sequences for input_state in sequence]
+            print training_sequence
             
             # create arrays to store previous states
             prev_hidden = np.zeros((depth, self.H.size))
@@ -134,6 +146,8 @@ class SimpleRecurrentNetwork():
                     error_signal = np.dot(np.dot(self.Who, error_signal), jacobian)
 
                     while time_lag <= depth and index >= time_lag:
+
+                        print "timelag:", timelag
 
                         # update Wch & Wih
                         update_Wch += learning_rate * np.outer(prev_hidden[index_hidden-time_lag], error_signal)
