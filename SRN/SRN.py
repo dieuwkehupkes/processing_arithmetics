@@ -109,11 +109,12 @@ class SimpleRecurrentNetwork():
         """
 
         for round in xrange(rounds):
+
+            # print "round ", round
             self.reset()
 
             # create new training sequence by shuffling and then unpacking
             training_sequence = [input_state for sequence in sequences for input_state in sequence]
-            print training_sequence
             
             # create arrays to store previous states
             prev_hidden = np.zeros((depth, self.H.size))
@@ -128,11 +129,18 @@ class SimpleRecurrentNetwork():
 
                     # Compute error signal output
                     diff_target = training_sequence[index+1] - self.O    # compute output error
+                    # print "output activation:", self.O
+                    # print "target: ", training_sequence[index+1], 'output: ', self.O
                     # jacobian = jacobian_sigmoid(self.O)
                     jacobian = jacobian_softmax(self.O)                             # compute jacobian matrix with partial derivatives
+                    # print "jacobian", jacobian
                     error_signal = np.dot(diff_target, jacobian)
 
                     update_Who = learning_rate * np.outer(self.H, error_signal)
+                    # print "hidden layer activation: ", self.H
+                    # print "error signal", error_signal
+                    # print "update hidden to output:", update_Who
+                    # raw_input()
 
                     # set working timelag
                     time_lag = 0
@@ -147,15 +155,13 @@ class SimpleRecurrentNetwork():
 
                     while time_lag <= depth and index >= time_lag:
 
-                        print "timelag:", timelag
+                        #print "time_lag:", time_lag
 
                         # update Wch & Wih
                         update_Wch += learning_rate * np.outer(prev_hidden[index_hidden-time_lag], error_signal)
 
-                        print "update weights context to hidden", update_Wch
                         # update Wih
                         update_Wih += learning_rate * np.outer(self.I, error_signal)
-                        print "update weights input to hidden: ", update_Wih
 
                         # propagate error one time step back
                         error_signal = np.dot(np.dot(self.Wch, error_signal), jacobian)
@@ -166,7 +172,14 @@ class SimpleRecurrentNetwork():
                     self.Who += update_Who
                     self.Wih += update_Wih
 
+                    # print "update weights input to hidden: ", update_Wih
+                    # print "update weights context to hidden", update_Wch
+                    # print "\n\n"
+                    # raw_input()
+
+
                     index_hidden = (index_hidden + 1) % depth       # switch index of storing hidden state
+
 
     def reset(self):
         """
