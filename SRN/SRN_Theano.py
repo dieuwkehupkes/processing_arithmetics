@@ -22,7 +22,7 @@ class SimpleRecurrentNetwork():
         :param output_size: number of output units
         """
 
-        # @TODO init random ipv zeros
+        # @TODO init random ipv zeros, gebruik rng random streams
 
         # weights from input to hidden
         self.U = theano.shared(value=numpy.zeros((input_size, hidden_size), dtype=theano.config.floatX), name='U')
@@ -37,10 +37,19 @@ class SimpleRecurrentNetwork():
         self.params = [self.U, self.V, self.W]
         # @TODO check if this is also updated when the parameters are updated
 
-    def create_symbolic_expressions(self):
+    def generate_network_dynamics(self):
         """
-        Symbolically describe how the different layers depend
-        on each other.
+        Create symbolic expressions defining how the network behaves when
+        given a sequence of inputs, and how its parameters can be trained.
+        In this function it is defined:
+        - How a sequence of hidden-layer activations can be computed
+          from an input sequence
+        - How a sequence of predictions can be computed from a sequence
+          of hidden layer activations
+        - How the next-item prediction of the network can be computed
+        - How the error of a sequence of predictions can be computed from
+          the input sequence
+        - How to compute the gradients w.r.t the different weights
         """
 
         # function describing how the hidden layer can be computed from the input
@@ -53,15 +62,14 @@ class SimpleRecurrentNetwork():
         hidden_sequence, _ = theano.scan(hidden, sequence=input_sequence, outputs_info = self.hidden_t)
 
         # compute prediction sequence (i.e., output layer activation)
-        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W))
+        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W))[:-1]       # predictions for all but last output
 
         # symbolic definition of error
-        # @TODO definieer error signal
-        errors = output_sequence - target_sequence
-        error = T.sum(T.mean(errors, axis=1))     # which axis order??
+        errors = categorical_crossentropy(output_sequence - input_sequence[1:])
+        error = T.mean(errors)
 
         # gradients
-        gradients = T.grad(error, self.params)          # maybe I should put this in an OrderedDict instead of list
+        gradients = T.grad(error, self.params)
 
         # updates @TODO is the sign of the update correct?
         new_params = self.params - gradients*learning_rate
@@ -76,6 +84,10 @@ class SimpleRecurrentNetwork():
         self.update_function = theano.function(input_data, error, updates=new_params, givens=givens)        # @TODO klopt updates=+, 
 
 
+        return
+
+    def prediction(self):
+
         # assuming a 1-k encoding, the network prediction is the output unit
         # with the highest activation value after applying the sigmoid
         # If we are using distributed representations oid (what in the end
@@ -83,7 +95,7 @@ class SimpleRecurrentNetwork():
         # for the prediction would change (as well as the output activation, btw)
         self.prediction = T.argmax(self.output, axis=1)
 
-        return
+
 
 """
 Otto:
