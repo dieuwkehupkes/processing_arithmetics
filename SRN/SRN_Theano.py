@@ -55,11 +55,17 @@ class SRN():
                 name='W'
         )
 
-        # create variables for hidden layers
-        # TODO do we even need this?
-        self.input_t = T.vector("input_t", dtype=theano.config.floatX)
-        self.hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
-        self.output_t = T.vector("output_t", dtype=theano.config.floatX)
+        # Store the network activation values to run the network
+        hidden_t = theano.shared(
+                value = np.zeros(hidden_size).astype(theano.config.floatX),
+                name = 'hidden_t'
+        )
+        output_t = theano.shared(
+                value = np.zeros(output_size).astype(theano.config.floatX),
+                name = 'output_t'
+        )
+
+        self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
 
         # store dimensions of network
         self.input_size =  input_size
@@ -76,9 +82,16 @@ class SRN():
         can be updated.
         """
         # current input
-        x = T.vector("input")
+        input_t = T.vector("input_t")
 
-        # TODO generate update function!!!
+        hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V))
+        output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
+
+        updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
+
+        givens = {}
+        self.forward_pass = theano.function([input_t], updates=updates, givens=givens)
+
         return
 
 
@@ -103,7 +116,6 @@ class SRN():
         """
 
         # TODO Maybe I should organise this differently somehow
-        # TODO something is off with this input sequence, that has to be set as an
         #      attribute of the network now, change that so that it makes more sence
 
         # function describing how the hidden layer can be computed from the input
@@ -115,7 +127,6 @@ class SRN():
 
         # compute sequence of hidden layer activations
         hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info = hidden_t)
-
 
         # compute prediction sequence (i.e., output layer activation)
         output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W))[:-1]       # predictions for all but last output
@@ -136,7 +147,6 @@ class SRN():
         # TODO klopt dit??? of moet ik echte waardes meegeven
         givens = {
                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
-                # input_t:        np.zeros(self.input_size).astype(theano.config.floatX)
         }
 
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)        

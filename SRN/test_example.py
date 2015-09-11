@@ -1,6 +1,7 @@
 # Test example taken from backprop book
 
 from SRN import *
+from SRN_Theano import *
 import numpy as np
 
 def generate_training_sequence(length):
@@ -26,6 +27,9 @@ def compute_training_error(sequence, network):
 
 network = SimpleRecurrentNetwork(3, 3, 3)
 network.initialise_weights(-0.2, 0.2)
+network_Theano = SRN(3, 3, 3, 0.2)
+network_Theano.generate_network_dynamics()
+exit()
 
 # training sequence
 a = np.array([0,0,1])
