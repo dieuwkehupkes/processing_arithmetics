@@ -5,6 +5,7 @@ Dieuwke Hupkes - <dieuwkehupkes@gmail.com>
 import numpy as np
 import theano
 import theano.tensor as T
+from collections import OrderedDict
 
 
 class SRN():
@@ -21,6 +22,9 @@ class SRN():
         :param hidden_size: number of hidden units
         :param output_size: number of output units
         """
+        # TODO as size(input) == size(output) we don't need to
+        # take that as a parameter really, or otherwise
+        # build in a check in the training method
 
         self.learning_rate = 0.1
 
@@ -63,7 +67,7 @@ class SRN():
         self.output_size = output_size
         
         # store the parameters of the network
-        self.params = [self.U, self.V, self.W]
+        self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W)])
         # @TODO check if this is also updated when the parameters are updated
 
     def generate_update_function(self):
@@ -121,11 +125,11 @@ class SRN():
         error = T.mean(errors)
 
         # gradients
-        gradients = T.grad(error, self.params)
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
 
         # updates
-        new_params = [self.params[i] - self.learning_rate*gradients[i] for i in xrange(len(self.params))]
-
+        new_params_values = [self.params[param] - self.learning_rate*gradients[param] for param in self.params.keys()]
+        new_params = OrderedDict(zip(self.params.values(), new_params_values))
 
         # inputs
         # @TODO should I put this somewhere else?
@@ -135,11 +139,10 @@ class SRN():
                 # input_t:        np.zeros(self.input_size).astype(theano.config.floatX)
         }
 
-        self.update_function = theano.function([input_sequence], new_params, givens=givens)        # @TODO klopt updates=+, 
-
+        self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)        
         return
 
-    def train(self, input_sequences, no_iterations, some_other_params):
+    def train(self, input_sequences, no_iterations, some_other_params=None):
         """
         Train the network to store input_sequences
         :param input_sequences  
@@ -147,7 +150,7 @@ class SRN():
         """
         #TODO write function description
         for iteration in xrange(0, no_iterations):
-            iteration(input_sequences)
+            self.iteration(input_sequences)
 
         return
 
