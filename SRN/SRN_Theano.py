@@ -26,7 +26,7 @@ class SRN():
         # take that as a parameter really, or otherwise
         # build in a check in the training method
 
-        self.learning_rate = 0.1
+        self.learning_rate = 0.5
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -74,7 +74,6 @@ class SRN():
         
         # store the parameters of the network
         self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W)])
-        # @TODO check if this is also updated when the parameters are updated
 
     def generate_update_function(self):
         """
@@ -93,12 +92,10 @@ class SRN():
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
         # updates = OrderedDict([(self.activations['hidden_t'], hidden_next)])
 
-        # givens = {hidden_t: self.activations['hidden_t']}
-        givens = {}
-        self.forward_pass = theano.function([input_t], updates=updates, givens=givens)
+        # givens = {}
+        self.forward_pass = theano.function([input_t], updates=updates, givens={})
 
         return
-
 
     def generate_network_dynamics(self):
         """
@@ -121,6 +118,7 @@ class SRN():
         """
 
         # TODO Maybe I should organise this differently somehow
+        # TODO it would be nice if I could also compute the prediction error
         #      attribute of the network now, change that so that it makes more sence
 
         # function describing how the hidden layer can be computed from the input
@@ -147,14 +145,14 @@ class SRN():
         new_params_values = [self.params[param] - self.learning_rate*gradients[param] for param in self.params.keys()]
         new_params = OrderedDict(zip(self.params.values(), new_params_values))
 
-        # inputs
-        # @TODO should I put this somewhere else?
-        # TODO klopt dit??? of moet ik echte waardes meegeven
+        # initial values
         givens = {
                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
         }
 
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)        
+        self.compute_error = theano.function([input_sequence], error, givens=givens)
+
         return
 
     def train(self, input_sequences, no_iterations, some_other_params=None):
@@ -194,12 +192,21 @@ class SRN():
         # TODO Make that this method actually does something
         return input_sequences
 
-    def prediction(self):
+    def prediction(self, output_vector):
 
         # assuming a 1-k encoding, the network prediction is the output unit
         # with the highest activation value after applying the sigmoid
         # If we are using distributed representations oid (what in the end
         # possibly desirable is, the symbolic expression for the prediction
         # for the prediction would change (as well as the output activation, btw)
-        self.prediction = T.argmax(self.output, axis=1)
+        self.prediction = T.argmax(output_vector, axis=1)
+        return
+
+    def output(self):
+        output = self.activations['output_t'].get_value()
+        return output
+
+    def hidden(self):
+        hidden = self.activations['hidden_t'].get_value()
+        return hidden
 
