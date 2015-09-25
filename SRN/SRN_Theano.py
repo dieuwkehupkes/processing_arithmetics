@@ -83,12 +83,17 @@ class SRN():
         """
         # current input
         input_t = T.vector("input_t")
+        hidden_t = T.vector("hidden_t")
 
         hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V))
-        output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
+
+        output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W)))
+        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
 
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
+        # updates = OrderedDict([(self.activations['hidden_t'], hidden_next)])
 
+        # givens = {hidden_t: self.activations['hidden_t']}
         givens = {}
         self.forward_pass = theano.function([input_t], updates=updates, givens=givens)
 
