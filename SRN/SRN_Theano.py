@@ -26,7 +26,7 @@ class SRN():
         # take that as a parameter really, or otherwise
         # build in a check in the training method
 
-        self.learning_rate = 0.1
+        self.learning_rate = 0.05
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -210,7 +210,8 @@ class SRN():
         should start doing some more things.
         """
         # TODO Make that this method actually does something
-        return input_sequences
+        # return permutated version of input sequences
+        return np.random.permutation(input_sequences)
 
     def prediction(self, output_vector):
 
