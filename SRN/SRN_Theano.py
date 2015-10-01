@@ -26,7 +26,7 @@ class SRN():
         # take that as a parameter really, or otherwise
         # build in a check in the training method
 
-        self.learning_rate = 0.5
+        self.learning_rate = 0.1
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -145,12 +145,16 @@ class SRN():
         hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info = hidden_t)
 
         # compute prediction sequence (i.e., output layer activation)
-        # TODO does this work???
         output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]       # predictions for all but last output
+        predictions = self.prediction(output_sequence)
 
         # symbolic definition of error
-        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])
-        error = T.mean(errors)
+        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
+        error = T.mean(errors)      # scalar
+
+        # prediction error, compute by dividing the number of correct predictions
+        # by the total number of predictions
+        prediction_error = 1 - T.mean(T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
 
         # gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
@@ -166,6 +170,8 @@ class SRN():
 
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)        
         self.compute_error = theano.function([input_sequence], error, givens=givens)
+
+        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
 
         return
 
@@ -213,8 +219,8 @@ class SRN():
         # If we are using distributed representations oid (what in the end
         # possibly desirable is, the symbolic expression for the prediction
         # for the prediction would change (as well as the output activation, btw)
-        self.prediction = T.argmax(output_vector, axis=1)
-        return
+        prediction = T.argmax(output_vector, axis=1)
+        return prediction
 
     def output(self):
         output = self.activations['output_t'].get_value()
