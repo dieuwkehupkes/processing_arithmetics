@@ -55,6 +55,20 @@ class SRN():
                 name='W'
         )
 
+        self.b1 = theano.shared(
+                value = np.random.normal(
+                    0, sigma_init, hidden_size
+                ).astype(theano.config.floatX),
+                name='b1'
+        )
+
+        self.b2 = theano.shared(
+                value = np.random.normal(
+                    0, sigma_init, output_size
+                ).astype(theano.config.floatX),
+                name = 'b2'
+        )
+
         # Store the network activation values to run the network
         hidden_t = theano.shared(
                 value = np.zeros(hidden_size).astype(theano.config.floatX),
@@ -73,7 +87,7 @@ class SRN():
         self.output_size = output_size
         
         # store the parameters of the network
-        self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W)])
+        self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
 
     def generate_update_function(self):
         """
@@ -84,10 +98,9 @@ class SRN():
         input_t = T.vector("input_t")
         hidden_t = T.vector("hidden_t")
 
-        hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V))
+        hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
 
-        output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W)))
-        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
+        output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
 
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
         # updates = OrderedDict([(self.activations['hidden_t'], hidden_next)])
@@ -124,7 +137,7 @@ class SRN():
         # function describing how the hidden layer can be computed from the input
         input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
         def calc_hidden(input_t, hidden_t):
-            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V))
+            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
         hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
 
@@ -132,7 +145,8 @@ class SRN():
         hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info = hidden_t)
 
         # compute prediction sequence (i.e., output layer activation)
-        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W))[:-1]       # predictions for all but last output
+        # TODO does this work???
+        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]       # predictions for all but last output
 
         # symbolic definition of error
         errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])
