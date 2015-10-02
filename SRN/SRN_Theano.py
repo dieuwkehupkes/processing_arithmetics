@@ -26,7 +26,7 @@ class SRN():
         # take that as a parameter really, or otherwise
         # build in a check in the training method
 
-        self.learning_rate = 0.05
+        self.learning_rate = 0.1
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -88,6 +88,16 @@ class SRN():
         
         # store the parameters of the network
         self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
+
+        # store history of gradients for adagrad
+        histgrad = []
+        for param in self.params:
+            init_grad = np.zeros_like(self.params[param].get_value(), dtype=theano.config.floatX)
+            name = "hist_grad_" + param
+            histgrad.append((param, theano.shared(init_grad, name=name)))
+
+        self.histgrad = OrderedDict(histgrad)
+
 
     def generate_update_function(self):
         """
@@ -159,9 +169,17 @@ class SRN():
         # gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
 
-        # updates
-        new_params_values = [self.params[param] - self.learning_rate*gradients[param] for param in self.params.keys()]
-        new_params = OrderedDict(zip(self.params.values(), new_params_values))
+        # updates for weightmatrices and historical grads
+        new_params = []
+        for param in self.params:
+            new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
+            new_param_value = self.params[param] - gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
+            new_params.append((self.params[param], new_param_value))
+            new_params.append((self.histgrad[param], new_histgrad))
+
+        # updates for weight matrices
+        # new_params_values = [self.params[param] - self.learning_rate*gradients[param] for param in self.params.keys()]
+        # new_params = zip(self.params.values(), new_params_values)
 
         # initial values
         givens = {
