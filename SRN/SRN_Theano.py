@@ -26,7 +26,7 @@ class SRN():
         # take that as a parameter really, or otherwise
         # build in a check in the training method
 
-        self.learning_rate = 0.1
+        self.learning_rate = 0.01
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -104,7 +104,7 @@ class SRN():
         Generate a symbolic expression describing how the network
         can be updated.
         """
-        # current input
+        # current input and current hidden vector
         input_t = T.vector("input_t")
         hidden_t = T.vector("hidden_t")
 
@@ -113,7 +113,6 @@ class SRN():
         output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
 
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
-        # updates = OrderedDict([(self.activations['hidden_t'], hidden_next)])
 
         # givens = {}
         self.forward_pass = theano.function([input_t], updates=updates, givens={})
@@ -141,8 +140,7 @@ class SRN():
         """
 
         # TODO Maybe I should organise this differently somehow
-        # TODO it would be nice if I could also compute the prediction error
-        #      attribute of the network now, change that so that it makes more sence
+        # TODO does this also work when there are multiple sequences in parallel?
 
         # function describing how the hidden layer can be computed from the input
         input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
@@ -164,7 +162,9 @@ class SRN():
 
         # prediction error, compute by dividing the number of correct predictions
         # by the total number of predictions
+        prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
         prediction_error = 1 - T.mean(T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
+        prediction_last = 1 - prediction_errors[-1]
 
         # gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
@@ -177,19 +177,22 @@ class SRN():
             new_params.append((self.params[param], new_param_value))
             new_params.append((self.histgrad[param], new_histgrad))
 
-        # updates for weight matrices
-        # new_params_values = [self.params[param] - self.learning_rate*gradients[param] for param in self.params.keys()]
-        # new_params = zip(self.params.values(), new_params_values)
-
         # initial values
         givens = {
                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
         }
 
-        self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)        
+        # function to update the weights
+        self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
+
+        # function to compute the cross-entropy error of the inputsequences
         self.compute_error = theano.function([input_sequence], error, givens=givens)
 
+        # function for the prediction error on the entire sequence
         self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+
+        # prediction error only on the last elements of the sequences
+        self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
         return
 
