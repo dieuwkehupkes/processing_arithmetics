@@ -1,5 +1,5 @@
 """
-Dieuwke Hupkes - <dieuwkehupkes@gmail.com>
+Dieuwke Hupkes - <D.hupkes@uva.nl>
 """
 
 import numpy as np
@@ -13,18 +13,14 @@ class SRN():
     A class representing a simple recurrent network (SRN), as presented
     in Elman (1990).
     """
-    def __init__(self, input_size, hidden_size, output_size, sigma_init):
+    def __init__(self, input_size, hidden_size, sigma_init):
         """
         The SRN is fully described by three weight matrices connecting
         the different layers of the network.
 
         :param input_size: number of input units
         :param hidden_size: number of hidden units
-        :param output_size: number of output units
         """
-        # TODO as size(input) == size(output) we don't need to
-        # take that as a parameter really, or otherwise
-        # build in a check in the training method
 
         self.learning_rate = 0.01
 
@@ -50,7 +46,7 @@ class SRN():
         self.W = theano.shared(
                 value = np.random.normal(
                     0, sigma_init,
-                    (hidden_size, output_size)
+                    (hidden_size, input_size)
                 ).astype(theano.config.floatX),
                 name='W'
         )
@@ -64,7 +60,7 @@ class SRN():
 
         self.b2 = theano.shared(
                 value = np.random.normal(
-                    0, sigma_init, output_size
+                    0, sigma_init, input_size
                 ).astype(theano.config.floatX),
                 name = 'b2'
         )
@@ -75,7 +71,7 @@ class SRN():
                 name = 'hidden_t'
         )
         output_t = theano.shared(
-                value = np.zeros(output_size).astype(theano.config.floatX),
+                value = np.zeros(input_size).astype(theano.config.floatX),
                 name = 'output_t'
         )
 
@@ -84,7 +80,6 @@ class SRN():
         # store dimensions of network
         self.input_size =  input_size
         self.hidden_size = hidden_size
-        self.output_size = output_size
         
         # store the parameters of the network
         self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
