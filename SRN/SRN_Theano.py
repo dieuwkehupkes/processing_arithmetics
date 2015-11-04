@@ -93,7 +93,6 @@ class SRN():
 
         self.histgrad = OrderedDict(histgrad)
 
-
     def generate_update_function(self):
         """
         Generate a symbolic expression describing how the network
@@ -114,7 +113,7 @@ class SRN():
 
         return
 
-    def generate_network_dynamics(self):
+    def generate_network_dynamics(self, word_embeddings = None):
         """
         Create symbolic expressions defining how the network behaves when
         given a sequence of inputs, and how its parameters can be trained.
@@ -134,11 +133,12 @@ class SRN():
         also don't want to recreate expressions more often than necessary
         """
 
-        # TODO Maybe I should organise this differently somehow
-        # TODO does this also work when there are multiple sequences in parallel?
+        # TODO Now this is a matrix describing an input sequence, ideally,
+        # we would want this to be a vector of matrices describing input
+        # sequences
+        input_sequence = T.matrix("input_sequence", dtype=Theano.config.floatX)
 
-        # function describing how the hidden layer can be computed from the input
-        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
+        # describe how the hidden layer can be computed from the input
         def calc_hidden(input_t, hidden_t):
             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
@@ -191,7 +191,7 @@ class SRN():
 
         return
 
-    def train(self, input_sequences, no_iterations, some_other_params=None):
+    def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
         """
         Train the network to store input_sequences
         :param input_sequences  
@@ -199,18 +199,18 @@ class SRN():
         """
         #TODO write function description
         for iteration in xrange(0, no_iterations):
-            self.iteration(input_sequences)
+            self.iteration(input_sequences, batchsize)
 
         return
 
-    def iteration(self, input_sequences):
+    def iteration(self, input_sequences, batchsize):
         """
         Slice data in minibatches and perform one
         training iteration.
         :param input_sequences: The sequences we want to
                                 store in the network
         """
-        batches = self.make_batches(input_sequences)
+        batches = self.make_batches(input_sequences, batchsize)
 
         # loop over minibatches, update parameters
         for batch in batches:
@@ -218,7 +218,7 @@ class SRN():
 
         return
 
-    def make_batches(self, input_sequences):
+    def make_batches(self, input_sequences, batchsize):
         """
         Make batches from input sequence. 
         Currently this doesn't do anything but return the
