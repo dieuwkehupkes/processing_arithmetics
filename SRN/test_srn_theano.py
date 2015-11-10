@@ -38,30 +38,33 @@ stepsize = 1
 rounds = np.arange(0, 800, stepsize)
 prediction1, prediction2 = [], []
 
-for training_opt in ['1', '2', '3', '4']:
+for training_opt in ['4']: #['1', '2', '3', '4']:
 
-    av_prediction_last = []
+    av_prediction_last, p1_prediction_last, p2_prediction_last = [], [], []
     prediction1, prediction2, prediction_rand = [], [], []
 
     training_seq, test_seq1, test_seq2, label1, label2 = training_options[training_opt]
 
     for round in rounds:
-        network.train(training_seq, stepsize)
+        network.train(training_seq, stepsize, 1)
 
         rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
 
         p1, p2 = network.predict_last(test_seq1), network.predict_last(test_seq2)
 
+        p1_prediction_last.append(p1)
+        p2_prediction_last.append(p2)
         av_prediction_last.append(0.5 * (p1+p2))
         prediction1.append(network.compute_prediction_error(test_seq1))
         prediction2.append(network.compute_prediction_error(test_seq2))
 
-    print "prediction rate sequence 1:", prediction1[-1]
-    print "prediction rate sequence 2:", prediction2[-1]
+    print "prediction rate sequence 1: ", prediction1[-1]
+    print "prediction rate sequence 2: ", prediction2[-1]
 
     # plt.plot(rounds, prediction1, label=label1+ " prediction error")
     # plt.plot(rounds, prediction2, label=label2+ " prediction error")
-    plt.plot(rounds, av_prediction_last, label = label1+"prediction last")
+    plt.plot(rounds, p1_prediction_last, label = label1+" prediction last")
+    plt.plot(rounds, p2_prediction_last, label = label2+" prediction last")
 
 plt.legend(loc=2)
 plt.ylim(ymin=0, ymax=1.5)

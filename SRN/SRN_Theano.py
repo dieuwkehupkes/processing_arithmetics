@@ -133,10 +133,7 @@ class SRN():
         also don't want to recreate expressions more often than necessary
         """
 
-        # TODO Now this is a matrix describing an input sequence, ideally,
-        # we would want this to be a vector of matrices describing input
-        # sequences
-        input_sequence = T.matrix("input_sequence", dtype=Theano.config.floatX)
+        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_t, hidden_t):
