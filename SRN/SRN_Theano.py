@@ -18,6 +18,11 @@ class SRN():
         The SRN is fully described by three weight matrices connecting
         the different layers of the network.
 
+        To allow for co-training the word-embeddings of the network,
+        the network also has a word-embeddings vector, to map one-hot
+        vectors to a distributed representation. If the word-embeddings
+        are not co-trained, this matrix is just the identity matrix.
+
         :param input_size: number of input units
         :param hidden_size: number of hidden units
         """
@@ -49,6 +54,14 @@ class SRN():
                     (hidden_size, input_size)
                 ).astype(theano.config.floatX),
                 name='W'
+        )
+
+        # word embeddings matrix
+        self.embeddings = theano.shared(
+                value = np.identity(
+                    input_size
+                    ).astype(theano.config.floatX),
+               name='embeddings'
         )
 
         self.b1 = theano.shared(
