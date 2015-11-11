@@ -2,10 +2,30 @@ import numpy as np
 import theano
 import theano.tensor as T
 
-np.random.seed(0)
+np.random.seed(2)
 
-input_size = 4
+word1 = np.array([0,0,0,1,0,0,0,0,0,0]).astype(theano.config.floatX)
+word2 = np.array([0,0,1,0,0,0,0,0,0,0]).astype(theano.config.floatX)
+word3 = np.array([0,1,0,0,0,0,0,0,0,0]).astype(theano.config.floatX)
+word4 = np.array([1,0,0,0,0,0,0,0,0,0]).astype(theano.config.floatX)
+words = [word1, word2, word3, word4]
+
+seq1 = [words[i] for i in np.random.choice(3, 6)]
+seq2 = [words[i] for i in np.random.choice(3, 6)]
+seq3 = [words[i] for i in np.random.choice(3, 6)]
+seqs = np.array([seq1, seq2]).transpose(1,0,2)
+
+lexicon = np.zeros((10,10)).astype(theano.config.floatX)
+np.fill_diagonal(lexicon, 1)
+a, b, c, d, e, f, g, h, i, j = lexicon
+seq1 = np.array([a, b, b, b, b, d])
+seq2 = np.array([f, b, b, b, b, i])
+seqs = np.array([seq1, seq2]).transpose(1, 0, 2)
+# print '\ntest theano seqs: \n', seqs
+
+input_size = len(seq1[1])
 hidden_size = 4
+
 
 U = theano.shared(value=np.random.randn(input_size,hidden_size), name='U')
 V = np.random.randn(hidden_size,hidden_size)
@@ -13,22 +33,6 @@ W = np.random.randn(hidden_size,input_size)
 b1 = np.random.normal(0, 0.1, hidden_size)
 b2 = np.random.normal(0, 0.1, input_size)
 
-word1 = np.array([0,0,0,1])
-word2 = np.array([0,0,1,0])
-word3 = np.array([0,1,0,0])
-word4 = np.array([1,0,0,0])
-words = [word1, word2, word3, word4]
-
-seq1 = [words[i] for i in np.random.choice(3, 5)]
-seq2 = [words[i] for i in np.random.choice(3, 5)]
-seq3 = [words[i] for i in np.random.choice(3, 5)]
-seqs = np.array([seq1, seq2, seq3]).transpose(1,0,2)
-
-"""
-seq1 = np.array([a, b, b, b, b, d])
-seq2 = np.array([f, b, b, b, b, i])
-seq = np.array([seq1, seq2]).transpose(1, 0, 2)
-"""
 
 # for single sequences
 input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
@@ -80,8 +84,8 @@ def softmax_tensor(t):
     return sm_reshaped
 
 # func to compute hidden layer activation
-def calc_hiddens(inputs_t, hiddens_t):
-    return T.nnet.sigmoid(T.dot(inputs_t, U) + T.dot(hiddens_t, V) + b1)
+def calc_hiddens(input_t, hidden_t):
+    return T.nnet.sigmoid(T.dot(input_t, U) + T.dot(hidden_t, V) + b1)
 
 hiddens_t = T.matrix("hiddens_t", dtype=theano.config.floatX)
 
@@ -113,16 +117,16 @@ prediction_error_pl = theano.function([input_sequences], prediction_last_pl, giv
 output1 = output(seq1)
 output2 = output(seq2)
 output3 = output(seq3)
-# output_matrix = output_mat(seqs)
+output_matrix = output_mat(seqs)
 
 prediction1 = prediction_sg(seq1)
 prediction2 = prediction_sg(seq2)
-prediction3 = prediction_sg(seq3)
+# prediction3 = prediction_sg(seq3)
 predictions = prediction_pl(seqs)
 
 prediction_error1 = prediction_error_sg(seq1)
 prediction_error2 = prediction_error_sg(seq2)
-prediction_error3 = prediction_error_sg(seq3)
+# prediction_error3 = prediction_error_sg(seq3)
 prediction_errors = prediction_error_pl(seqs)
 
 
@@ -131,12 +135,12 @@ prediction_errors = prediction_error_pl(seqs)
 print "input sequences:\n", seqs
 
 print "\n\nprediction computed as separate sequences:\n"
-print prediction1, prediction2, prediction3
+print prediction1, prediction2 #, prediction3
 print "\n\nprediction computed as matrix:\n"
 print predictions
 
 print "\n\nprediction error computed as separate sequences:\n"
-print prediction_error1, prediction_error2, prediction_error3
+print prediction_error1, prediction_error2 #, prediction_error3
 print "\n\nprediction computed as matrix:\n"
 print prediction_errors
 

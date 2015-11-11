@@ -133,8 +133,8 @@ class SRN():
         also don't want to recreate expressions more often than necessary
         """
 
-        # TODO test if this is alright with bias!!
-        input_sequences = T.tensor3("input_sequences", dtype=theano.config.floatX)
+        input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
+        input_sequences = input_seqs.transpose(1,0,2)
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_t, hidden_t):
@@ -148,8 +148,8 @@ class SRN():
         # compute prediction sequence (i.e., output layer activation)
         output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
-        # TODO is this still correct???
-        # predictions = self.prediction(output_sequence)
+        # compute predictions
+        predictions = self.prediction(output_sequences)
 
         # symbolic definition of error
         errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:])   # vector
@@ -157,10 +157,9 @@ class SRN():
 
         # prediction error, compute by dividing the number of correct predictions
         # by the total number of predictions
-        # TODO is this still correct?
-        # prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
-        # prediction_error = 1 - T.mean(T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
-        # prediction_last = 1 - prediction_errors[-1]
+        prediction_errors = T.eq(predictions, self.prediction(input_sequences[1:]))
+        prediction_error = T.mean(1 - T.eq(predictions, self.prediction_batch(input_sequences[1:])))   # scalar
+        prediction_last = T.mean(1 - prediction_errors[-1])
 
         # gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
@@ -181,18 +180,46 @@ class SRN():
         # function to update the weights
         self.update_function = theano.function([input_sequences], updates=new_params, givens=givens)     # update U, V, W, b1, b2
 
-        # TODO fix
         # function to compute the cross-entropy error of the inputsequences
-        # self.compute_error = theano.function([input_sequence], error, givens=givens)
+        self.compute_error_batch = theano.function([input_seqs], error, givens=givens, mode='DebugMode')
 
-        # TODO fix
         # function for the prediction error on the entire sequence
-        # self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+        self.compute_prediction_error_batch = theano.function([input_seqs], prediction_error, givens=givens)
 
-        # TODO fix
         # prediction error only on the last elements of the sequences
-        # self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
+        self.compute_prediction_last_error_batch = theano.function([input_seqs], prediction_last, givens=givens)
 
+        return
+
+    def test_single_sequence(self):
+        """
+        Generate functions to compute the error on a single
+        input/output sequence.
+        """
+
+        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
+
+        hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
+
+        def calc_hidden(input_t, hidden_t):
+            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
+
+        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info=hidden_t)
+        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]
+        predictions = self.prediction(output_sequence)
+
+        # symbolic definitions of error
+        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
+        error = T.mean(errors)      # scalar
+        prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
+        prediction_error = T.mean(1 - T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
+        prediction_last_error = T.mean(1 - prediction_errors[-1])
+
+        hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
+        givens = {hidden_t : hidden_init}
+        self.compute_error = theano.function([input_sequence], error, givens=givens)
+        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+        self.compute_prediction_last_error = theano.function([input_sequence], prediction_last_error, givens=givens)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
@@ -239,15 +266,23 @@ class SRN():
 
         input_perm = np.random.permutation(input_sequences)
 
-        return [input_perm.transpose(1,0,2)]
+        # return [input_perm.transpose(1,0,2)]
+        return [input_perm]
 
-    def prediction(self, output_vector):
+    def prediction_batch(self, output_vector):
 
         # assuming a 1-k encoding, the network prediction is the output unit
         # with the highest activation value after applying the sigmoid
         # If we are using distributed representations oid (what in the end
         # possibly desirable is, the symbolic expression for the prediction
         # for the prediction would change (as well as the output activation, btw)
+        prediction = T.argmax(output_vector, axis=2)
+        return prediction
+
+    def prediction(self, output_vector):
+        """
+        Prediction of a single output vector. Assumes one-hot encoding.
+        """
         prediction = T.argmax(output_vector, axis=1)
         return prediction
 

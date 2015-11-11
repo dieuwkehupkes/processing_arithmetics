@@ -1,14 +1,15 @@
 from SRN_Theano import SRN
 import numpy as np
 import matplotlib.pyplot as plt
+import theano
 
 network = SRN(10, 8, 0.2)
 network.generate_update_function()
 network.generate_network_dynamics()
-
+network.test_single_sequence()
 
 # test and training sequences
-lexicon = np.zeros((10,10), float)
+lexicon = np.zeros((10,10)).astype(theano.config.floatX)
 np.fill_diagonal(lexicon, 1)
 a, b, c, d, e, f, g, h, i, j = lexicon
 
@@ -16,10 +17,10 @@ seq1, l1 = np.array([a,b,d]), 'abd'
 seq2, l2 = np.array([f,b,i]), 'fbi'
 seq3, l3 = np.array([a, b, b, d]), 'abbd'
 seq4, l4 = np.array([f, b, b, i]), 'fbbi'
-seq5, l5 = np.array([a, b, b, d]), 'abbbd'
-seq6, l6 = np.array([f, b, b, i]), 'fbbbi'
-seq7, l7 = np.array([a, b, b, d]), 'abbbbd'
-seq8, l8 = np.array([f, b, b, i]), 'fbbbbi'
+seq5, l5 = np.array([a, b, b, b, d]), 'abbbd'
+seq6, l6 = np.array([f, b, b, b, i]), 'fbbbi'
+seq7, l7 = np.array([a, b, b, b, b, d]), 'abbbbd'
+seq8, l8 = np.array([f, b, b, b, b, i]), 'fbbbbi'
 
 
 training_sequence1 = np.array([seq1, seq2])
@@ -41,32 +42,32 @@ training_opt = '4'
 
 av_prediction_last, p1_prediction_last, p2_prediction_last = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
+error1, error2, error_rand = [], [], []
 
 training_seq, test_seq1, test_seq2, label1, label2 = training_options[training_opt]
+test_seqs = np.array([test_seq1, test_seq2])
 
 for round in rounds:
     network.train(training_seq, stepsize, 1)
 
     rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
 
-#     error1.append(network.compute_error(test_seq1))
-#     error2.append(network.compute_error(test_seq2))
-#     error_rand.append(network.compute_error(rand_sequence))
-#     prediction1.append(network.compute_prediction_error(test_seq1))
-#     prediction2.append(network.compute_prediction_error(test_seq2))
-#     prediction_rand.append(network.compute_prediction_error(rand_sequence))
-
-exit()
+    error1.append(network.compute_error(test_seq1))
+    error2.append(network.compute_error(test_seq2))
+    error_rand.append(network.compute_error(rand_sequence))
+    prediction1.append(network.compute_prediction_last_error(test_seq1))
+    prediction2.append(network.compute_prediction_last_error(test_seq2))
+    prediction_rand.append(network.compute_prediction_last_error(rand_sequence))
 
 print "cross entropy sequence 1:", error1[-1]
 print "cross entropy sequence 2:", error2[-1]
 
-print "prediction rate sequence 1:", prediction1[-1]
-print "prediction rate sequence 2:", prediction2[-1]
+print "prediction error sequence 1:", prediction1[-1]
+print "prediction error sequence 2:", prediction2[-1]
 
-plt.plot(rounds, error1, label=label1+" cross-entropy")
-plt.plot(rounds, error2, label=label2+" cross-entropy")
-plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
+# plt.plot(rounds, error1, label=label1+" cross-entropy")
+# plt.plot(rounds, error2, label=label2+" cross-entropy")
+# plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
 plt.plot(rounds, prediction1, label=label1+ " prediction error")
 plt.plot(rounds, prediction2, label=label2+ " prediction error")
 plt.plot(rounds, prediction_rand, label="random sequence, prediction error")
