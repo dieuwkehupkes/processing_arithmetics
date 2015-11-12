@@ -113,6 +113,34 @@ class SRN():
 
         return
 
+    def generate_network_dynamics_batch(self):
+        """
+        omschrijving
+        """
+        
+        # declare variables
+        input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
+        input_sequences = input_seqs.transpose(1,0,2)
+
+        # describe how the hidden layer can be computed from the input
+        def calc_hidden(input_t, hidden_t):
+            # return hidden_t + 5
+            return T.nnet.sigmoid(T.dot(input_t, self.U)  + T.dot(hidden_t, self.V) + self.b1)
+
+        hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
+
+        # compute sequence of hidden layer activations
+        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences, outputs_info = hidden_t)
+        hidden_sequences_T = hidden_sequences.transpose(1,0,2)
+
+        # initial values
+        givens = {
+                hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
+        }
+
+        self.print_hidden_batch = theano.function([input_seqs], hidden_sequences_T, givens=givens)
+        return
+
     def generate_network_dynamics(self, word_embeddings = None):
         """
         Create symbolic expressions defining how the network behaves when
@@ -127,7 +155,6 @@ class SRN():
           the input sequence
         - How to compute the gradients w.r.t the different weights
 
-
         NB: I somehow feel like this should not all be in the same class,
         but I am not really sure how to do it differently, because I
         also don't want to recreate expressions more often than necessary
@@ -140,6 +167,7 @@ class SRN():
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_t, hidden_t):
+            # return hidden_t + 5
             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
         hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
@@ -162,7 +190,8 @@ class SRN():
         prediction_last = 1 - prediction_errors[-1]
 
         # gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values(), disconnected_inputs='ignore')))
+
 
         # updates for weightmatrices and historical grads
         new_params = []
@@ -176,6 +205,8 @@ class SRN():
         givens = {
                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
         }
+
+        self.print_hidden = theano.function([input_sequence], hidden_sequence, givens=givens)
 
         # function to update the weights
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
@@ -245,9 +276,14 @@ class SRN():
 
         # loop over minibatches, update parameters
         for batch in batches:
-            # TODO this should be changed once dim is increased
-            self.update_function(batch[0])
 
+            print "\nactivations computed in batch:"
+            print self.print_hidden_batch(batch)
+
+            for seq in xrange(len(batch)):
+                # TODO this should be changed once dim is increased
+                print "activations computed through single sequence:"
+                print self.print_hidden(batch[seq])
         return
 
     def make_batches(self, input_sequences, batchsize):
