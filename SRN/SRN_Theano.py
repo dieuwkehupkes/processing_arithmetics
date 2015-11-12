@@ -181,13 +181,13 @@ class SRN():
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
 
         # function to compute the cross-entropy error of the inputsequences
-        self.compute_error = theano.function([input_sequence], error, givens=givens)
+        self.compute_error_batch = theano.function([input_sequence], error, givens=givens)
 
         # function for the prediction error on the entire sequence
-        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+        self.compute_prediction_error_batch = theano.function([input_sequence], prediction_error, givens=givens)
 
         # prediction error only on the last elements of the sequences
-        self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
+        self.predict_last_batch = theano.function([input_sequence], prediction_last, givens=givens)
 
         return
 
@@ -245,7 +245,8 @@ class SRN():
 
         # loop over minibatches, update parameters
         for batch in batches:
-            self.update_function(batch)
+            # TODO this should be changed once dim is increased
+            self.update_function(batch[0])
 
         return
 
@@ -258,7 +259,8 @@ class SRN():
         """
         # TODO Make that this method actually does something
         # return permutated version of input sequences
-        return np.random.permutation(input_sequences)
+        input_perm = np.random.permutation(input_sequences)
+        return [input_perm]
 
     def prediction(self, output_vector):
 
