@@ -35,14 +35,15 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
                     '4': (training_sequence4, seq7, seq8, l7, l8)
                    }
 
-stepsize = 1
-rounds = np.arange(0, 800, stepsize)
+stepsize = 5
+rounds = np.arange(0, 300, stepsize)
 prediction1, prediction2 = [], []
-training_opt = '4'
+training_opt = '1'
 
 av_prediction_last, p1_prediction_last, p2_prediction_last = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
 error1, error2, error_rand = [], [], []
+training_error = []
 
 training_seq, test_seq1, test_seq2, label1, label2 = training_options[training_opt]
 test_seqs = np.array([test_seq1, test_seq2])
@@ -51,6 +52,8 @@ for round in rounds:
     network.train(training_seq, stepsize, 1)
 
     rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
+
+    training_error.append(network.compute_error_batch(training_seq))
 
     error1.append(network.compute_error(test_seq1))
     error2.append(network.compute_error(test_seq2))
@@ -68,9 +71,10 @@ print "prediction error sequence 2:", prediction2[-1]
 # plt.plot(rounds, error1, label=label1+" cross-entropy")
 # plt.plot(rounds, error2, label=label2+" cross-entropy")
 # plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
-plt.plot(rounds, prediction1, label=label1+ " prediction error")
-plt.plot(rounds, prediction2, label=label2+ " prediction error")
-plt.plot(rounds, prediction_rand, label="random sequence, prediction error")
+# plt.plot(rounds, prediction1, label=label1+ " prediction error")
+# plt.plot(rounds, prediction2, label=label2+ " prediction error")
+# plt.plot(rounds, prediction_rand, label="random sequence, prediction error")
+plt.plot(rounds, training_error)
 plt.legend(loc=2)
 plt.ylim(ymin=0)
 plt.xlabel("number of training rounds")

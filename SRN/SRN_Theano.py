@@ -27,7 +27,7 @@ class SRN():
         :param hidden_size: number of hidden units
         """
 
-        self.learning_rate = 0.01
+        self.learning_rate = 0.1
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -126,7 +126,7 @@ class SRN():
 
         return
 
-    def generate_network_dynamics(self, word_embeddings = None):
+    def generate_network_dynamics(self):
         """
         Create symbolic expressions defining how the network behaves when
         given a sequence of inputs, and how its parameters can be trained.
@@ -181,7 +181,7 @@ class SRN():
         new_params = []
         for param in self.params:
             new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
-            new_param_value = self.params[param] - gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
+            new_param_value = self.params[param] - self.learning_rate * gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
             new_params.append((self.params[param], new_param_value))
             new_params.append((self.histgrad[param], new_histgrad))
 
