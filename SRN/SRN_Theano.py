@@ -22,7 +22,7 @@ class SRN():
         :param hidden_size: number of hidden units
         """
 
-        self.learning_rate = 0.01
+        self.learning_rate = 0.1
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -168,7 +168,7 @@ class SRN():
         new_params = []
         for param in self.params:
             new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
-            new_param_value = self.params[param] - gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
+            new_param_value = self.params[param] - self.learning_rate*gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
             new_params.append((self.params[param], new_param_value))
             new_params.append((self.histgrad[param], new_histgrad))
 
@@ -189,6 +189,37 @@ class SRN():
         # prediction error only on the last elements of the sequences
         self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
+        return
+
+    def test_single_sequence(self):
+        """
+        Generate functions to compute the error on a single
+        input/output sequence.
+        """
+
+        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
+
+        hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
+
+        def calc_hidden(input_t, hidden_t):
+            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
+
+        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info=hidden_t)
+        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]
+        predictions = self.prediction(output_sequence)
+
+        # symbolic definitions of error
+        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
+        error = T.mean(errors)      # scalar
+        prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
+        prediction_error = T.mean(1 - T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
+        prediction_last_error = T.mean(1 - prediction_errors[-1])
+
+        hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
+        givens = {hidden_t : hidden_init}
+        self.compute_error = theano.function([input_sequence], error, givens=givens)
+        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+        self.compute_prediction_last_error = theano.function([input_sequence], prediction_last_error, givens=givens)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
