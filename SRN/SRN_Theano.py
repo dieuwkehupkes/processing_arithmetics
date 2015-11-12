@@ -131,14 +131,16 @@ class SRN():
 
         # compute sequence of hidden layer activations
         hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences, outputs_info = hidden_t)
-        hidden_sequences_T = hidden_sequences.transpose(1,0,2)
+        # compute prediction sequence (i.e., output layer activation)
+        output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
+        output_sequence_T = output_sequences.transpose(0,1,2)
         # initial values
         givens = {
                 hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
         }
 
-        self.print_hidden_batch = theano.function([input_seqs], hidden_sequences_T, givens=givens)
+        self.output_batch = theano.function([input_seqs], output_sequence_T, givens=givens)
         return
 
     def generate_network_dynamics(self, word_embeddings = None):
@@ -206,7 +208,7 @@ class SRN():
                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
         }
 
-        self.print_hidden = theano.function([input_sequence], hidden_sequence, givens=givens)
+        self.output = theano.function([input_sequence], output_sequence, givens=givens)
 
         # function to update the weights
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
@@ -278,12 +280,12 @@ class SRN():
         for batch in batches:
 
             print "\nactivations computed in batch:"
-            print self.print_hidden_batch(batch)
+            print self.output_batch(batch)
 
             for seq in xrange(len(batch)):
                 # TODO this should be changed once dim is increased
                 print "activations computed through single sequence:"
-                print self.print_hidden(batch[seq])
+                print self.output(batch[seq])
         return
 
     def make_batches(self, input_sequences, batchsize):
@@ -307,6 +309,17 @@ class SRN():
         # for the prediction would change (as well as the output activation, btw)
         prediction = T.argmax(output_vector, axis=1)
         return prediction
+
+    def softmax_tensor(self, input_tensor):
+        """
+        Softmax function that can be applied to a 
+        three dimensional tensor.
+        """
+        d0, d1, d2 = input_tensor.shape
+        reshaped = T.reshape(input_tensor, (d0*d1, d2))
+        softmax_reshaped = T.nnet.softmax(reshaped)
+        softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
+        return softmax
 
     def output(self):
         output = self.activations['output_t'].get_value()
