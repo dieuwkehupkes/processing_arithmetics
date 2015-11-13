@@ -134,13 +134,24 @@ class SRN():
         # compute prediction sequence (i.e., output layer activation)
         output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
-        output_sequence_T = output_sequences.transpose(0,1,2)
+        # TODO print and test predictions
+
+        # TODO print and test error
+        errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
+        error = T.mean(errors)  # scalar
+
+        # TODO print and test prediction error
+
+        # TODO compute and test gradients
+
+        # TODO compute and test new parameters
+
         # initial values
         givens = {
                 hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
         }
 
-        self.output_batch = theano.function([input_seqs], output_sequence_T, givens=givens)
+        self.error_batch = theano.function([input_seqs], error, givens=givens)
         return
 
     def generate_network_dynamics(self, word_embeddings = None):
@@ -214,13 +225,13 @@ class SRN():
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
 
         # function to compute the cross-entropy error of the inputsequences
-        self.compute_error_batch = theano.function([input_sequence], error, givens=givens)
+        self.compute_error = theano.function([input_sequence], error, givens=givens)
 
         # function for the prediction error on the entire sequence
-        self.compute_prediction_error_batch = theano.function([input_sequence], prediction_error, givens=givens)
+        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
 
         # prediction error only on the last elements of the sequences
-        self.predict_last_batch = theano.function([input_sequence], prediction_last, givens=givens)
+        self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
         return
 
@@ -280,12 +291,12 @@ class SRN():
         for batch in batches:
 
             print "\nactivations computed in batch:"
-            print self.output_batch(batch)
+            print self.error_batch(batch)
 
             for seq in xrange(len(batch)):
                 # TODO this should be changed once dim is increased
                 print "activations computed through single sequence:"
-                print self.output(batch[seq])
+                print self.compute_error(batch[seq])
         return
 
     def make_batches(self, input_sequences, batchsize):
