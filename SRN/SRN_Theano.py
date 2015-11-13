@@ -22,7 +22,7 @@ class SRN():
         :param hidden_size: number of hidden units
         """
 
-        self.learning_rate = 0.1
+        self.learning_rate = 0.01
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -113,47 +113,6 @@ class SRN():
 
         return
 
-    def generate_network_dynamics_batch(self):
-        """
-        omschrijving
-        """
-        
-        # declare variables
-        input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
-        input_sequences = input_seqs.transpose(1,0,2)
-
-        # describe how the hidden layer can be computed from the input
-        def calc_hidden(input_t, hidden_t):
-            # return hidden_t + 5
-            return T.nnet.sigmoid(T.dot(input_t, self.U)  + T.dot(hidden_t, self.V) + self.b1)
-
-        hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
-
-        # compute sequence of hidden layer activations
-        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences, outputs_info = hidden_t)
-        # compute prediction sequence (i.e., output layer activation)
-        output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
-
-        # TODO print and test predictions
-
-        # TODO print and test error
-        errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
-        error = T.mean(errors)  # scalar
-
-        # TODO print and test prediction error
-
-        # TODO compute and test gradients
-
-        # TODO compute and test new parameters
-
-        # initial values
-        givens = {
-                hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
-        }
-
-        self.error_batch = theano.function([input_seqs], error, givens=givens)
-        return
-
     def generate_network_dynamics(self, word_embeddings = None):
         """
         Create symbolic expressions defining how the network behaves when
@@ -168,6 +127,7 @@ class SRN():
           the input sequence
         - How to compute the gradients w.r.t the different weights
 
+
         NB: I somehow feel like this should not all be in the same class,
         but I am not really sure how to do it differently, because I
         also don't want to recreate expressions more often than necessary
@@ -180,7 +140,6 @@ class SRN():
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_t, hidden_t):
-            # return hidden_t + 5
             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
         hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
@@ -203,14 +162,13 @@ class SRN():
         prediction_last = 1 - prediction_errors[-1]
 
         # gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values(), disconnected_inputs='ignore')))
-
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
 
         # updates for weightmatrices and historical grads
         new_params = []
         for param in self.params:
             new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
-            new_param_value = self.params[param] - self.learning_rate*gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
+            new_param_value = self.params[param] - gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
             new_params.append((self.params[param], new_param_value))
             new_params.append((self.histgrad[param], new_histgrad))
 
@@ -218,8 +176,6 @@ class SRN():
         givens = {
                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
         }
-
-        self.output = theano.function([input_sequence], output_sequence, givens=givens)
 
         # function to update the weights
         self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
@@ -233,37 +189,6 @@ class SRN():
         # prediction error only on the last elements of the sequences
         self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
-        return
-
-    def test_single_sequence(self):
-        """
-        Generate functions to compute the error on a single
-        input/output sequence.
-        """
-
-        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
-
-        hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
-
-        def calc_hidden(input_t, hidden_t):
-            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
-
-        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info=hidden_t)
-        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]
-        predictions = self.prediction(output_sequence)
-
-        # symbolic definitions of error
-        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
-        error = T.mean(errors)      # scalar
-        prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
-        prediction_error = T.mean(1 - T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
-        prediction_last_error = T.mean(1 - prediction_errors[-1])
-
-        hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
-        givens = {hidden_t : hidden_init}
-        self.compute_error = theano.function([input_sequence], error, givens=givens)
-        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
-        self.compute_prediction_last_error = theano.function([input_sequence], prediction_last_error, givens=givens)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
@@ -289,14 +214,8 @@ class SRN():
 
         # loop over minibatches, update parameters
         for batch in batches:
+            self.update_function(batch)
 
-            print "\nactivations computed in batch:"
-            print self.error_batch(batch)
-
-            for seq in xrange(len(batch)):
-                # TODO this should be changed once dim is increased
-                print "activations computed through single sequence:"
-                print self.compute_error(batch[seq])
         return
 
     def make_batches(self, input_sequences, batchsize):
@@ -308,8 +227,7 @@ class SRN():
         """
         # TODO Make that this method actually does something
         # return permutated version of input sequences
-        input_perm = np.random.permutation(input_sequences)
-        return [input_perm]
+        return np.random.permutation(input_sequences)
 
     def prediction(self, output_vector):
 
@@ -320,17 +238,6 @@ class SRN():
         # for the prediction would change (as well as the output activation, btw)
         prediction = T.argmax(output_vector, axis=1)
         return prediction
-
-    def softmax_tensor(self, input_tensor):
-        """
-        Softmax function that can be applied to a 
-        three dimensional tensor.
-        """
-        d0, d1, d2 = input_tensor.shape
-        reshaped = T.reshape(input_tensor, (d0*d1, d2))
-        softmax_reshaped = T.nnet.softmax(reshaped)
-        softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
-        return softmax
 
     def output(self):
         output = self.activations['output_t'].get_value()
