@@ -6,16 +6,8 @@ np.random.seed(8)
 
 network = SRN(10, 8, 0.2)
 network.generate_update_function()
-network.generate_network_dynamics()
 network.generate_network_dynamics_batch()
-
-np.random.seed(8)
-
-network2 = SRN(10, 8, 0.2)
-network2.generate_update_function()
-network2.generate_network_dynamics()
-network2.generate_network_dynamics_batch()
-
+network.test_single_sequence()
 
 # test and training sequences
 lexicon = np.zeros((10,10), float)
@@ -53,10 +45,6 @@ prediction1, prediction2 = [], []
 training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
 error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
-
-# network.test_equal(training_seq, batchsize)
-
-# exit()
 
 for round in rounds:
     network.train_batch(training_seq, stepsize, 1)

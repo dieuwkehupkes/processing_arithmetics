@@ -115,6 +115,22 @@ class SRN():
 
     def generate_network_dynamics_batch(self):
         """
+        Create symbolic expressions defining how the network behaves when
+        given a sequence of inputs, and how its parameters can be trained.
+        In this function it is defined:
+        - How a sequence of hidden-layer activations can be computed
+          from an input sequence
+        - How a sequence of predictions can be computed from a sequence
+          of hidden layer activations
+        - How the next-item prediction of the network can be computed
+        - How the error of a sequence of predictions can be computed from
+          the input sequence
+        - How to compute the gradients w.r.t the different weights
+
+
+        NB: I somehow feel like this should not all be in the same class,
+        but I am not really sure how to do it differently, because I
+        also don't want to recreate expressions more often than necessary
         Omschrijving.
         """
         
@@ -163,86 +179,49 @@ class SRN():
         self.update_function_batch = theano.function([input_seqs], updates=new_params, givens=givens)
         return
 
-    def generate_network_dynamics(self):
-        """
-        Create symbolic expressions defining how the network behaves when
-        given a sequence of inputs, and how its parameters can be trained.
-        In this function it is defined:
-        - How a sequence of hidden-layer activations can be computed
-          from an input sequence
-        - How a sequence of predictions can be computed from a sequence
-          of hidden layer activations
-        - How the next-item prediction of the network can be computed
-        - How the error of a sequence of predictions can be computed from
-          the input sequence
-        - How to compute the gradients w.r.t the different weights
-
-
-        NB: I somehow feel like this should not all be in the same class,
-        but I am not really sure how to do it differently, because I
-        also don't want to recreate expressions more often than necessary
-        """
-
-        # TODO Now this is a matrix describing an input sequence, ideally,
-        # we would want this to be a vector of matrices describing input
-        # sequences
-        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
-
-        # describe how the hidden layer can be computed from the input
-        def calc_hidden(input_t, hidden_t):
-            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
-
-        hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
-
-        # compute sequence of hidden layer activations
-        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info = hidden_t)
-
-        # compute prediction sequence (i.e., output layer activation)
-        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]       # predictions for all but last output
-
-        predictions = self.prediction(output_sequence)
-
-        # symbolic definition of error
-        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
-        error = T.mean(errors)      # scalar
-
-        # prediction error, compute by dividing the number of correct predictions
-        # by the total number of predictions
-        prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
-        prediction_error = 1 - T.mean(T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
-        prediction_last = 1 - prediction_errors[-1]
-
-        # gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
-
-        # updates for weightmatrices and historical grads
-        new_params = OrderedDict()
-        for param in self.params:
-            new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
-            new_param_value = self.params[param] - gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
-            new_params[self.params[param]] = new_param_value
-            new_params[self.histgrad[param]] = new_histgrad
-
-        # initial values
-        givens = {
-                hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
-        }
-
-        # function to update the weights
-        self.update_function = theano.function([input_sequence], updates=new_params, givens=givens)     # update U, V, W, b1, b2
-
-        # function to compute the cross-entropy error of the inputsequences
-        self.compute_error = theano.function([input_sequence], error, givens=givens)
-
-        # function for the prediction error on the entire sequence
-        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
-
-        # prediction error only on the last elements of the sequences
-        self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
-
-        self.produce_output = theano.function([input_sequence], new_params[self.W], givens=givens)
-
-        return
+    def test_single_sequence(self):
+         """
+         Generate functions to compute teh error on a single
+         input/output sequence.
+         """
+ 
+         input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
+         hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
+ 
+         # describe how the hidden layer can be computed from the input
+         def calc_hidden(input_t, hidden_t):
+             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
+ 
+         hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info=hidden_t)
+         output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]       # predictions for all but last output
+ 
+         predictions = self.prediction(output_sequence)
+ 
+         # symbolic definition of error
+         errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
+         error = T.mean(errors)      # scalar
+ 
+         # prediction error, compute by dividing the number of correct predictions
+         # by the total number of predictions
+         prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
+         prediction_error = 1 - T.mean(T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
+         prediction_last = 1 - prediction_errors[-1]
+ 
+         # initial values
+         givens = {
+                 hidden_t:       np.zeros(self.hidden_size).astype(theano.config.floatX),
+         }
+ 
+         # function to compute the cross-entropy error of the inputsequences
+         self.compute_error = theano.function([input_sequence], error, givens=givens)
+ 
+         # function for the prediction error on the entire sequence
+         self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+ 
+         # prediction error only on the last elements of the sequences
+         self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
+ 
+         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
         """
