@@ -6,7 +6,7 @@ np.random.seed(1)
 
 network = SRN(10, 8, 0.2)
 # network.generate_network_dynamics(word_embeddings=True)
-network.generate_network_dynamics(word_embeddings=False)
+network.generate_network_dynamics(word_embeddings=True)
 network.test_single_sequence()
 
 # test and training sequences

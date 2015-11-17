@@ -53,11 +53,8 @@ class SRN():
 
         # weights to co-train embeddings
         self.embeddings = theano.shared(
-                 value = np.random.normal(
-                     0, 1,
-                     (input_size, input_size)
-#                 value = np.identity(
-#                     input_size
+                value = np.identity(
+                    input_size
                 ).astype(theano.config.floatX),
                 name='embeddings'
         )
