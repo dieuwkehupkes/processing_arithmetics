@@ -277,23 +277,6 @@ class SRN():
 
         return
 
-    def test_equal(self, input_sequences, batchsize):
-        """
-        Test if batch and single example processing
-        give the same output.
-        """
-        batches = self.make_batches(input_sequences, batchsize)
-
-        for batch in batches:
-            print "Output computed all at once:"
-            print self.produce_output_batch(batch)
-
-            print '\nOutput computed example by example'
-            # loop over minibatches
-            for seq in xrange(len(batch)):
-                print '\n', self.produce_output(batch[seq])
-        return
-
     def make_batches(self, input_sequences, batchsize):
         """
         Make batches from input sequence. 

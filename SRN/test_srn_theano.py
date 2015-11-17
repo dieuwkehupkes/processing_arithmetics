@@ -46,8 +46,6 @@ training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
 error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
 
-network.test_equal(training_seq, batchsize)
-
 for round in rounds:
     network.train(training_seq, stepsize, 1)
 
