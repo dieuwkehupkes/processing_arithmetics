@@ -138,7 +138,7 @@ class SRN():
 
         # TODO print and test error
         errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
-        error = T.mean(errors)  # scalar
+        error = T.mean(errors, axis=0)  # scalar
 
         # TODO print and test prediction error
 
@@ -151,7 +151,7 @@ class SRN():
                 hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
         }
 
-        self.produce_output_batch = theano.function([input_seqs], output_sequences, givens=givens)
+        self.produce_output_batch = theano.function([input_seqs], error, givens=givens)
         return
 
     def generate_network_dynamics(self):
@@ -231,7 +231,7 @@ class SRN():
         # prediction error only on the last elements of the sequences
         self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
-        self.produce_output = theano.function([input_sequence], output_sequence, givens=givens)
+        self.produce_output = theano.function([input_sequence], error, givens=givens)
 
         return
 

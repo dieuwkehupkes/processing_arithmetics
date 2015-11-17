@@ -36,10 +36,10 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
                     '4': (training_sequence4, seq7, seq8, l7, l8)
                    }
 
-stepsize = 1
+stepsize = 2
 batchsize = 1
-train_opt = '2'
-rounds = np.arange(0, 800, stepsize)
+train_opt = '4'
+rounds = np.arange(0, 2000, stepsize)
 prediction1, prediction2 = [], []
 
 training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
