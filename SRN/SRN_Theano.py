@@ -235,34 +235,7 @@ class SRN():
 
         return
 
-    def train_batch(self, input_sequences, no_iterations, batchsize, some_other_params=None):
-        """
-        Train the network to store input_sequences
-        :param input_sequences  
-        :param no_iterations    
-        """
-        #TODO write function description
-        for iteration in xrange(0, no_iterations):
-            self.iteration_batch(input_sequences, batchsize)
-
-        return
-
     def iteration(self, input_sequences, batchsize):
-        """
-        Slice data in minibatches and perform one
-        training iteration.
-        :param input_sequences: The sequences we want to
-                                store in the network
-        """
-        batches = self.make_batches(input_sequences, batchsize)
-
-        # loop over minibatches, update parameters
-        for batch in batches:
-            self.update_function(batch[0]) 
-
-        return
-
-    def iteration_batch(self, input_sequences, batchsize):
         """
         Slice data in minibatches and perform one
         training iteration.
@@ -291,7 +264,7 @@ class SRN():
 
     def prediction(self, output_vector):
 
-        # assuming a 1-k encoding, the network prediction is the output unit
+        # assuming a one-hot encoding, the network prediction is the output unit
         # with the highest activation value after applying the sigmoid
         # If we are using distributed representations oid (what in the end
         # possibly desirable is, the symbolic expression for the prediction
