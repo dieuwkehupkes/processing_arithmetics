@@ -83,6 +83,11 @@ class SRN():
                 name = 'output_t'
         )
 
+        input_map_t = theano.shared(
+                value = np.zeros(input_size).astype(theano.config.floatX),
+                name = 'input_t'
+        )
+
         self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
 
         # store dimensions of network
@@ -108,9 +113,11 @@ class SRN():
         """
         # current input and current hidden vector
         input_t = T.vector("input_t")
+        input_map_t = T.vector("input_map_t")
         hidden_t = T.vector("hidden_t")
 
-        hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
+        input_map_t = T.dot(input_map_t, self.embeddings)
+        hidden_next = T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
 
         output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
 
@@ -138,12 +145,17 @@ class SRN():
         
         # declare variables
         input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
-        input_sequences = input_seqs.transpose(1,0,2)
+
+        # compute input map from input
+        input_map_t = T.dot(input_seqs, self.embeddings)
+
+        # transpose to loop over right dimensions
+        input_sequences = input_map_t.transpose(1,0,2)
 
         # describe how the hidden layer can be computed from the input
-        def calc_hidden(input_t, hidden_t):
+        def calc_hidden(input_map_t, hidden_t):
             # return hidden_t + 5
-            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
+            return T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
         hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
 
@@ -186,13 +198,14 @@ class SRN():
         """
 
         input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
+        input_map_sequence = T.dot(input_sequence, self.embeddings)
 
         hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
 
         def calc_hidden(input_t, hidden_t):
             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
-        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence, outputs_info=hidden_t)
+        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_map_sequence, outputs_info=hidden_t)
         output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]
         predictions = self.prediction(output_sequence)
 
