@@ -138,20 +138,29 @@ class SRN():
 
         # TODO print and test error
         errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
-        error = T.mean(errors, axis=0)  # scalar
+        error = T.mean(errors)  # scalar
 
         # TODO print and test prediction error
 
         # TODO compute and test gradients
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
 
         # TODO compute and test new parameters
+        new_params = OrderedDict()
+        for param in self.params:
+            new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
+            new_param_value = self.params[param] - self.learning_rate*gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
+            new_params[self.params[param]] = new_param_value
+            new_params[self.histgrad[param]] = new_histgrad
 
         # initial values
         givens = {
                 hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
         }
 
-        self.produce_output_batch = theano.function([input_seqs], error, givens=givens)
+        self.produce_output_batch = theano.function([input_seqs], new_params[self.W], givens=givens)
+
+        self.update_function_batch = theano.function([input_seqs], updates=new_params, givens=givens)
         return
 
     def generate_network_dynamics(self):
@@ -207,12 +216,12 @@ class SRN():
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
 
         # updates for weightmatrices and historical grads
-        new_params = []
+        new_params = OrderedDict()
         for param in self.params:
             new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
             new_param_value = self.params[param] - gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
-            new_params.append((self.params[param], new_param_value))
-            new_params.append((self.histgrad[param], new_histgrad))
+            new_params[self.params[param]] = new_param_value
+            new_params[self.histgrad[param]] = new_histgrad
 
         # initial values
         givens = {
@@ -231,7 +240,7 @@ class SRN():
         # prediction error only on the last elements of the sequences
         self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
-        self.produce_output = theano.function([input_sequence], error, givens=givens)
+        self.produce_output = theano.function([input_sequence], new_params[self.W], givens=givens)
 
         return
 
@@ -244,6 +253,18 @@ class SRN():
         #TODO write function description
         for iteration in xrange(0, no_iterations):
             self.iteration(input_sequences, batchsize)
+
+        return
+
+    def train_batch(self, input_sequences, no_iterations, batchsize, some_other_params=None):
+        """
+        Train the network to store input_sequences
+        :param input_sequences  
+        :param no_iterations    
+        """
+        #TODO write function description
+        for iteration in xrange(0, no_iterations):
+            self.iteration_batch(input_sequences, batchsize)
 
         return
 
@@ -273,7 +294,7 @@ class SRN():
 
         # loop over minibatches, update parameters
         for batch in batches:
-            self.update_function(batch) 
+            self.update_function_batch(batch) 
 
         return
 
@@ -285,13 +306,19 @@ class SRN():
         batches = self.make_batches(input_sequences, batchsize)
 
         for batch in batches:
-            print "Output computed all at once:"
-            print self.produce_output_batch(batch)
+            print "Update for W computed at once"
+            out_batch = self.produce_output_batch(batch)
+            print out_batch
 
-            print '\nOutput computed example by example'
+            sum_examples = np.zeros_like(out_batch)
+
+            print '\nUpdate for W computed example by example'
             # loop over minibatches
             for seq in xrange(len(batch)):
-                print '\n', self.produce_output(batch[seq])
+                output = self.produce_output(batch[seq])
+                sum_examples += output
+
+            print sum_examples
         return
 
     def make_batches(self, input_sequences, batchsize):
