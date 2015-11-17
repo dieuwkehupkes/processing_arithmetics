@@ -2,20 +2,12 @@ from SRN_Theano import SRN
 import numpy as np
 import matplotlib.pyplot as plt
 
-np.random.seed(8)
+np.random.seed(2)
 
 network = SRN(10, 8, 0.2)
 network.generate_update_function()
-network.generate_network_dynamics()
 network.generate_network_dynamics_batch()
-
-np.random.seed(8)
-
-network2 = SRN(10, 8, 0.2)
-network2.generate_update_function()
-network2.generate_network_dynamics()
-network2.generate_network_dynamics_batch()
-
+network.test_single_sequence()
 
 # test and training sequences
 lexicon = np.zeros((10,10), float)
@@ -55,7 +47,7 @@ error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
 
 for round in rounds:
-    network.train_batch(training_seq, stepsize, 1)
+    network.train(training_seq, stepsize, 1)
 
     rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
 
