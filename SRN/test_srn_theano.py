@@ -2,12 +2,20 @@ from SRN_Theano import SRN
 import numpy as np
 import matplotlib.pyplot as plt
 
+np.random.seed(8)
+
 network = SRN(10, 8, 0.2)
 network.generate_update_function()
 network.generate_network_dynamics()
 network.generate_network_dynamics_batch()
 
 np.random.seed(8)
+
+network2 = SRN(10, 8, 0.2)
+network2.generate_update_function()
+network2.generate_network_dynamics()
+network2.generate_network_dynamics_batch()
+
 
 # test and training sequences
 lexicon = np.zeros((10,10), float)
@@ -39,7 +47,7 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
 stepsize = 2
 batchsize = 1
 train_opt = '4'
-rounds = np.arange(0, 2000, stepsize)
+rounds = np.arange(0, 1000, stepsize)
 prediction1, prediction2 = [], []
 
 training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
@@ -47,7 +55,7 @@ error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
 
 for round in rounds:
-    network.train(training_seq, stepsize, 1)
+    network.train_batch(training_seq, stepsize, 1)
 
     rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
 
@@ -64,9 +72,9 @@ print "cross entropy sequence 2:", error2[-1]
 print "prediction rate sequence 1:", prediction1[-1]
 print "prediction rate sequence 2:", prediction2[-1]
 
-plt.plot(rounds, error1, label=label1+" cross-entropy")
-plt.plot(rounds, error2, label=label2+" cross-entropy")
-plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
+# plt.plot(rounds, error1, label=label1+" cross-entropy")
+# plt.plot(rounds, error2, label=label2+" cross-entropy")
+# plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
 plt.plot(rounds, prediction1, label=label1+ " prediction error")
 plt.plot(rounds, prediction2, label=label2+ " prediction error")
 plt.plot(rounds, prediction_rand, label="random sequence, prediction error")
