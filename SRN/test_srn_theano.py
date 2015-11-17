@@ -54,28 +54,12 @@ training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
 error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
 
-network.test_equal(training_seq, batchsize)
-
-"""
-np.random.seed(0)
-network2.train_batch(training_seq, stepsize, batchsize)
-
-print "weights after update per example:\n\n"
-print "W:", network2.W.get_value()
-print "U:", network2.U.get_value()
-
-np.random.seed(0)
-network2.train_batch(training_seq, stepsize, batchsize)
-
-print "weights after update per batch:\n\n"
-print "W:", network2.W.get_value()
-print "U:", network2.U.get_value()
-"""
+# network.test_equal(training_seq, batchsize)
 
 # exit()
 
 for round in rounds:
-    network.train(training_seq, stepsize, 1)
+    network.train_batch(training_seq, stepsize, 1)
 
     rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
 
@@ -92,9 +76,9 @@ print "cross entropy sequence 2:", error2[-1]
 print "prediction rate sequence 1:", prediction1[-1]
 print "prediction rate sequence 2:", prediction2[-1]
 
-plt.plot(rounds, error1, label=label1+" cross-entropy")
-plt.plot(rounds, error2, label=label2+" cross-entropy")
-plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
+# plt.plot(rounds, error1, label=label1+" cross-entropy")
+# plt.plot(rounds, error2, label=label2+" cross-entropy")
+# plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
 plt.plot(rounds, prediction1, label=label1+ " prediction error")
 plt.plot(rounds, prediction2, label=label2+ " prediction error")
 plt.plot(rounds, prediction_rand, label="random sequence, prediction error")

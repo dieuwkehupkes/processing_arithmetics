@@ -22,7 +22,7 @@ class SRN():
         :param hidden_size: number of hidden units
         """
 
-        self.learning_rate = 0.01
+        self.learning_rate = 0.1
 
         # weights from input to hidden
         self.U = theano.shared(
