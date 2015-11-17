@@ -2,10 +2,11 @@ from SRN_Theano import SRN
 import numpy as np
 import matplotlib.pyplot as plt
 
-np.random.seed(8)
+np.random.seed(1)
 
 network = SRN(10, 8, 0.2)
-network.generate_network_dynamics()
+# network.generate_network_dynamics(word_embeddings=True)
+network.generate_network_dynamics(word_embeddings=False)
 network.test_single_sequence()
 
 # test and training sequences
@@ -38,7 +39,7 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
 stepsize = 2
 batchsize = 1
 train_opt = '4'
-rounds = np.arange(0, 1000, stepsize)
+rounds = np.arange(0, 2000, stepsize)
 error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
 

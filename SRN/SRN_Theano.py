@@ -22,7 +22,7 @@ class SRN():
         :param hidden_size: number of hidden units
         """
 
-        self.learning_rate = 0.1
+        self.learning_rate = 0.05
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -53,8 +53,11 @@ class SRN():
 
         # weights to co-train embeddings
         self.embeddings = theano.shared(
-                value = np.identity(
-                    input_size
+                 value = np.random.normal(
+                     0, 1,
+                     (input_size, input_size)
+#                 value = np.identity(
+#                     input_size
                 ).astype(theano.config.floatX),
                 name='embeddings'
         )
@@ -94,18 +97,6 @@ class SRN():
         self.input_size =  input_size
         self.hidden_size = hidden_size
         
-        # store the parameters of the network
-        self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
-
-        # store history of gradients for adagrad
-        histgrad = []
-        for param in self.params:
-            init_grad = np.zeros_like(self.params[param].get_value(), dtype=theano.config.floatX)
-            name = "hist_grad_" + param
-            histgrad.append((param, theano.shared(init_grad, name=name)))
-
-        self.histgrad = OrderedDict(histgrad)
-
     def generate_update_function(self):
         """
         Generate a symbolic expression describing how the network
@@ -113,10 +104,10 @@ class SRN():
         """
         # current input and current hidden vector
         input_t = T.vector("input_t")
-        input_map_t = T.vector("input_map_t")
+
         hidden_t = T.vector("hidden_t")
 
-        input_map_t = T.dot(input_map_t, self.embeddings)
+        input_map_t = T.dot(input_t, self.embeddings)
         hidden_next = T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
 
         output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
@@ -128,7 +119,7 @@ class SRN():
 
         return
 
-    def generate_network_dynamics(self):
+    def generate_network_dynamics(self, word_embeddings=False):
         """
         Create symbolic expressions defining how the network behaves when
         given a sequence of inputs, and how its parameters can be trained.
@@ -142,25 +133,28 @@ class SRN():
           the input sequence
         - How to compute the gradients w.r.t the different weights
         """
+
+        # set the parameters of the network
+        self.set_network_parameters(word_embeddings)
         
         # declare variables
         input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
+        input_sequences = input_seqs.transpose(1,0,2)
 
         # compute input map from input
-        input_map_t = T.dot(input_seqs, self.embeddings)
+        input_seqs_map = T.dot(input_seqs, self.embeddings)
 
         # transpose to loop over right dimensions
-        input_sequences = input_map_t.transpose(1,0,2)
+        input_sequences_map = input_seqs_map.transpose(1,0,2)
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_map_t, hidden_t):
-            # return hidden_t + 5
             return T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
         hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
 
         # compute sequence of hidden layer activations
-        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences, outputs_info = hidden_t)
+        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map, outputs_info=hidden_t)
         # compute prediction sequence (i.e., output layer activation)
         output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
@@ -282,6 +276,30 @@ class SRN():
         softmax_reshaped = T.nnet.softmax(reshaped)
         softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
         return softmax
+
+    def set_network_parameters(self, word_embeddings):
+        """
+        If co training of word embeddings is desired,
+        add word-embeddings matrix to trainable parameters
+        of the network.
+        """
+
+        # store the parameters of the network
+        self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
+
+        if word_embeddings:
+            self.params['embeddings'] = self.embeddings
+
+        # store history of gradients for adagrad
+        histgrad = []
+        for param in self.params:
+            init_grad = np.zeros_like(self.params[param].get_value(), dtype=theano.config.floatX)
+            name = "hist_grad_" + param
+            histgrad.append((param, theano.shared(init_grad, name=name)))
+
+        self.histgrad = OrderedDict(histgrad)
+
+        return
 
     def output(self):
         output = self.activations['output_t'].get_value()
