@@ -150,18 +150,18 @@ class SRN():
         # compute prediction sequence (i.e., output layer activation)
         output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
-        # TODO print and test predictions
+        # TODO print and test predictions, do we need this?
 
-        # TODO print and test error
+        # compute error
         errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
         error = T.mean(errors)  # scalar
 
-        # TODO print and test prediction error
+        # TODO print and test prediction error, do we need this?
 
-        # TODO compute and test gradients
+        # compute gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
 
-        # TODO compute and test new parameters
+        # compute new parameters
         new_params = OrderedDict()
         for param in self.params:
             new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
