@@ -113,7 +113,48 @@ class SRN():
 
         return
 
-    def generate_network_dynamics(self, word_embeddings = None):
+    def generate_network_dynamics_batch(self):
+        """
+        Omschrijving.
+        """
+        
+        # declare variables
+        input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
+        input_sequences = input_seqs.transpose(1,0,2)
+
+        # describe how the hidden layer can be computed from the input
+        def calc_hidden(input_t, hidden_t):
+            # return hidden_t + 5
+            return T.nnet.sigmoid(T.dot(input_t, self.U)  + T.dot(hidden_t, self.V) + self.b1)
+
+        hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
+
+        # compute sequence of hidden layer activations
+        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences, outputs_info = hidden_t)
+        # compute prediction sequence (i.e., output layer activation)
+        output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
+
+        # TODO print and test predictions
+
+        # TODO print and test error
+        errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
+        error = T.mean(errors)  # scalar
+
+        # TODO print and test prediction error
+
+        # TODO compute and test gradients
+
+        # TODO compute and test new parameters
+
+        # initial values
+        givens = {
+                hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
+        }
+
+        self.produce_output_batch = theano.function([input_seqs], output_sequences, givens=givens)
+        return
+
+    def generate_network_dynamics(self):
         """
         Create symbolic expressions defining how the network behaves when
         given a sequence of inputs, and how its parameters can be trained.
@@ -149,6 +190,7 @@ class SRN():
 
         # compute prediction sequence (i.e., output layer activation)
         output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]       # predictions for all but last output
+
         predictions = self.prediction(output_sequence)
 
         # symbolic definition of error
@@ -189,6 +231,8 @@ class SRN():
         # prediction error only on the last elements of the sequences
         self.predict_last = theano.function([input_sequence], prediction_last, givens=givens)
 
+        self.produce_output = theano.function([input_sequence], output_sequence, givens=givens)
+
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
@@ -214,8 +258,40 @@ class SRN():
 
         # loop over minibatches, update parameters
         for batch in batches:
-            self.update_function(batch)
+            self.update_function(batch[0]) 
 
+        return
+
+    def iteration_batch(self, input_sequences, batchsize):
+        """
+        Slice data in minibatches and perform one
+        training iteration.
+        :param input_sequences: The sequences we want to
+                                store in the network
+        """
+        batches = self.make_batches(input_sequences, batchsize)
+
+        # loop over minibatches, update parameters
+        for batch in batches:
+            self.update_function(batch) 
+
+        return
+
+    def test_equal(self, input_sequences, batchsize):
+        """
+        Test if batch and single example processing
+        give the same output.
+        """
+        batches = self.make_batches(input_sequences, batchsize)
+
+        for batch in batches:
+            print "Output computed all at once:"
+            print self.produce_output_batch(batch)
+
+            print '\nOutput computed example by example'
+            # loop over minibatches
+            for seq in xrange(len(batch)):
+                print '\n', self.produce_output(batch[seq])
         return
 
     def make_batches(self, input_sequences, batchsize):
@@ -227,7 +303,8 @@ class SRN():
         """
         # TODO Make that this method actually does something
         # return permutated version of input sequences
-        return np.random.permutation(input_sequences)
+        input_perm = np.random.permutation(input_sequences)
+        return [input_perm]
 
     def prediction(self, output_vector):
 
@@ -238,6 +315,17 @@ class SRN():
         # for the prediction would change (as well as the output activation, btw)
         prediction = T.argmax(output_vector, axis=1)
         return prediction
+
+    def softmax_tensor(self, input_tensor):
+        """
+        Softmax function that can be applied to a 
+        three dimensional tensor.
+        """
+        d0, d1, d2 = input_tensor.shape
+        reshaped = T.reshape(input_tensor, (d0*d1, d2))
+        softmax_reshaped = T.nnet.softmax(reshaped)
+        softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
+        return softmax
 
     def output(self):
         output = self.activations['output_t'].get_value()

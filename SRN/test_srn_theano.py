@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 network = SRN(10, 8, 0.2)
 network.generate_update_function()
 network.generate_network_dynamics()
+network.generate_network_dynamics_batch()
 
+np.random.seed(8)
 
 # test and training sequences
 lexicon = np.zeros((10,10), float)
@@ -35,13 +37,16 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
                    }
 
 stepsize = 1
-train_opt = '4'
+batchsize = 1
+train_opt = '2'
 rounds = np.arange(0, 800, stepsize)
 prediction1, prediction2 = [], []
 
 training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
 error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
+
+network.test_equal(training_seq, batchsize)
 
 for round in rounds:
     network.train(training_seq, stepsize, 1)
@@ -55,7 +60,7 @@ for round in rounds:
     prediction2.append(network.compute_prediction_error(test_seq2))
     prediction_rand.append(network.compute_prediction_error(rand_sequence))
 
-print "cross entropy sequence 1:", error1[-1]
+print "\ncross entropy sequence 1:", error1[-1]
 print "cross entropy sequence 2:", error2[-1]
 
 print "prediction rate sequence 1:", prediction1[-1]
