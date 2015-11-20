@@ -51,7 +51,6 @@ for i in xrange(20):
 
 plt.show()
 
-print train_seq[-200:].shape
 t = np.array(train_seq[-200:]).reshape(200,1)
 
 # compute output matrix
