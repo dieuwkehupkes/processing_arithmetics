@@ -51,15 +51,29 @@ for i in xrange(20):
 
 plt.show()
 
+print train_seq[-200:].shape
+t = np.array(train_seq[-200:]).reshape(200,1)
+
 # compute output matrix
-W_out = np.dot(np.linalg.pinv(s[-200:]), train_seq[-200:])
+W_out = np.dot(np.linalg.pinv(s[-200:]), t).reshape(20,)
 
 # test phase, start from last network state
 output = []
+states = []
 for i in xrange(50):
     out = np.dot(network_state, W_out)
     network_state = np.tanh(np.dot(network_state, W_in) + np.dot(out, W_out_back))
     output.append(out)
+    states.append(network_state)
+
+s = np.array(states)
+
+plt.figure(1)
+for i in xrange(20):
+    plt.subplot(4, 5, i)
+    plt.plot(x, s[:,i])
+
+plt.show()
 
 # plot network behaviour after training
 x_range = xrange(50)
