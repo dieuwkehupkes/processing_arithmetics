@@ -13,7 +13,7 @@ network_state = (0.5-np.random.random(N))
 W_in = damp_factor*(0.5-np.random.random((N,N)))             # weightmatrix
 W_out_back = (0.5-np.random.random(N))          # feed output back into network
 
-train_seq = np.array([0.5*np.sin(float(x)/4) for x in xrange(n)])
+train_seq = np.array([0.5*np.sin(float(x)/4) for x in xrange(n+1)])
 
 # plot oscillations DR without input
 states = []
@@ -67,12 +67,13 @@ for i in xrange(50):
 
 s = np.array(states)
 
-plt.figure(1)
-for i in xrange(20):
-    plt.subplot(4, 5, i)
-    plt.plot(x, s[:,i])
-
-plt.show()
+# Plot internal states after training
+# plt.figure(1)
+# for i in xrange(20):
+#     plt.subplot(4, 5, i)
+#     plt.plot(x, s[:,i])
+# 
+# plt.show()
 
 # plot network behaviour after training
 x_range = xrange(50)
