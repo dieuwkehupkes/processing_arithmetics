@@ -25,44 +25,44 @@ numbers_operators = numbers + ['+', '-', '(', ')', '=']
 identity = np.identity(len(numbers_operators))              
 number2vec = OrderedDict([(numbers_operators[i], identity[i]) for i in xrange(len(identity))])
 
-# generate all expressions with 2 numeric leaves and store in a dictionary with readable
-# string representation
-L2 = OrderedDict()
-number2vecL2 = OrderedDict()
+# write one-hot vectors to file
+pickle.dump(number2vec, open('one-hot_-19-19.pickle', 'wb'))
+
+# generate all expressions with 2 numeric leaves (string representation)
+L2 = []
+L2_input_expressions = []
 for expression in it.product(input_numbers, ['+', '-'], input_numbers):
     # string representation input part expression, compute outcome
     expression_string = '('+''.join(list(expression))+')'
     outcome = str(eval(expression_string))
 
-    # generate vector representation expression_string and store in dict
-    expression_matrix = [number2vec[item] for item in ['('] + list(expression) + [')']]
-    number2vecL2[expression_string] = expression_matrix
+    # store list representation for recursion
+    input_expression = ['('] + list(expression) + [')']
+    L2_input_expressions.append(input_expression)
 
     # generate full expression
     expr = list(expression) + ['=', outcome]
-    expr_matrix = np.array([number2vec[item] for item in expr])
-    L2[''.join(expr)] = expr_matrix
+    L2.append(expr)
 
 pickle.dump(L2, open('L2.pickle', 'wb'))
 
-number2vec.update(number2vecL2)
-
 # generate all expressions with 3 numeric leaves whose expression is no larger than 60
-L3 = OrderedDict()
-number2vecL3 = OrderedDict()
-L3_left_branching = it.product(number2vecL2.keys(), ['+','-'], input_numbers)
-L3_right_branching = it.product(input_numbers, ['+','-'], number2vecL2.keys())
-for expression in it.chain(L3_left_branching, L3_right_branching):
-    # string representation input expression, compute outcome
+L3_in, L3 = [], []
+L3_left_branching = it.product(L2_input_expressions, ['+','-'], input_numbers)
+L3_right_branching = it.product(input_numbers, ['+','-'], L2_input_expressions)
+for expression in L3_left_branching:
+    expression = expression[0] + list(expression[1:])
+    L3_in.append(expression)
+
+for expression in L3_right_branching:
+    expression = list(expression[:-1]) + expression[-1]
+    L3_in.append(expression)
+
+for expression in L3_in:
     expression_string = ''.join(list(expression))
     outcome = eval(expression_string)
-
     expr = list(expression) + ['=', str(outcome)]
-    if outcome <= max_number and outcome >= min_number:
-        expr_matrix = np.array([number2vec[item] for item in expr])
-        L3[''.join(expr)] = expr_matrix
-    else:
-        pass
+    L3.append(expr)
 
 pickle.dump(L3, open('L3.pickle', 'wb'))
 
