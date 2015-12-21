@@ -6,10 +6,10 @@ import itertools as it
 # order of one-hot vectors: min_number, ....., max_number, +, -, (, ), =
 
 
-min_number = -2
-max_number = 2
-min_input_number = -1
-max_input_number = 1
+min_input_number = -19
+max_input_number = 19
+min_number = -60
+max_number = 60
 
 numbers = [str(i) for i in xrange(min_number, max_number+1)]
 input_numbers = [str(i) for i in xrange(min_input_number, max_input_number+1)]
@@ -28,4 +28,4 @@ pickle.dump(L2, open('L2.pickle', 'wb'))
 
 # generate all expressions with 3 numeric leaves
 # TODO implement generate expressions with 3 numeric leaves
-# I think it makes sense to use the L2 phrases and combine them with another numeric leave
+# I think it makes sense to use the L2 phrases and combine them with another numeric leaf
