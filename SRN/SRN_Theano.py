@@ -13,13 +13,16 @@ class SRN():
     A class representing a simple recurrent network (SRN), as presented
     in Elman (1990).
     """
-    def __init__(self, input_size, hidden_size, sigma_init):
+    def __init__(self, input_size, hidden_size, sigma_init, **embeddings):
         """
         The SRN is fully described by three weight matrices connecting
         the different layers of the network.
 
         :param input_size: number of input units
         :param hidden_size: number of hidden units
+        :param embeddings: optional argument, if cotraining of word
+        embeddings is required, one can give in an initial word embeddings
+        matrix by passing an argument with the name embeddings
         """
 
         self.learning_rate = 0.05
@@ -52,12 +55,17 @@ class SRN():
         )
 
         # weights to co-train embeddings
-        self.embeddings = theano.shared(
-                value = np.identity(
-                    input_size
-                ).astype(theano.config.floatX),
-                name='embeddings'
-        )
+        if 'embeddings' in embeddings:
+            self.embeddings = theano.shared(
+                    value = embeddings['embeddings'].astype(theano.config.floatX),
+                    name = 'embeddings'
+            )
+        else:
+            self.embeddings = theano.shared(
+                    value = np.identity(
+                        input_size).astype(theano.config.floatX),
+                    name='embeddings'
+            )
 
         self.b1 = theano.shared(
                 value = np.random.normal(
