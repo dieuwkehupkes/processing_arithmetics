@@ -37,7 +37,7 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
                    }
 
 stepsize = 2
-batchsize = 1
+batchsize = 2
 train_opt = '4'
 rounds = np.arange(0, 2000, stepsize)
 error1, error2, error_rand = [], [], []
@@ -48,7 +48,7 @@ training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
 network.train(training_seq, stepsize, batchsize)
 
 for round in rounds:
-    network.train(training_seq, stepsize, 1)
+    network.train(training_seq, stepsize, batchsize)
 
     rand_sequence = [lexicon[i] for i in np.random.randint(0, 10, size=12)]
 
