@@ -91,15 +91,15 @@ class SRN():
                 name = 'output_t'
         )
 
-        input_map_t = theano.shared(
-                value = np.zeros(input_size).astype(theano.config.floatX),
-                name = 'input_t'
-        )
-
+#         input_map_t = theano.shared(
+#                 value = np.zeros(input_size).astype(theano.config.floatX),
+#                 name = 'input_t'
+#         )
+ 
         self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
 
         # store dimensions of network
-        self.input_size =  input_size
+        self.input_size = input_size
         self.hidden_size = hidden_size
         
     def generate_update_function(self):
@@ -110,12 +110,12 @@ class SRN():
         # current input and current hidden vector
         input_t = T.vector("input_t")
 
-        hidden_t = T.vector("hidden_t")
+        # hidden_t = T.vector("hidden_t")   # TODO can we actually leave this out?
 
         input_map_t = T.dot(input_t, self.embeddings)
         hidden_next = T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
 
-        output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        # output_next = T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W))
+        output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        
 
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
 
@@ -161,15 +161,12 @@ class SRN():
         # compute sequence of hidden layer activations
         hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map, outputs_info=hidden_t)
         # compute prediction sequence (i.e., output layer activation)
-        output_sequences = self.softmax_tensor(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
-
-        # TODO print and test predictions, do we need this?
+        output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
         # compute error
-        errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences[1:]) # vector
+        errors = T.sqrt(T.sum(T.sqr(output_sequences[-1] - input_sequences_map[-1])))
+        # errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_map[-1])  # vector
         error = T.mean(errors)  # scalar
-
-        # TODO print and test prediction error, do we need this?
 
         # compute gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
@@ -197,29 +194,29 @@ class SRN():
         """
 
         input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
-        input_map_sequence = T.dot(input_sequence, self.embeddings)
+        input_sequence_map = T.dot(input_sequence, self.embeddings)
 
         hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
 
         def calc_hidden(input_t, hidden_t):
             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
-        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_map_sequence, outputs_info=hidden_t)
-        output_sequence = T.nnet.softmax(T.dot(hidden_sequence, self.W) + self.b2)[:-1]
-        predictions = self.prediction(output_sequence)
+        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence_map, outputs_info=hidden_t)
+        output_sequence = T.nnet.sigmoid(T.dot(hidden_sequence, self.W) + self.b2)[-2]      # prediction is one but last element of output
+
+        # prediction of the network (of the last element of the sequence)
+        prediction = self.prediction(output_sequence)
+        true_value = self.prediction(input_sequence_map[-1])
 
         # symbolic definitions of error
-        errors = T.nnet.categorical_crossentropy(output_sequence, input_sequence[1:])   # vector
-        error = T.mean(errors)      # scalar
-        prediction_errors = T.eq(predictions, self.prediction(input_sequence[1:]))
-        prediction_error = T.mean(1 - T.eq(predictions, self.prediction(input_sequence[1:])))   # scalar
-        prediction_last_error = T.mean(1 - prediction_errors[-1])
+        error = T.sqrt(T.sum(T.sqr(output_sequence - input_sequence_map[-1])))
+        # error = T.mean(errors)      # scalar
+        prediction_error = 1 - T.eq(prediction, true_value)   # scalar
 
         hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
         givens = {hidden_t : hidden_init}
         self.compute_error = theano.function([input_sequence], error, givens=givens)
         self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
-        self.compute_prediction_last_error = theano.function([input_sequence], prediction_last_error, givens=givens)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
@@ -228,7 +225,7 @@ class SRN():
         :param input_sequences  
         :param no_iterations    
         """
-        #TODO write function description
+        # TODO write function description
         for iteration in xrange(0, no_iterations):
             self.iteration(input_sequences, batchsize)
 
@@ -262,14 +259,26 @@ class SRN():
         return [input_perm]
 
     def prediction(self, output_vector):
-
-        # assuming a one-hot encoding, the network prediction is the output unit
-        # with the highest activation value after applying the sigmoid
-        # If we are using distributed representations oid (what in the end
-        # possibly desirable is, the symbolic expression for the prediction
-        # for the prediction would change (as well as the output activation, btw)
-        prediction = T.argmax(output_vector, axis=1)
+        """
+        Compute the prediction of the network for output_vector
+        by comparing its output with the word embeddings matrix.
+        The prediction of the network will be the word embedding
+        the output vector is closest to.
+        NB: this function only works for an input *vector* and
+        cannot be applied to an input matrix of vectors
+        """
+        # compute the distance with the embeddings
+        e_distance_embeddings = T.sqrt(T.sum(T.sqr(self.embeddings-output_vector), axis=1))
+        # prediction is embedding with minimal distance
+        prediction = T.argmin(e_distance_embeddings)    
         return prediction
+
+    def prediction_batch(self, output_matrix):
+        """
+        Compute the predictions of the network for a batch
+        of output vectors.
+        """
+        raise NotImplementedError("Function not implemented yet")
 
     def softmax_tensor(self, input_tensor):
         """
