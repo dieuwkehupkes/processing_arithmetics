@@ -25,14 +25,13 @@ class SRN():
         matrix by passing an argument with the name embeddings
         """
 
-        self.learning_rate = 0.05
+        self.learning_rate = 0.01
 
         # weights from input to hidden
         self.U = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init,
-                    (input_size, hidden_size)
-                ).astype(theano.config.floatX),
+                value = sigma_init*np.random.normal(
+                    input_size, hidden_size
+                ),
                 name='U'
         )
 
@@ -115,12 +114,14 @@ class SRN():
         input_map_t = T.dot(input_t, self.embeddings)
         hidden_next = T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
 
-        output_next = T.flatten(T.nnet.softmax(T.dot(self.activations['hidden_t'], self.W) + self.b2))        
+        output_next = T.nnet.sigmoid(T.dot(self.activations['hidden_t'], self.W) + self.b2)
+        prediction = self.prediction(self.activations['output_t'])
 
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
 
         # givens = {}
         self.forward_pass = theano.function([input_t], updates=updates, givens={})
+        self.cur_prediction = theano.function([], prediction)
 
         return
 
@@ -202,21 +203,22 @@ class SRN():
             return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
         hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence_map, outputs_info=hidden_t)
-        output_sequence = T.nnet.sigmoid(T.dot(hidden_sequence, self.W) + self.b2)[-2]      # prediction is one but last element of output
+        output_sequence = T.nnet.sigmoid(T.dot(hidden_sequence, self.W) + self.b2)[:-1]      # output sequence is all but last element of the output
 
         # prediction of the network (of the last element of the sequence)
-        prediction = self.prediction(output_sequence)
+        prediction = self.prediction(output_sequence[-1])
         true_value = self.prediction(input_sequence_map[-1])
 
         # symbolic definitions of error
-        error = T.sqrt(T.sum(T.sqr(output_sequence - input_sequence_map[-1])))
-        # error = T.mean(errors)      # scalar
+        error = T.sqrt(T.sum(T.sqr(output_sequence[-1] - input_sequence_map[-1])))  # scalar
         prediction_error = 1 - T.eq(prediction, true_value)   # scalar
 
         hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
         givens = {hidden_t : hidden_init}
         self.compute_error = theano.function([input_sequence], error, givens=givens)
         self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+        self.network_prediction = theano.function([input_sequence], prediction, givens=givens)
+        self.true_prediction = theano.function([input_sequence], true_value)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
@@ -257,7 +259,7 @@ class SRN():
         # return permutated version of input sequences
         input_perm = np.random.permutation(input_sequences)
         return [input_perm]
-
+    
     def prediction(self, output_vector):
         """
         Compute the prediction of the network for output_vector
