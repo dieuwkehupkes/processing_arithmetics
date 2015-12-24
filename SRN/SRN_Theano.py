@@ -25,7 +25,7 @@ class SRN():
         matrix by passing an argument with the name embeddings
         """
 
-        self.learning_rate = 0.01
+        self.learning_rate = 0.005
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -255,10 +255,24 @@ class SRN():
         input sequence (for testing phase) but later this
         should start doing some more things.
         """
-        # TODO Make that this method actually does something
-        # return permutated version of input sequences
-        input_perm = np.random.permutation(input_sequences)
-        return [input_perm]
+        # create indices for batches
+        data_size = len(input_sequences)
+        indices = np.random.permutation(data_size)
+
+        # create array for batches
+        batches = []
+        to, fro = 0, batchsize
+        while fro <= data_size:
+            batch = input_sequences[indices[to:fro]]
+            batches.append(batch)
+            to = fro
+            fro += batchsize
+
+        # last batch
+        batch = input_sequences[to:]
+        batches.append(batch)
+
+        return batches
     
     def prediction(self, output_vector):
         """
