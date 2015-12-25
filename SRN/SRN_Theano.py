@@ -165,12 +165,10 @@ class SRN():
         output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
 
         # compute error
-        errors = T.sqrt(T.sum(T.sqr(output_sequences[-1] - input_sequences_map[-1])))
+        sse = T.sqrt(T.sum(T.sqr(output_sequences[-1] - input_sequences_map[-1])))
         # errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_map[-1])  # vector
-        error = T.mean(errors)  # scalar
-
         # compute gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(error, self.params.values())))
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(sse, self.params.values())))
 
         # compute new parameters
         new_params = OrderedDict()
