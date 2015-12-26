@@ -173,7 +173,7 @@ class SRN():
 
         # compute the differences between the numbers outputted by the network
         # and the target output numbers, take sum
-        spe = T.sqr(target_predictions-predictions)
+        spe = T.sqrt(T.sqr(target_predictions-predictions))
         sspe = T.sum(spe)
 
         # compute the difference between the output vectors and the target output vectors
