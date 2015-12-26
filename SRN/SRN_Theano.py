@@ -144,14 +144,14 @@ class SRN():
         self.set_network_parameters(word_embeddings)
         
         # declare variables
-        input_seqs = T.tensor3("input_seqs", dtype=theano.config.floatX)
-        input_sequences = input_seqs.transpose(1,0,2)
+        input_sequences = T.tensor3("input_sequences", dtype=theano.config.floatX)
+        input_sequences_transpose = input_sequences.transpose(1,0,2)
 
         # compute input map from input
-        input_seqs_map = T.dot(input_seqs, self.embeddings)
+        input_sequences_map = T.dot(input_sequences, self.embeddings)
 
         # transpose to loop over right dimensions
-        input_sequences_map = input_seqs_map.transpose(1,0,2)
+        input_sequences_map_transpose = input_sequences_map.transpose(1,0,2)
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_map_t, hidden_t):
@@ -160,15 +160,24 @@ class SRN():
         hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
 
         # compute sequence of hidden layer activations
-        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map, outputs_info=hidden_t)
+        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map_transpose, outputs_info=hidden_t)
         # compute prediction sequence (i.e., output layer activation)
-        output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
+        output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # predictions for all but last output
+        
+        # compute distances to embeddings for input and output
+        distances = T.sqrt(T.sum(T.sqr(self.embeddings[:, None,:] - output_sequences), axis=2))
+        predictions = T.argmin(distances, axis=0)
+
+        target_distances = T.sqrt(T.sum(T.sqr(self.embeddings[:, None,:] - input_sequences_map_transpose[-1]), axis=2))
+        target_predictions = T.argmin(target_distances, axis=0)
+
+        prediction_error = T.sqrt(T.sum(T.sqr(target_predictions-predictions)))
 
         # compute error
-        sse = T.sqrt(T.sum(T.sqr(output_sequences[-1] - input_sequences_map[-1])))
-        # errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_map[-1])  # vector
+        sse = T.sqrt(T.sum(T.sqr(output_sequences[-1] - input_sequences_map_transpose[-1])))
+        # errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_map_transpose[-1])  # vector
         # compute gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(sse, self.params.values())))
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(prediction_error, self.params.values())))
 
         # compute new parameters
         new_params = OrderedDict()
@@ -180,10 +189,12 @@ class SRN():
 
         # initial values
         givens = {
-                hidden_t:       T.zeros((input_sequences.shape[1], self.hidden_size)).astype(theano.config.floatX),
+                hidden_t:       T.zeros((input_sequences_transpose.shape[1], self.hidden_size)).astype(theano.config.floatX),
         }
 
-        self.update_function = theano.function([input_seqs], updates=new_params, givens=givens)
+        self.update_function = theano.function([input_sequences], updates=new_params, givens=givens)
+        self.print_output_sequences = theano.function([input_sequences], output_sequences, givens=givens)
+        self.compute_error = theano.function([input_sequences], sse, givens=givens)
         return
 
     def test_single_sequence(self):
@@ -204,7 +215,7 @@ class SRN():
         output_sequence = T.nnet.sigmoid(T.dot(hidden_sequence, self.W) + self.b2)[:-1]      # output sequence is all but last element of the output
 
         # prediction of the network (of the last element of the sequence)
-        prediction = self.prediction(output_sequence[-1])
+        prediction = self.prediction(output_sequence[-1])    # TODO adapt this as well
         true_value = self.prediction(input_sequence_map[-1])
 
         # symbolic definitions of error
@@ -213,8 +224,8 @@ class SRN():
 
         hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
         givens = {hidden_t : hidden_init}
-        self.compute_error = theano.function([input_sequence], error, givens=givens)
-        self.compute_prediction_error = theano.function([input_sequence], prediction_error, givens=givens)
+        self.compute_error_sequence = theano.function([input_sequence], error, givens=givens)
+        self.compute_prediction_error_sequence = theano.function([input_sequence], prediction_error, givens=givens)
         self.network_prediction = theano.function([input_sequence], prediction, givens=givens)
         self.true_prediction = theano.function([input_sequence], true_value)
         return
