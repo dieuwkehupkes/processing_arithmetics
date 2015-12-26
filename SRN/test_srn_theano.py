@@ -5,10 +5,9 @@ import theano
 
 np.random.seed(1)
 
-embeddings = np.random.normal(0, 0.2, (10, 8)).astype(theano.config.floatX)
+embeddings = np.random.uniform(-0.02, 0.2, (10, 8)).astype(theano.config.floatX)
 network = SRN(8, 8, 0.2, embeddings=embeddings)
-# network = SRN(10, 8, 0.2)
-network.generate_network_dynamics(word_embeddings=False)
+network.generate_network_dynamics(word_embeddings=True)
 network.test_single_sequence()
 
 # test and training sequences
@@ -41,7 +40,7 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
 
 stepsize = 5
 batchsize = 2
-train_opt = '4'
+train_opt = '1'
 rounds = np.arange(0, 5000, stepsize)
 error1, error2, error_rand = [], [], []
 prediction1, prediction2, prediction_rand = [], [], []
@@ -51,16 +50,32 @@ training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
 network.train(training_seq, stepsize, batchsize)
 
 for round in rounds:
-    network.train(training_seq, stepsize, batchsize)
 
     rand_sequence = [lexicon[k] for k in np.random.randint(0, 10, size=12)]
 
-    error1.append(network.compute_error(test_seq1))
-    error2.append(network.compute_error(test_seq2))
-    error_rand.append(network.compute_error(rand_sequence))
-    prediction1.append(network.compute_prediction_error(test_seq1))
-    prediction2.append(network.compute_prediction_error(test_seq2))
-    prediction_rand.append(network.compute_prediction_error(rand_sequence))
+    err1 = network.compute_error(np.array([test_seq1]))
+    err2 = network.compute_error(np.array([test_seq2]))
+    error1.append(err1)
+    error2.append(err2)
+    error_rand.append(network.compute_error_sequence(rand_sequence))
+    err = network.compute_error(np.array([test_seq1, test_seq2]))
+
+    print "error sequence 1", err1
+    print "error sequence 2", err1
+    print "error, batch", err
+    raw_input()
+    pred1 = network.compute_prediction_error(np.array([test_seq1]))
+    pred2 = network.compute_prediction_error(np.array([test_seq2]))
+    prediction1.append(pred1)
+    prediction2.append(pred2)
+    prediction_rand.append(network.compute_prediction_error(np.array([rand_sequence])))
+
+    print "\nprediction error 1", err1
+    print "prediction error 2", err1
+    print "prediction error, batch", err
+    raw_input()
+
+    network.train(training_seq, stepsize, batchsize)
 
 print "\ncross entropy sequence 1:", error1[-1]
 print "cross entropy sequence 2:", error2[-1]
@@ -68,12 +83,12 @@ print "cross entropy sequence 2:", error2[-1]
 print "prediction rate sequence 1:", prediction1[-1]
 print "prediction rate sequence 2:", prediction2[-1]
 
-plt.plot(rounds, error1, label=label1+" sum squared error")
-plt.plot(rounds, error2, label=label2+" sum squared error")
-plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
-# plt.plot(rounds, prediction1, label=label1 + " prediction error")
-# plt.plot(rounds, prediction2, label=label2 + " prediction error")
-# plt.plot(rounds, prediction_rand, label="random sequence, prediction error")
+# plt.plot(rounds, error1, label=label1+" sum squared error")
+# plt.plot(rounds, error2, label=label2+" sum squared error")
+# plt.plot(rounds, error_rand, label="random sequence, cross_entropy")
+plt.plot(rounds, prediction1, label=label1 + " prediction error")
+plt.plot(rounds, prediction2, label=label2 + " prediction error")
+plt.plot(rounds, prediction_rand, label="random sequence, prediction error")
 plt.legend(loc=2)
 # plt.ylim(ymin=0)
 plt.xlabel("number of training rounds")

@@ -25,7 +25,7 @@ class SRN():
         matrix by passing an argument with the name embeddings
         """
 
-        self.learning_rate = 0.005
+        self.learning_rate = 0.05
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -174,10 +174,10 @@ class SRN():
         prediction_error = T.sqrt(T.sum(T.sqr(target_predictions-predictions)))
 
         # compute error
-        sse = T.sqrt(T.sum(T.sqr(output_sequences[-1] - input_sequences_map_transpose[-1])))
+        sse = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
         # errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_map_transpose[-1])  # vector
         # compute gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(prediction_error, self.params.values())))
+        gradients = OrderedDict(zip(self.params.keys(), T.grad(sse, self.params.values())))
 
         # compute new parameters
         new_params = OrderedDict()
@@ -195,39 +195,7 @@ class SRN():
         self.update_function = theano.function([input_sequences], updates=new_params, givens=givens)
         self.print_output_sequences = theano.function([input_sequences], output_sequences, givens=givens)
         self.compute_error = theano.function([input_sequences], sse, givens=givens)
-        return
-
-    def test_single_sequence(self):
-        """
-        Generate functions to compute the error on a single
-        input/output sequence.
-        """
-
-        input_sequence = T.matrix("input_sequence", dtype=theano.config.floatX)
-        input_sequence_map = T.dot(input_sequence, self.embeddings)
-
-        hidden_t = T.vector("hidden_t", dtype=theano.config.floatX)
-
-        def calc_hidden(input_t, hidden_t):
-            return T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
-
-        hidden_sequence, _ = theano.scan(calc_hidden, sequences=input_sequence_map, outputs_info=hidden_t)
-        output_sequence = T.nnet.sigmoid(T.dot(hidden_sequence, self.W) + self.b2)[:-1]      # output sequence is all but last element of the output
-
-        # prediction of the network (of the last element of the sequence)
-        prediction = self.prediction(output_sequence[-1])    # TODO adapt this as well
-        true_value = self.prediction(input_sequence_map[-1])
-
-        # symbolic definitions of error
-        error = T.sqrt(T.sum(T.sqr(output_sequence[-1] - input_sequence_map[-1])))  # scalar
-        prediction_error = 1 - T.eq(prediction, true_value)   # scalar
-
-        hidden_init = np.zeros(self.hidden_size).astype(theano.config.floatX)
-        givens = {hidden_t : hidden_init}
-        self.compute_error_sequence = theano.function([input_sequence], error, givens=givens)
-        self.compute_prediction_error_sequence = theano.function([input_sequence], prediction_error, givens=givens)
-        self.network_prediction = theano.function([input_sequence], prediction, givens=givens)
-        self.true_prediction = theano.function([input_sequence], true_value)
+        self.compute_prediction_error = theano.function([input_sequences], prediction_error, givens=givens)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
