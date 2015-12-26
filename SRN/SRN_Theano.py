@@ -25,7 +25,7 @@ class SRN():
         matrix by passing an argument with the name embeddings
         """
 
-        self.learning_rate = 0.05
+        self.learning_rate = 0.01
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -171,11 +171,14 @@ class SRN():
         target_distances = T.sqrt(T.sum(T.sqr(self.embeddings[:, None,:] - input_sequences_map_transpose[-1]), axis=2))
         target_predictions = T.argmin(target_distances, axis=0)
 
-        prediction_error = T.sqrt(T.sum(T.sqr(target_predictions-predictions)))
+        # compute the differences between the numbers outputted by the network
+        # and the target output numbers, take sum
+        spe = T.sqr(target_predictions-predictions)
+        sspe = T.sum(spe)
 
-        # compute error
+        # compute the difference between the output vectors and the target output vectors
         sse = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
-        # errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_map_transpose[-1])  # vector
+
         # compute gradients
         gradients = OrderedDict(zip(self.params.keys(), T.grad(sse, self.params.values())))
 
@@ -195,7 +198,8 @@ class SRN():
         self.update_function = theano.function([input_sequences], updates=new_params, givens=givens)
         self.print_output_sequences = theano.function([input_sequences], output_sequences, givens=givens)
         self.compute_error = theano.function([input_sequences], sse, givens=givens)
-        self.compute_prediction_error = theano.function([input_sequences], prediction_error, givens=givens)
+        self.prediction_error_diff = theano.function([input_sequences], spe, givens=givens)
+        self.prediction_err_diff_sum = theano.function([input_sequences], sspe, givens=givens)
         return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
