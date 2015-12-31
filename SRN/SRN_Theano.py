@@ -178,7 +178,7 @@ class SRN():
 
         # compute sum squared differences between predicted numbers
         spe = T.sqr(predictions - target_predictions)   # squared prediction error per item
-        sspe = T.sum(spe - target_predictions)           # sum squared prediction error
+        sspe = T.sum(spe)           # sum squared prediction error
 
         # compute the difference between the output vectors and the target output vectors
         # errors = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
