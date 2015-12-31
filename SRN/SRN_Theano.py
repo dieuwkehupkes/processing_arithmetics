@@ -13,7 +13,7 @@ class SRN():
     A class representing a simple recurrent network (SRN), as presented
     in Elman (1990).
     """
-    def __init__(self, input_size, hidden_size, sigma_init, **embeddings):
+    def __init__(self, input_size, hidden_size, sigma_init, **kwargs):
         """
         The SRN is fully described by three weight matrices connecting
         the different layers of the network.
@@ -23,9 +23,13 @@ class SRN():
         :param embeddings: optional argument, if cotraining of word
         embeddings is required, one can give in an initial word embeddings
         matrix by passing an argument with the name embeddings
+        :param classifier: optional argument, a softmax classifier is put
+        on top of the network to map the input back to the correct size.
+        One can provide initial values for the classifier by passing an argument
+        with the name "classifier"
         """
 
-        self.learning_rate = 0.01
+        self.learning_rate = 0.5
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -54,17 +58,19 @@ class SRN():
         )
 
         # weights to co-train embeddings
-        if 'embeddings' in embeddings:
-            self.embeddings = theano.shared(
-                    value = embeddings['embeddings'].astype(theano.config.floatX),
-                    name = 'embeddings'
-            )
-        else:
-            self.embeddings = theano.shared(
-                    value = np.identity(
-                        input_size).astype(theano.config.floatX),
-                    name='embeddings'
-            )
+
+        embeddings_value = kwargs.get('embeddings', np.identity(input_size).astype(theano.config.floatX))
+        self.embeddings = theano.shared(
+                value = embeddings_value,
+                name = 'embeddings'
+        )
+
+        # classifier on top to interpret output
+        classifier_value = kwargs.get('classifier', np.random.uniform(-0.5, 0.5, (input_size, embeddings_value.shape[0])).astype(theano.config.floatX))
+        self.classifier = theano.shared(
+                value = classifier_value,
+                name = 'classifier'
+        )
 
         self.b1 = theano.shared(
                 value = np.random.normal(
@@ -90,11 +96,6 @@ class SRN():
                 name = 'output_t'
         )
 
-#         input_map_t = theano.shared(
-#                 value = np.zeros(input_size).astype(theano.config.floatX),
-#                 name = 'input_t'
-#         )
- 
         self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
 
         # store dimensions of network
@@ -125,7 +126,7 @@ class SRN():
 
         return
 
-    def generate_network_dynamics(self, word_embeddings=False):
+    def generate_network_dynamics(self, word_embeddings=False, classifier=True):
         """
         Create symbolic expressions defining how the network behaves when
         given a sequence of inputs, and how its parameters can be trained.
@@ -141,14 +142,17 @@ class SRN():
         """
 
         # set the parameters of the network
-        self.set_network_parameters(word_embeddings)
-        
+        self.set_network_parameters(word_embeddings, classifier)
+        self.print_embeddings = theano.function([], self.embeddings)
+
         # declare variables
         input_sequences = T.tensor3("input_sequences", dtype=theano.config.floatX)
         input_sequences_transpose = input_sequences.transpose(1,0,2)
 
         # compute input map from input
         input_sequences_map = T.dot(input_sequences, self.embeddings)
+
+        self.print_input_map = theano.function([input_sequences], input_sequences_map)
 
         # transpose to loop over right dimensions
         input_sequences_map_transpose = input_sequences_map.transpose(1,0,2)
@@ -162,25 +166,30 @@ class SRN():
         # compute sequence of hidden layer activations
         hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map_transpose, outputs_info=hidden_t)
         # compute prediction sequence (i.e., output layer activation)
-        output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # predictions for all but last output
+        pre_output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # predictions for all but last output
         
-        # compute distances to embeddings for input and output
-        distances = T.sqrt(T.sum(T.sqr(self.embeddings[:, None,:] - output_sequences), axis=2))
-        predictions = T.argmin(distances, axis=0)
+        # compute softmax output
+        # TODO should I have a third bias vector here?
+        output_sequences = T.nnet.softmax(T.dot(pre_output_sequences, self.classifier))
 
-        target_distances = T.sqrt(T.sum(T.sqr(self.embeddings[:, None,:] - input_sequences_map_transpose[-1]), axis=2))
-        target_predictions = T.argmin(target_distances, axis=0)
+        # compute predictions and target predictions
+        predictions = T.argmax(output_sequences, axis = 1)
+        target_predictions = T.argmax(input_sequences_transpose[-1], axis = 1)
 
-        # compute the differences between the numbers outputted by the network
-        # and the target output numbers, take sum
-        spe = T.sqrt(T.sqr(target_predictions-predictions))
-        sspe = T.sum(spe)
+        # compute sum squared differences between predicted numbers
+        spe = T.sqr(predictions - target_predictions)   # squared prediction error per item
+        sspe = T.sum(spe - target_predictions)           # sum squared prediction error
 
         # compute the difference between the output vectors and the target output vectors
-        sse = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
+        # errors = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
+        errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences_transpose[-1])
+        error = T.mean(errors)
 
         # compute gradients
-        gradients = OrderedDict(zip(self.params.keys(), T.grad(sse, self.params.values())))
+        grads = T.grad(error, self.params.values())
+        gradients = OrderedDict(zip(self.params.keys(), grads))
+
+        theano.pp(gradients['W'])
 
         # compute new parameters
         new_params = OrderedDict()
@@ -195,12 +204,35 @@ class SRN():
                 hidden_t:       T.zeros((input_sequences_transpose.shape[1], self.hidden_size)).astype(theano.config.floatX),
         }
 
+
+        self.print_grad_W = theano.function([input_sequences], gradients['W'], givens=givens)
+
+        # define functions
+
+        # run update function to train weights
         self.update_function = theano.function([input_sequences], updates=new_params, givens=givens)
-        self.print_output_sequences = theano.function([input_sequences], output_sequences, givens=givens)
-        self.compute_error = theano.function([input_sequences], sse, givens=givens)
-        self.prediction_error_diff = theano.function([input_sequences], spe, givens=givens)
+
+        # compute the differences of the output vectors with the target vectors
+        self.compute_error = theano.function([input_sequences], errors, givens=givens)
+
+        # compute the differences of the meaning of the output vectors with the target meanings
+        self.prediction_error_diff = theano.function([input_sequences], T.sqrt(spe), givens=givens)
+
+        # take the sum of the latter for the whole batch
         self.prediction_err_diff_sum = theano.function([input_sequences], sspe, givens=givens)
-        return
+
+        # print network predictions for current batch
+        self.predictions = theano.function([input_sequences], predictions, givens=givens)
+
+        # print target predictions for current batch
+        self.target_predictions = theano.function([input_sequences], target_predictions, givens=givens)
+
+        # temp functions for monitoring
+        self.print_input_map_transpose = theano.function([input_sequences], input_sequences_map_transpose)
+        self.print_hidden = theano.function([input_sequences], hidden_sequences, givens=givens)
+        self.print_output = theano.function([input_sequences], output_sequences, givens=givens)
+        self.print_predictions = theano.function([input_sequences], predictions, givens=givens)
+        self.print_target_predictions = theano.function([input_sequences], target_predictions, givens=givens)
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
         """
@@ -288,7 +320,7 @@ class SRN():
         softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
         return softmax
 
-    def set_network_parameters(self, word_embeddings):
+    def set_network_parameters(self, word_embeddings, classifier):
         """
         If co training of word embeddings is desired,
         add word-embeddings matrix to trainable parameters
@@ -300,6 +332,9 @@ class SRN():
 
         if word_embeddings:
             self.params['embeddings'] = self.embeddings
+
+        if classifier:
+            self.params['classifier'] = self.classifier
 
         # store history of gradients for adagrad
         histgrad = []
