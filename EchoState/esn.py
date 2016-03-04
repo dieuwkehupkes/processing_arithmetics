@@ -10,8 +10,8 @@ def initialize_matrices(n,l,alpha):
     
     try:
         # initialize randomly
-        w = np.random.rand(n,n)
-        w_mask = np.random.rand(n,n) >= 0.99
+        w = 0.5-np.random.rand(n,n)
+        w_mask = np.random.rand(n,n) >= 0.44
         w = w*w_mask
         w_back = np.random.rand(n,l)
 
@@ -39,7 +39,7 @@ if __name__=='__main__':
     l = 1
     iters = 300
     t_0 = 100
-    alpha = .5
+    alpha = .8
     m = np.zeros((iters-t_0,n))
     t = np.zeros((iters-t_0,l))
 
@@ -52,11 +52,11 @@ if __name__=='__main__':
     network_state = (0.5-np.random.random(n))
     states = []
 
-    for i in xrange(3):
+    for i in xrange(20):
         network_state = np.tanh(np.dot(network_state, w))
         states.append(network_state)
 
-    x = xrange(3)
+    x = xrange(20)
     s = np.array(states)
 
     plt.figure(1)
@@ -84,6 +84,9 @@ if __name__=='__main__':
     # weight update stage
     m_inv = np.linalg.pinv(m)
     w_out = m_inv.dot(t)
+
+    print "average w_out ", np.mean(w_out)
+    print "variance w_out ", np.var(w_out)
 
     # plot x_n
     n_plot = 50
