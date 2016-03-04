@@ -1,12 +1,17 @@
-from SRN_Theano import SRN
 import numpy as np
 import matplotlib.pyplot as plt
 import theano
+import sys
+import os
+
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+
+from SRN_Theano import SRN
 
 np.random.seed(1)
 
 embeddings = np.random.uniform(-0.02, 0.2, (10, 8)).astype(theano.config.floatX)
-network = SRN(8, 8, 0.2, embeddings=embeddings)
+network = SRN(8, 8, 0.2)
 network.generate_network_dynamics(word_embeddings=True)
 
 # test and training sequences

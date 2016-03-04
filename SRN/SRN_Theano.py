@@ -175,9 +175,9 @@ class SRN():
         output_sequences = self.softmax_tensor(T.dot(pre_output_sequences, self.classifier))
 
         # compute predictions and target predictions
-        predictions = T.argmax(output_sequences, axis = 1)
+        predictions = T.argmax(output_sequences, axis = 1)              # TODO test if this does what I want
         predictions_last = T.argmax(output_sequences_last, axis = 1)
-        target_predictions = T.argmax(input_sequences_transpose[1:], axis = 1)
+        target_predictions = T.argmax(input_sequences_transpose[1:], axis = 1)      # TODO test if this does what I want
         target_predictions_last = T.argmax(input_sequences_transpose[-1], axis = 1)
 
         # compute sum squared differences between predicted numbers
