@@ -166,24 +166,30 @@ class SRN():
         # compute sequence of hidden layer activations
         hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map_transpose, outputs_info=hidden_t)
         # compute prediction sequence (i.e., output layer activation)
-        pre_output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # predictions for all but last output
+        pre_output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
+        pre_output_sequences_last = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # prediction of last output
         
         # compute softmax output
         # TODO should I have a third bias vector here?
-        output_sequences = T.nnet.softmax(T.dot(pre_output_sequences, self.classifier))
+        output_sequences_last = T.nnet.softmax(T.dot(pre_output_sequences_last, self.classifier))
+        output_sequences = self.softmax_tensor(T.dot(pre_output_sequences, self.classifier))
 
         # compute predictions and target predictions
-        predictions = T.argmax(output_sequences, axis = 1)
-        target_predictions = T.argmax(input_sequences_transpose[-1], axis = 1)
+        predictions = T.argmax(output_sequences, axis = 1)              # TODO test if this does what I want
+        predictions_last = T.argmax(output_sequences_last, axis = 1)
+        target_predictions = T.argmax(input_sequences_transpose[1:], axis = 1)      # TODO test if this does what I want
+        target_predictions_last = T.argmax(input_sequences_transpose[-1], axis = 1)
 
         # compute sum squared differences between predicted numbers
         spe = T.sqr(predictions - target_predictions)   # squared prediction error per item
         sspe = T.sum(spe)           # sum squared prediction error
         mspe = T.mean(spe)           # mean squared prediction error
+        spel = T.sqr(predictions_last - target_predictions_last)   # squared prediction error of last element per item
+        sspel = T.sum(spel)                                # sum squared prediction error of last element
+        mspel = T.mean(spe)                                # mean squared prediction error of last element
 
         # compute the difference between the output vectors and the target output vectors
-        # errors = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
-        errors = T.nnet.categorical_crossentropy(output_sequences, input_sequences_transpose[-1])
+        errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_transpose[-1])
         error = T.mean(errors)
 
         # compute gradients
@@ -217,11 +223,14 @@ class SRN():
         self.compute_error = theano.function([input_sequences], errors, givens=givens)
 
         # compute the differences of the meaning of the output vectors with the target meanings
-        self.prediction_error_diff = theano.function([input_sequences], T.sqrt(spe), givens=givens)
+        # TODO???
+        self.prediction_error_diff = theano.function([input_sequences], T.sqrt(spel), givens=givens)
 
         # take the sum of the latter for the whole batch
         self.sum_squared_prediction_error = theano.function([input_sequences], sspe, givens=givens)
         self.mean_squared_prediction_error = theano.function([input_sequences], mspe, givens=givens)
+        self.sum_squared_prediction_last_error = theano.function([input_sequences], sspel, givens=givens)
+        self.mean_squared_prediction_last_error = theano.function([input_sequences], mspel, givens=givens)
 
         # print network predictions for current batch
         self.predictions = theano.function([input_sequences], predictions, givens=givens)

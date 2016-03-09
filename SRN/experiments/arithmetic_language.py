@@ -14,7 +14,7 @@ network = SRN(2, 2, 0.2)
 embeddings = np.random.normal(1, size=(124,2))
 
 # create shared variables to store word embeddings
-names = [str(i) for i in xrange(-20, 21)] + ['+', '-', '=']
+names = [str(i) for i in xrange(-19, 20)] + ['+', '-', '=', '(',')']
 words = OrderedDict()
 values = dict()
 for i in xrange(len(names)):
