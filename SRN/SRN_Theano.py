@@ -29,7 +29,7 @@ class SRN():
         with the name "classifier"
         """
 
-        self.learning_rate = 0.5
+        self.learning_rate = kwargs.get('learning_rate', 0.5)
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -179,6 +179,7 @@ class SRN():
         # compute sum squared differences between predicted numbers
         spe = T.sqr(predictions - target_predictions)   # squared prediction error per item
         sspe = T.sum(spe)           # sum squared prediction error
+        mspe = T.mean(spe)           # mean squared prediction error
 
         # compute the difference between the output vectors and the target output vectors
         # errors = T.sqrt(T.sum(T.sqr(output_sequences - input_sequences_map_transpose[-1])))
@@ -219,7 +220,8 @@ class SRN():
         self.prediction_error_diff = theano.function([input_sequences], T.sqrt(spe), givens=givens)
 
         # take the sum of the latter for the whole batch
-        self.prediction_err_diff_sum = theano.function([input_sequences], sspe, givens=givens)
+        self.sum_squared_prediction_error = theano.function([input_sequences], sspe, givens=givens)
+        self.mean_squared_prediction_error = theano.function([input_sequences], mspe, givens=givens)
 
         # print network predictions for current batch
         self.predictions = theano.function([input_sequences], predictions, givens=givens)

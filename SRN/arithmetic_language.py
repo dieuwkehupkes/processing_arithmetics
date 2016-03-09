@@ -24,8 +24,6 @@ for i in xrange(len(names)):
     except ValueError:
         pass
 
-# words['b1'] = 'whatever'
-
 training = []
 # generate some training examples with 2 numbers
 for i in xrange(N_training):
@@ -50,7 +48,7 @@ for batch in training:
     print batch
     for embedding in batch:
         print embedding
-exit()
+# exit()
 
 network.create_model(training, words)
 # network.generate_update_function()

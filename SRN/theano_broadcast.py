@@ -2,18 +2,18 @@ import numpy as np
 import theano
 import theano.tensor as T
 
+np.random.seed(10)
 # create target matrix and give names to elements
 lexicon = np.identity(10).astype(theano.config.floatX)
 a, b, c, d, e, f, g, h, i, j = lexicon
 
-embeddings = np.random.uniform(-1, 1, (10,8))
+embeddings_values = np.random.uniform(-1, 1, (10,8))
 
 input_seq = np.array([[a,b,d],[f,b,i]])
 
 # definieer shared variable for embeddings
-theano_embeddings = theano.shared(
-        value = embeddings,
-        # broadcastable = (True, True) ???
+embeddings = theano.shared(
+        value = embeddings_values,
         name = 'embeddings'
 )
 
@@ -39,16 +39,18 @@ def calc_hidden(input_vector, prev_vector):
     # input sequence
     return T.nnet.sigmoid(T.dot(input_vector, W) + T.dot(prev_vector, V))
 
+# declare first hidden state
 hidden_t = T.matrix('init_output', dtype=theano.config.floatX)
 
 # apply scan to compute output sequences
-hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_transpose, outputs_info=hidden_t)
+hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_transpose, outputs_info=hidden_t)      # tensor
 
-output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, W))[-2]
-# take the last element to get a vector with vectors
+# compute output sequences by applying weight matrix and activation function
+# take 1 but last output as prediction
+output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, W))[-2]   # matrix
 
 # now compute distances and closest vector analog to numpy
-theano_distances = T.sqrt(T.sum(T.sqr(embeddings[:, None] - output_sequences), axis=2))
+theano_distances = T.sqrt(T.sum(T.sqr(embeddings[:, None, :] - output_sequences), axis=2))
 theano_closest = T.argmin(theano_distances, axis=0)
 
 givens = {hidden_t: T.zeros((2,8)).astype(theano.config.floatX)}

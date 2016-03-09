@@ -1,9 +1,7 @@
 # Test example taken from backprop book
 
-from SRN_Theano import *
+from SRN import *
 import numpy as np
-
-np.random.seed(0)
 
 def generate_training_sequence(length):
     seq = []
@@ -14,96 +12,45 @@ def generate_training_sequence(length):
     return np.array(seq)
 
 def compute_training_error(sequence, network):
-    for index in xrange(0, len(sequence) - 1):
-        network.forward_pass(sequence[index])
-        print "network output: ", network.activations['output_t'].get_value()
-        print 'target output: ', sequence[index+1]
+    sse = 0.0
+    network.update(sequence[0])
+    for index in xrange(1, len(sequence) - 1):
+        network.update(sequence[index])
+        # print "network output: ", network.O
+        # print 'target output: ', sequence[index+1]
+        error = np.sqrt(np.power(sequence[index+1] - network.O, 2).sum())
+        # print "error: ", error
+        sse += error
+        # raw_input()
+    return sse/(len(sequence)-1)
 
-network = SRN(3, 3, 0.1)
-network.generate_network_dynamics()
-network.test_single_sequence()
-network.generate_update_function()
+network = SimpleRecurrentNetwork(3, 3, 3)
+network.initialise_weights(-0.2, 0.2)
 
 # training sequence
-a = np.array([0,0,1]).astype(theano.config.floatX)
-b = np.array([0,1,0]).astype(theano.config.floatX)
-c = np.array([1,0,0]).astype(theano.config.floatX)
-seq1 = np.array([a, b, c, a, b, c, a, b, c])
-seq2 = np.array([b, a, c, b, a, c, b, a, c])
-seq1 = np.array([a,a,a,a,a,a])
-seq2 = np.array([b,b,b,b,b,b])
-training_sequence = np.array([seq1, seq2])
+a = np.array([0,0,1])
+b = np.array([0,1,0])
+c = np.array([1,0,0])
+training_sequence = np.array([[a, b, c, a, b, c, a, b, c, a], [b, a, c, b, a, c, b, a, c]])
+test_sequence1 = np.array([a, b, c, a, b, c, a, b, c])
+test_sequence2 = np.array([b, a, c, b, a, c, b, a, c])
 
-print "\ntraining error before training:", network.compute_error(seq1)
-print network.compute_error(seq1)
-print network.compute_error(seq2)
+print compute_training_error(test_sequence1, network)
 
-print "\nwhat happens? sequence 1:"
-compute_training_error(seq1, network)
+# construct xor training sequence
+# training_sequence = generate_training_sequence(1000)
+network.train(training_sequence, learning_rate = 0.1, rounds = 1000, depth = 3)
 
-print "\nwhat happens? sequence 2:"
-compute_training_error(seq2, network)
+test_sequence = np.array([[0], [0], [0], [0], [1], [1], [1], [0], [1], [1], [1], [0]])
+print compute_training_error(test_sequence1, network)
+print compute_training_error(test_sequence2, network)
 
-"""
-print "\nNetwork weights:"
-print "W:", network.W.get_value()
-print "V:", network.V.get_value()
-print "U:", network.U.get_value()
-"""
+network.train(training_sequence, learning_rate = 0.1, rounds = 1000, depth = 3)
 
-raw_input()
+print compute_training_error(test_sequence1, network)
+print compute_training_error(test_sequence2, network)
 
-network.train(training_sequence, 200, 1)
+network.train(training_sequence, learning_rate = 0.1, rounds = 1000, depth = 3)
 
-print "\ntraining error after 1 round of training:"
-print network.compute_error(seq1)
-print network.compute_error(seq2)
-
-print "\nwhat happens? sequence 1:"
-compute_training_error(seq1, network)
-
-print "\nwhat happens? sequence 2:"
-compute_training_error(seq2, network)
-
-"""
-print "\nNetwork weights:"
-print "W:", network.W.get_value()
-print "V:", network.V.get_value()
-print "U:", network.U.get_value()
-"""
-
-raw_input()
-
-network.train(training_sequence, 200, 1)
-
-print "\ntraining error after 2 rounds of training:"
-print network.compute_error(seq1)
-print network.compute_error(seq2)
-
-"""
-print "\nNetwork weights:"
-print "W:", network.W.get_value()
-print "V:", network.V.get_value()
-print "U:", network.U.get_value()
-"""
-
-raw_input()
-
-network.train(training_sequence, 200, 1)
-
-print "\ntraining error after 3 rounds of training:"
-print network.compute_error(seq1)
-print network.compute_error(seq2)
-
-print "\nwhat happens? sequence 2:"
-compute_training_error(seq1, network)
-
-print "\nwhat happens? sequence 2:"
-compute_training_error(seq2, network)
-
-"""
-print "\nNetwork weights:"
-print "W:", network.W.get_value()
-print "V:", network.V.get_value()
-print "U:", network.U.get_value()
-"""
+print compute_training_error(test_sequence1, network)
+print compute_training_error(test_sequence2, network)
