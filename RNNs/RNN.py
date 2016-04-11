@@ -7,6 +7,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from collections import OrderedDict
+import itertools
 
 
 class RNN():
@@ -137,23 +138,6 @@ class RNN():
 
         raise NotImplementedError("Function not implemented in abstract class")
 
-        # current input and current hidden vector
-        input_t = T.vector("input_t")
-
-        input_map_t = T.dot(input_t, self.embeddings)
-        hidden_next = T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
-
-        output_next = T.nnet.sigmoid(T.dot(self.activations['hidden_t'], self.W) + self.b2)
-        prediction = self.prediction(self.activations['output_t'])
-
-        updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
-
-        # givens = {}
-        self.forward_pass = theano.function([input_t], updates=updates, givens={})
-        self.cur_prediction = theano.function([], prediction)
-
-        return
-
     def generate_network_dynamics(self, word_embeddings=False, classifier=True):
         """
         Create symbolic expressions defining how the network behaves when
@@ -171,110 +155,6 @@ class RNN():
 
         raise NotImplementedError("Function not implemented in abstract class")
 
-        # set the parameters of the network
-        self.set_network_parameters(word_embeddings, classifier)
-        self.print_embeddings = theano.function([], self.embeddings)
-
-        # declare variables
-        input_sequences = T.tensor3("input_sequences", dtype=theano.config.floatX)
-        input_sequences_transpose = input_sequences.transpose(1,0,2)
-
-        # compute input map from input
-        input_sequences_map = T.dot(input_sequences, self.embeddings)
-
-        self.print_input_map = theano.function([input_sequences], input_sequences_map)
-
-        # transpose to loop over right dimensions
-        input_sequences_map_transpose = input_sequences_map.transpose(1,0,2)
-
-        # describe how the hidden layer can be computed from the input
-        def calc_hidden(input_map_t, hidden_t):
-            return T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
-
-        hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
-
-        # compute sequence of hidden layer activations
-        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map_transpose, outputs_info=hidden_t)
-        # compute prediction sequence (i.e., output layer activation)
-        pre_output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
-        pre_output_sequences_last = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # prediction of last output
-        
-        # compute softmax output
-        # TODO should I have a third bias vector here?
-        output_sequences_last = T.nnet.softmax(T.dot(pre_output_sequences_last, self.classifier))
-        output_sequences = self.softmax_tensor(T.dot(pre_output_sequences, self.classifier))
-
-        # compute predictions and target predictions
-        predictions = T.argmax(output_sequences, axis = 1)              # TODO test if this does what I want
-        predictions_last = T.argmax(output_sequences_last, axis = 1)
-        target_predictions = T.argmax(input_sequences_transpose[1:], axis = 1)      # TODO test if this does what I want
-        target_predictions_last = T.argmax(input_sequences_transpose[-1], axis = 1)
-
-        # compute sum squared differences between predicted numbers
-        spe = T.sqr(predictions - target_predictions)   # squared prediction error per item
-        sspe = T.sum(spe)           # sum squared prediction error
-        mspe = T.mean(spe)           # mean squared prediction error
-        spel = T.sqr(predictions_last - target_predictions_last)   # squared prediction error of last element per item
-        sspel = T.sum(spel)                                # sum squared prediction error of last element
-        mspel = T.mean(spe)                                # mean squared prediction error of last element
-
-        # compute the difference between the output vectors and the target output vectors
-        errors = T.nnet.categorical_crossentropy(output_sequences[-1], input_sequences_transpose[-1])
-        error = T.mean(errors)
-
-        # compute gradients
-        grads = T.grad(error, self.params.values())
-        gradients = OrderedDict(zip(self.params.keys(), grads))
-
-        theano.pp(gradients['W'])
-
-        # compute new parameters
-        new_params = OrderedDict()
-        for param in self.params:
-            new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
-            new_param_value = self.params[param] - self.learning_rate*gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
-            new_params[self.params[param]] = new_param_value
-            new_params[self.histgrad[param]] = new_histgrad
-
-        # initial values
-        givens = {
-                hidden_t:       T.zeros((input_sequences_transpose.shape[1], self.hidden_size)).astype(theano.config.floatX),
-        }
-
-
-        self.print_grad_W = theano.function([input_sequences], gradients['W'], givens=givens)
-
-        # define functions
-
-        # run update function to train weights
-        self.update_function = theano.function([input_sequences], updates=new_params, givens=givens)
-
-        # compute the differences of the output vectors with the target vectors
-        self.compute_error = theano.function([input_sequences], errors, givens=givens)
-
-        # compute the differences of the meaning of the output vectors with the target meanings
-        # TODO???
-        self.prediction_error_diff = theano.function([input_sequences], T.sqrt(spel), givens=givens)
-
-        # take the sum of the latter for the whole batch
-        self.sum_squared_prediction_error = theano.function([input_sequences], sspe, givens=givens)
-        self.mean_squared_prediction_error = theano.function([input_sequences], mspe, givens=givens)
-        self.sum_squared_prediction_last_error = theano.function([input_sequences], sspel, givens=givens)
-        self.mean_squared_prediction_last_error = theano.function([input_sequences], mspel, givens=givens)
-
-        # print network predictions for current batch
-        self.predictions = theano.function([input_sequences], predictions, givens=givens)
-
-        # print target predictions for current batch
-        self.target_predictions = theano.function([input_sequences], target_predictions, givens=givens)
-
-        # temp functions for monitoring
-        self.print_input_map_transpose = theano.function([input_sequences], input_sequences_map_transpose)
-        self.print_hidden = theano.function([input_sequences], hidden_sequences, givens=givens)
-        self.print_output = theano.function([input_sequences], output_sequences, givens=givens)
-        self.print_predictions = theano.function([input_sequences], predictions, givens=givens)
-        self.print_target_predictions = theano.function([input_sequences], target_predictions, givens=givens)
-
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
         """
         Train the network to store input_sequences
@@ -287,6 +167,38 @@ class RNN():
 
         return
 
+    def comparison_training1(self, input_sequences1, targets, no_iterations, batch_size):
+        """
+        Train the network by comparing the output of an
+        input sequence with a random number. Use a comparison
+        layer and a softmax classifier on top to propagate
+        back error signal.
+        """
+        raise NotImplementedError("Implement this function!")
+
+    def comparison_training2(self, input_sequences1, input_sequences2, targets, no_iterations, batch_size):
+        """
+        Train the network by comparing the output of two
+        input sequences using a comparison layer and a
+        softmax classifier on top.
+        """
+
+        # TODO check if input sequences have equal number of sequences
+        raise NotImplementedError("Implement check to see if sequences have same length")
+        
+        # iterate for no_iterations steps
+        for iteration in xrange(0, no_iterations):
+            # create new batches
+            batches1, indices = self.make_batches(input_sequences1, batchsize)
+            batches2, _ = self.make_batches(input_sequences2, batchsize, indices=indices)
+            targets, _ = self.make_batches(targets, batchsize, indices=indices)
+
+            for batch1, batch2, target in itertools.izip(batches1, batches2, target):
+                # update weights for current examples
+                training_step_comparison2(batch1, batch2)
+
+        return
+
     def iteration(self, input_sequences, batchsize):
         """
         Slice data in minibatches and perform one
@@ -294,7 +206,7 @@ class RNN():
         :param input_sequences: The sequences we want to
                                 store in the network
         """
-        batches = self.make_batches(input_sequences, batchsize)
+        batches, _ = self.make_batches(input_sequences, batchsize)
 
         # loop over minibatches, update parameters
         for batch in batches:
@@ -302,16 +214,13 @@ class RNN():
 
         return
 
-    def make_batches(self, input_sequences, batchsize):
+    def make_batches(self, input_sequences, batchsize, **kwargs):
         """
         Make batches from input sequence. 
-        Currently this doesn't do anything but return the
-        input sequence (for testing phase) but later this
-        should start doing some more things.
         """
         # create indices for batches
         data_size = len(input_sequences)
-        indices = np.random.permutation(data_size)
+        indices = kwargs.get(indices, np.random.permutation(data_size))
 
         # create array for batches
         batches = []
@@ -326,7 +235,7 @@ class RNN():
         batch = input_sequences[to:]
         batches.append(batch)
 
-        return batches
+        return batches, indices
     
     def prediction(self, output_vector):
         """
