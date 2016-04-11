@@ -7,14 +7,14 @@ import theano
 import theano.tensor as T
 from collections import OrderedDict
 from auxiliary_functions import *
+from RNN import RNN
 
-
-class SRN():
+class SRN(RNN):
     """
     A class representing a simple recurrent network (SRN), as presented
     in Elman (1990).
     """
-    def __init__(self, input_size, hidden_size, sigma_init, **kwargs):
+    def __init__(self, input_size, hidden_size, learning_rate=0.5, sigma_init=0.2):
         """
         This class implements a classic simple recurrent network in Theano:
 
@@ -32,69 +32,15 @@ class SRN():
         :param learning_rate: learning rate
         """
 
-        self.learning_rate = kwargs.get('learning_rate', 0.5)
+        RNN.__init__(
+                self, 
+                input_size=input_size,
+                hidden_size=hidden_size,
+                output_size=input_size,
+                learning_rate=learning_rate,
+                sigma_init=sigma_init
+                )
 
-        # weights from input to hidden
-        self.U = theano.shared(
-                value = sigma_init*np.random.normal(
-                    input_size, hidden_size
-                ),
-                name='U'
-        )
-
-        # weights from context to hidden
-        self.V = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init,
-                    (hidden_size, hidden_size)
-                ).astype(theano.config.floatX),
-                name='V'
-        )
-
-        # weights from hidden to output
-        self.W = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init,
-                    (hidden_size, input_size)
-                ).astype(theano.config.floatX),
-                name='W'
-        )
-
-        # bias hidden layer
-        self.b1 = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init, hidden_size
-                ).astype(theano.config.floatX),
-                name='b1'
-        )
-
-        # bias output layer
-        self.b2 = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init, input_size
-                ).astype(theano.config.floatX),
-                name = 'b2'
-        )
-
-        # Shared variable representing the hidden layer activations
-        hidden_t = theano.shared(
-                value = np.zeros(hidden_size).astype(theano.config.floatX),
-                name = 'hidden_t'
-        )
-
-        # Shared variable representing the output layer activations
-        output_t = theano.shared(
-                value = np.zeros(input_size).astype(theano.config.floatX),
-                name = 'output_t'
-        )
-
-        # store network activations in an ordered dict
-        self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
-
-        # store dimensions of network
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        
     def generate_update_function(self):
         """
         Generate a symbolic graph describing what happens when the 
@@ -104,17 +50,20 @@ class SRN():
         # generate symbolic variable for current input
         input_t = T.vector("input_t")
 
+        # TODO change this so that it uses an activation function set as input
+        hidden_next = piecewise_linear(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
+
         # define the next hidden and output state by applying the network dynamics
+        # use intermediate steps to model behaviour
         # use piecewise linear activation functions
         hidden_project1 = T.dot(input_t, self.U)
         hidden_project2 = T.dot(self.activations['hidden_t'], self.V)
-        hidden_project3 = T.dot(self.activations['hidden_t'], self.V)
         hidden_sum = hidden_project1 + hidden_project2 + self.b1
-        squash = piecewise_linear(hidden_sum)
-        # squash = T.nnet.sigmoid(hidden_sum)
+        hidden_squash = piecewise_linear(hidden_sum)
         # hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
-        hidden_next = piecewise_linear(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
         
+        output_project = T.dot(self.activations['hidden_t'], self.W)
+        output_sum = output_project + self.b2
         output_next = T.nnet.sigmoid(T.dot(self.activations['hidden_t'], self.W) + self.b2)
         # output_next = piecewise_linear(T.dot(self.activations['hidden_t'], self.W) + self.b2)
 
@@ -247,59 +196,6 @@ class SRN():
         self.print_predictions = theano.function([input_sequences], predictions, givens=givens)
         self.print_target_predictions = theano.function([input_sequences], target_predictions, givens=givens)
 
-    def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
-        """
-        Train the network to store input_sequences
-        :param input_sequences  
-        :param no_iterations    
-        """
-        # TODO write function description
-        for iteration in xrange(0, no_iterations):
-            self.iteration(input_sequences, batchsize)
-
-        return
-
-    def iteration(self, input_sequences, batchsize):
-        """
-        Slice data in minibatches and perform one
-        training iteration.
-        :param input_sequences: The sequences we want to
-                                store in the network
-        """
-        batches = self.make_batches(input_sequences, batchsize)
-
-        # loop over minibatches, update parameters
-        for batch in batches:
-            self.update_function(batch) 
-
-        return
-
-    def make_batches(self, input_sequences, batchsize):
-        """
-        Make batches from input sequence. 
-        Currently this doesn't do anything but return the
-        input sequence (for testing phase) but later this
-        should start doing some more things.
-        """
-        # create indices for batches
-        data_size = len(input_sequences)
-        indices = np.random.permutation(data_size)
-
-        # create array for batches
-        batches = []
-        to, fro = 0, batchsize
-        while fro <= data_size:
-            batch = input_sequences[indices[to:fro]]
-            batches.append(batch)
-            to = fro
-            fro += batchsize
-
-        # last batch
-        batch = input_sequences[to:]
-        batches.append(batch)
-
-        return batches
-    
     def prediction(self, output_vector):
         """
         Compute the prediction of the network for output_vector
