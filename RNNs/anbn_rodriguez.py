@@ -23,8 +23,8 @@ srn = SRN(input_size=3, hidden_size=3, sigma_init=0.01, learning_rate=0.5)
 # set weights according to rodriguez
 srn.U = np.array([[0.5, -5, -5], [-5, -1, 5],[-5, -5, -5]])
 srn.V = np.array([[0.5, 2, 0], [0, 2, 0], [0, 0, 0]])
-srn.b1 = 0
-srn.b2 = 0
+srn.b1 = np.array([0,0,0])
+srn.b2 = np.array([0,0,0])
 
 # generate dynamics
 srn.generate_update_function()
