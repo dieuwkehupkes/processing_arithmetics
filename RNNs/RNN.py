@@ -76,6 +76,20 @@ class RNN():
                 name='W'
         )
 
+        self.b1 = theano.shared(
+                value = np.random.normal(
+                    0, sigma_init, hidden_size
+                ).astype(theano.config.floatX),
+                name='b1'
+        )
+
+        self.b2 = theano.shared(
+                value = np.random.normal(
+                    0, sigma_init, input_size
+                ).astype(theano.config.floatX),
+                name = 'b2'
+        )
+
         # TODO do I need this in basis?
         """
         # weights to co-train embeddings
@@ -93,19 +107,6 @@ class RNN():
                 name = 'classifier'
         )
 
-        self.b1 = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init, hidden_size
-                ).astype(theano.config.floatX),
-                name='b1'
-        )
-
-        self.b2 = theano.shared(
-                value = np.random.normal(
-                    0, sigma_init, input_size
-                ).astype(theano.config.floatX),
-                name = 'b2'
-        )
         """
 
         # Store the network activation values to run the network
