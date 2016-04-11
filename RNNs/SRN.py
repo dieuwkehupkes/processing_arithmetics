@@ -1,5 +1,4 @@
 """
-Base class for RNN's.
 Dieuwke Hupkes - <D.hupkes@uva.nl>
 """
 
@@ -7,48 +6,33 @@ import numpy as np
 import theano
 import theano.tensor as T
 from collections import OrderedDict
+from auxiliary_functions import *
 
 
-class RRN():
+class SRN():
     """
-    A class providing basic functionality for RNN's.
+    A class representing a simple recurrent network (SRN), as presented
+    in Elman (1990).
     """
-    def __init__(self, input_size, hidden_size, output_size, learnig_rate=0.5, sigma_init=0.2, **kwargs):
+    def __init__(self, input_size, hidden_size, sigma_init, **kwargs):
         """
-        This class provides functionality for RNNs in Theano.
-
-        A basic RNN consists of an input, a hidden and and output layer.
-        The behaviour of the RNN is fully described by three weight matrices
-        and a set of activation functions:
+        This class implements a classic simple recurrent network in Theano:
 
             X_t = f(V*X_{t-1} + U*I_t)
             Y_t = g(W*X_t)
 
-        Where X_t is the hidden layer, Y_t is the output layer and f and g
-        are activation functions describing how to compute the current
-        activations of the layers given their netto input.
+        where X_t is the hidden layer, Y_t is the output layer and f(x) is a
+        simple sigmoid function.
 
-        Args:
-        :param input_size:      number of input units
-        :param hidden_size:     number of hidden units
-        :param output_size:     number of output units
-        :param sigma_init:      parameter for initialising
-                                weight matrices
-        :param learning_rate:   learning rate for training
+        Describe the functionality implemented in this class
 
-        Kwargs:
-        :param embeddings:  if cotraining of word embeddings is desired
-                            one can give in an initial word embeddings
-                            matrix by passing passing an argument with
-                            the name embeddings
-        :param classifier:  a softmax classifier is put on top of the
-                            network to map the input back to the correct
-                            size. One can provide initial values for
-                            the classifier by passing an argument
-                            with the name "classifier"
+        :param input_size: number of input units
+        :param hidden_size: number of hidden units
+        :param sigma_init: parameter used to initialise network weights
+        :param learning_rate: learning rate
         """
 
-        self.learning_rate = learning_rate
+        self.learning_rate = kwargs.get('learning_rate', 0.5)
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -76,23 +60,7 @@ class RRN():
                 name='W'
         )
 
-        # TODO do I need this in basis?
-        """
-        # weights to co-train embeddings
-
-        embeddings_value = kwargs.get('embeddings', np.identity(input_size).astype(theano.config.floatX))
-        self.embeddings = theano.shared(
-                value = embeddings_value,
-                name = 'embeddings'
-        )
-
-        # classifier on top to interpret output
-        classifier_value = kwargs.get('classifier', np.random.uniform(-0.5, 0.5, (input_size, embeddings_value.shape[0])).astype(theano.config.floatX))
-        self.classifier = theano.shared(
-                value = classifier_value,
-                name = 'classifier'
-        )
-
+        # bias hidden layer
         self.b1 = theano.shared(
                 value = np.random.normal(
                     0, sigma_init, hidden_size
@@ -100,24 +68,27 @@ class RRN():
                 name='b1'
         )
 
+        # bias output layer
         self.b2 = theano.shared(
                 value = np.random.normal(
                     0, sigma_init, input_size
                 ).astype(theano.config.floatX),
                 name = 'b2'
         )
-        """
 
-        # Store the network activation values to run the network
+        # Shared variable representing the hidden layer activations
         hidden_t = theano.shared(
                 value = np.zeros(hidden_size).astype(theano.config.floatX),
                 name = 'hidden_t'
         )
+
+        # Shared variable representing the output layer activations
         output_t = theano.shared(
                 value = np.zeros(input_size).astype(theano.config.floatX),
                 name = 'output_t'
         )
 
+        # store network activations in an ordered dict
         self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
 
         # store dimensions of network
@@ -126,34 +97,47 @@ class RRN():
         
     def generate_update_function(self):
         """
-        Generate a symbolic expression describing the forward
-        pass of the network. The forward pass is only used to
-        monitor the behaviour of a trained network given a
-        sequence of inputs, not for training or testing.
+        Generate a symbolic graph describing what happens when the 
+        network gets updated
         """
-        # TODO maybe this is something that should be 
-        # seperately defined for each network?
 
-        raise NotImplementedError("Function not implemented in abstract class")
-
-        # current input and current hidden vector
+        # generate symbolic variable for current input
         input_t = T.vector("input_t")
 
-        input_map_t = T.dot(input_t, self.embeddings)
-        hidden_next = T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
-
+        # define the next hidden and output state by applying the network dynamics
+        # use piecewise linear activation functions
+        hidden_project1 = T.dot(input_t, self.U)
+        hidden_project2 = T.dot(self.activations['hidden_t'], self.V)
+        hidden_project3 = T.dot(self.activations['hidden_t'], self.V)
+        hidden_sum = hidden_project1 + hidden_project2 + self.b1
+        squash = piecewise_linear(hidden_sum)
+        # squash = T.nnet.sigmoid(hidden_sum)
+        # hidden_next = T.nnet.sigmoid(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
+        hidden_next = piecewise_linear(T.dot(input_t, self.U) + T.dot(self.activations['hidden_t'], self.V) + self.b1)
+        
         output_next = T.nnet.sigmoid(T.dot(self.activations['hidden_t'], self.W) + self.b2)
-        prediction = self.prediction(self.activations['output_t'])
+        # output_next = piecewise_linear(T.dot(self.activations['hidden_t'], self.W) + self.b2)
 
+        # prediction is defined by output layer
+        # prediction = self.prediction(output_next)
+
+        # define function that executes forward pass
         updates = OrderedDict(zip(self.activations.values(), [hidden_next, output_next]))
 
-        # givens = {}
+        # define functions to visualise project squash sum
         self.forward_pass = theano.function([input_t], updates=updates, givens={})
-        self.cur_prediction = theano.function([], prediction)
+        self.project_input = theano.function([input_t], hidden_project1, givens={})
+        self.project_hidden = theano.function([], hidden_project2, givens={})
+        self.sumh = theano.function([input_t], hidden_sum, givens={})
+        self.print_hidden = theano.function([input_t], hidden_next, givens={})
+        self.squash = theano.function([input_t], squash, givens={})
+
+        # function that returns current prediction
+        # self.cur_prediction = theano.function([], prediction)
 
         return
 
-    def generate_network_dynamics(self, word_embeddings=False, classifier=True):
+    def generate_network_dynamics(self):
         """
         Create symbolic expressions defining how the network behaves when
         given a sequence of inputs, and how its parameters can be trained.
@@ -168,40 +152,29 @@ class RRN():
         - How to compute the gradients w.r.t the different weights
         """
 
-        raise NotImplementedError("Function not implemented in abstract class")
+        # Set parameters to be updated during training and initialise adagrad parameters
+        # default to be updated: W, U, V, b1 and b2
+        self.set_network_parameters()
 
-        # set the parameters of the network
-        self.set_network_parameters(word_embeddings, classifier)
-        self.print_embeddings = theano.function([], self.embeddings)
-
-        # declare variables
-        input_sequences = T.tensor3("input_sequences", dtype=theano.config.floatX)
-        input_sequences_transpose = input_sequences.transpose(1,0,2)
-
-        # compute input map from input
-        input_sequences_map = T.dot(input_sequences, self.embeddings)
-
-        self.print_input_map = theano.function([input_sequences], input_sequences_map)
-
-        # transpose to loop over right dimensions
-        input_sequences_map_transpose = input_sequences_map.transpose(1,0,2)
+        # create symbolic variable for input sequence (batch processing)
+        input_sequences = T.tensor3("input_sequences", dtype=theano.config.floatX)      # tensor 3-dim
+        input_sequences_transpose = input_sequences.transpose(1,0,2)                    # tensor 3-dim
 
         # describe how the hidden layer can be computed from the input
         def calc_hidden(input_map_t, hidden_t):
             return T.nnet.sigmoid(T.dot(input_map_t, self.U) + T.dot(hidden_t, self.V) + self.b1)
 
-        hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)
+        hidden_t = T.matrix("hidden_t", dtype=theano.config.floatX)                     # tensor 2-dim
 
-        # compute sequence of hidden layer activations
-        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_map_transpose, outputs_info=hidden_t)
-        # compute prediction sequence (i.e., output layer activation)
-        pre_output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]       # predictions for all but last output
-        pre_output_sequences_last = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[-2]       # prediction of last output
-        
-        # compute softmax output
-        # TODO should I have a third bias vector here?
-        output_sequences_last = T.nnet.softmax(T.dot(pre_output_sequences_last, self.classifier))
-        output_sequences = self.softmax_tensor(T.dot(pre_output_sequences, self.classifier))
+        # compute sequence of hidden layer activations for all input sequences by using scan
+        hidden_sequences, _ = theano.scan(calc_hidden, sequences=input_sequences_transpose, outputs_info=hidden_t)      # tensor 3-dim
+
+        # compute sequence of output layer activations (don't include last one which is the prediction after the end of the string)
+        # output_sequences = T.nnet.sigmoid(T.dot(hidden_sequences, self.W) + self.b2)[:-1]    # tensor 3-dim
+        output_sequences = piecewise_linear(T.dot(hidden_sequences, self.W) + self.b2)[:-1]    # tensor 3-dim
+
+
+        # TODO include function that says which part of the predictions should be trained/tested
 
         # compute predictions and target predictions
         predictions = T.argmax(output_sequences, axis = 1)              # TODO test if this does what I want
@@ -336,7 +309,6 @@ class RRN():
         NB: this function only works for an input *vector* and
         cannot be applied to an input matrix of vectors
         """
-        raise NotImplementedError("Implement function in subclass")
         # compute the distance with the embeddings
         e_distance_embeddings = T.sqrt(T.sum(T.sqr(self.embeddings-output_vector), axis=1))
         # prediction is embedding with minimal distance
@@ -350,25 +322,13 @@ class RRN():
         """
         raise NotImplementedError("Function not implemented yet")
 
-    def softmax_tensor(self, input_tensor):
-        """
-        Softmax function that can be applied to a 
-        three dimensional tensor.
-        """
-        d0, d1, d2 = input_tensor.shape
-        reshaped = T.reshape(input_tensor, (d0*d1, d2))
-        softmax_reshaped = T.nnet.softmax(reshaped)
-        softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
-        return softmax
-
-    def set_network_parameters(self, word_embeddings, classifier):
+    def set_network_parameters(self, word_embeddings=None, classifier=None):
+        # TODO This method should be moved to superclass!
         """
         If co training of word embeddings is desired,
         add word-embeddings matrix to trainable parameters
         of the network.
         """
-
-        # TODO dit verschilt misschien ook per klasse?
 
         # store the parameters of the network
         self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
