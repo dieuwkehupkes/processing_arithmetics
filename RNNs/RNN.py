@@ -9,7 +9,7 @@ import theano.tensor as T
 from collections import OrderedDict
 
 
-class RRN():
+class RNN():
     """
     A class providing basic functionality for RNN's.
     """
