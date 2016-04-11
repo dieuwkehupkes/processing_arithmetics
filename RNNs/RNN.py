@@ -13,7 +13,7 @@ class RNN():
     """
     A class providing basic functionality for RNN's.
     """
-    def __init__(self, input_size, hidden_size, output_size, learnig_rate=0.5, sigma_init=0.2, **kwargs):
+    def __init__(self, input_size, hidden_size, output_size, learning_rate=0.5, sigma_init=0.2, **kwargs):
         """
         This class provides functionality for RNNs in Theano.
 
