@@ -21,8 +21,8 @@ class RNN():
         The behaviour of the RNN is fully described by three weight matrices
         and a set of activation functions:
 
-            X_t = f(V*X_{t-1} + U*I_t)
-            Y_t = g(W*X_t)
+            X_t = f(V*X_{t-1} + U*I_t + b1)
+            Y_t = g(W*X_t + b2)
 
         Where X_t is the hidden layer, Y_t is the output layer and f and g
         are activation functions describing how to compute the current
