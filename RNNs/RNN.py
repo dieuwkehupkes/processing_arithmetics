@@ -165,16 +165,29 @@ class RNN():
 
         return
 
-    def comparison_training1(self, input_sequences1, targets, no_iterations, batch_size):
+    def comparison_training1(self, input_sequences1, target_sequence, no_iterations, batch_size):
         """
         Train the network by comparing the output of an
         input sequence with a random number. Use a comparison
         layer and a softmax classifier on top to propagate
         back error signal.
         """
+        # TODO check if input sequences and targets have same length
+        raise NotImplementedError("Implement check of length")
+        
+        # iterate for no_iterations steps
+        for iteration in xrange(0, no_iterations):
+            # create new batches
+            batches, indices = self.make_batches(input_sequences1, batch_size)
+            targets, _ = self.make_batches(target_sequence, indices)
+
+        for batch1, target in itertools.izip(batches, targets):
+            # update weights for current batch
+            self.training_step_comparison1(batch1, targets)
+
         raise NotImplementedError("Implement this function!")
 
-    def comparison_training2(self, input_sequences1, input_sequences2, targets, no_iterations, batch_size):
+    def comparison_training2(self, input_sequences1, input_sequences2, target_sequence, no_iterations, batch_size):
         """
         Train the network by comparing the output of two
         input sequences using a comparison layer and a
@@ -187,13 +200,13 @@ class RNN():
         # iterate for no_iterations steps
         for iteration in xrange(0, no_iterations):
             # create new batches
-            batches1, indices = self.make_batches(input_sequences1, batchsize)
-            batches2, _ = self.make_batches(input_sequences2, batchsize, indices=indices)
-            targets, _ = self.make_batches(targets, batchsize, indices=indices)
+            batches1, indices = self.make_batches(input_sequences1, batch_size)
+            batches2, _ = self.make_batches(input_sequences2, batch_size, indices=indices)
+            targets, _ = self.make_batches(target_sequence, batch_size, indices=indices)
 
-            for batch1, batch2, target in itertools.izip(batches1, batches2, target):
-                # update weights for current examples
-                training_step_comparison2(batch1, batch2)
+            for batch1, batch2, target in itertools.izip(batches1, batches2, targets):
+                # update weights for current batch
+                self.training_step_comparison2(batch1, batch2, targets)
 
         return
 
