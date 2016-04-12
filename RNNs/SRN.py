@@ -41,6 +41,14 @@ class SRN(RNN):
                 sigma_init=sigma_init
                 )
 
+    def generate_forward_pass(self):
+        """
+        Symbolically define the forward pass of the
+        network for a batch of inputs.
+        Return an ordered dictionary 
+        """
+        # TODO implement this function
+
     def generate_update_function(self):
         """
         Generate a symbolic graph describing what happens when the 
