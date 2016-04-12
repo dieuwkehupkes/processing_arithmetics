@@ -100,18 +100,8 @@ class RNN():
                 name = 'embeddings'
         )
 
-        """
-        # classifier on top to interpret output
-        classifier_value = kwargs.get('classifier', np.random.uniform(-0.5, 0.5, (input_size, embeddings_value.shape[0])).astype(theano.config.floatX))
-        self.classifier = theano.shared(
-                value = classifier_value,
-                name = 'classifier'
-        )
-
-        """
-
         # Store the network activation values to run the network
-        # TODO do I actually need this?
+        # TODO Maybe I don't need this, check later if it is still useful
         hidden_t = theano.shared(
                 value = np.zeros(hidden_size).astype(theano.config.floatX),
                 name = 'hidden_t'
@@ -139,22 +129,39 @@ class RNN():
 
         raise NotImplementedError("Function not implemented in abstract class")
 
-    def generate_dynamics(self, word_embeddings=False):
+    def generate_standard_training_function():
         """
-        Write description of this function
+        Generate a function that allows standard training
+        of the network with batches and backpropagation
         """
+        # TODO make this description more elaborate
 
-        # generate output for batch 1
+        # set trainable parameters network
 
-        # generate output for batch 2
+        # generate symbolic input variables
+
+        # generate output sequences for input using forward function (symbolic)
+
+        # compare with target outputs, generate error signal
+
+        # compute gradients
+
+        # compute weight updates and store in ordered dictionary
+        
+        # make givens dictionary
+
+        self.train = self.training_step_standard([input_sequences], updates=updates, givens=givens)
 
 
-        raise NotImplementedError("Function not implemented in abstract class")
 
     def generate_comparison_training1_function():
-        raise NotImplementedError("Implement this function")
+
+        # generate comparison matrix
+
+        # generate softmax classifier on top
         
         # set trainable the trainable parameters for this configuration
+        # (in this case: all weight matrices, softmax classifier and comparison matrix)
 
         # generate symbolic variables for input of training function
         
@@ -168,10 +175,14 @@ class RNN():
 
         # compute gradients for all trainable parameters
 
-        # compute weight updates
+        # store weight updates in ordered dictionary
+
+        # generate givens dictionary
         
         # generate update function
         self.training_step_comparison1 = theano.function([batch1, target], updates=updates, givens=givens)
+
+        raise NotImplementedError("Implement this function")
 
         return
 
@@ -243,7 +254,7 @@ class RNN():
 
         # loop over minibatches, update parameters
         for batch in batches:
-            self.update_function(batch) 
+            self.training_step_standard(batch) 
 
         return
 
