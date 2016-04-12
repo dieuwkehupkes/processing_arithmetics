@@ -77,6 +77,7 @@ class RNN():
                 name='W'
         )
 
+        # bias for hidden layer
         self.b1 = theano.shared(
                 value = np.random.normal(
                     0, sigma_init, hidden_size
@@ -84,6 +85,7 @@ class RNN():
                 name='b1'
         )
 
+        # bias for output layer
         self.b2 = theano.shared(
                 value = np.random.normal(
                     0, sigma_init, input_size
@@ -109,6 +111,7 @@ class RNN():
         """
 
         # Store the network activation values to run the network
+        # TODO do I actually need this?
         hidden_t = theano.shared(
                 value = np.zeros(hidden_size).astype(theano.config.floatX),
                 name = 'hidden_t'
@@ -136,22 +139,41 @@ class RNN():
 
         raise NotImplementedError("Function not implemented in abstract class")
 
-    def generate_network_dynamics(self, word_embeddings=False, classifier=True):
+    def generate_dynamics(self, word_embeddings=False):
         """
-        Create symbolic expressions defining how the network behaves when
-        given a sequence of inputs, and how its parameters can be trained.
-        In this function it is defined:
-        - How a sequence of hidden-layer activations can be computed
-          from an input sequence
-        - How a sequence of predictions can be computed from a sequence
-          of hidden layer activations
-        - How the next-item prediction of the network can be computed
-        - How the error of a sequence of predictions can be computed from
-          the input sequence
-        - How to compute the gradients w.r.t the different weights
+        Write description of this function
         """
 
+        # generate output for batch 1
+
+        # generate output for batch 2
+
+
         raise NotImplementedError("Function not implemented in abstract class")
+
+    def generate_comparison_training1_function():
+        raise NotImplementedError("Implement this function")
+        
+        # set trainable the trainable parameters for this configuration
+
+        # generate symbolic variables for input of training function
+        
+        # generate output for batch
+
+        # apply comparison matrix
+
+        # use softmax layer to compute outputs
+
+        # compare with target outputs using cross_entropy
+
+        # compute gradients for all trainable parameters
+
+        # compute weight updates
+        
+        # generate update function
+        self.training_step_comparison1 = theano.function([batch1, target], updates=updates, givens=givens)
+
+        return
 
     def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
         """
