@@ -117,7 +117,7 @@ class RNN():
         self.input_size = input_size
         self.hidden_size = hidden_size
         
-    def generate_update_function(self):
+    def generate_forward_pass(self):
         """
         Generate a symbolic expression describing the forward
         pass of the network. The forward pass is only used to
@@ -129,7 +129,7 @@ class RNN():
 
         raise NotImplementedError("Function not implemented in abstract class")
 
-    def generate_standard_training_function():
+    def generate_standard_training_function(self):
         """
         Generate a function that allows standard training
         of the network with batches and backpropagation
@@ -152,9 +152,12 @@ class RNN():
 
         self.train = self.training_step_standard([input_sequences], updates=updates, givens=givens)
 
+        raise NotImplementedError("implement function generate_standard_training_function")
+
+        return
 
 
-    def generate_comparison_training1_function():
+    def generate_comparison_training1_function(self):
 
         # generate comparison matrix
 
