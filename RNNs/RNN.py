@@ -91,16 +91,14 @@ class RNN():
                 name = 'b2'
         )
 
-        # TODO do I need this in basis?
-        """
         # weights to co-train embeddings
-
         embeddings_value = kwargs.get('embeddings', np.identity(input_size).astype(theano.config.floatX))
         self.embeddings = theano.shared(
                 value = embeddings_value,
                 name = 'embeddings'
         )
 
+        """
         # classifier on top to interpret output
         classifier_value = kwargs.get('classifier', np.random.uniform(-0.5, 0.5, (input_size, embeddings_value.shape[0])).astype(theano.config.floatX))
         self.classifier = theano.shared(
