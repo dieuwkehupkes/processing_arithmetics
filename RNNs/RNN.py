@@ -185,7 +185,7 @@ class RNN():
             # update weights for current batch
             self.training_step_comparison1(batch1, targets)
 
-        raise NotImplementedError("Implement this function!")
+        return
 
     def comparison_training2(self, input_sequences1, input_sequences2, target_sequence, no_iterations, batch_size):
         """
