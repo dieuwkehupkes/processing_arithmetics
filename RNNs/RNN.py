@@ -119,14 +119,12 @@ class RNN():
         
     def generate_forward_pass(self):
         """
-        Generate a symbolic expression describing the forward
-        pass of the network. The forward pass is only used to
-        monitor the behaviour of a trained network given a
-        sequence of inputs, not for training or testing.
-        """
-        # TODO maybe this is something that should be 
-        # seperately defined for each network?
+        Symbolically define how a batch of output sequences
+        can be computed from a batch of input sequences.
 
+        This function depends on the specific details of the
+        network and should be defined in the subclass.
+        """
         raise NotImplementedError("Function not implemented in abstract class")
 
     def generate_standard_training_function(self):
