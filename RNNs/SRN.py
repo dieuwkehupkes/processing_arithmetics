@@ -99,14 +99,11 @@ class SRN(RNN):
         raise NotImplementedError("Function not implemented yet")
 
     def set_network_parameters(self, word_embeddings=None):
-        # TODO This method should be moved to superclass!
         """
-        If co training of word embeddings is desired,
-        add word-embeddings matrix to trainable parameters
-        of the network.
+        Set trainable parameters of the network
         """
 
-        # set default network parameters of network using superclass method
+        # No extra trainable parameters required, use superclass method
         RNN.set_network_parameters(self, word_embeddings)
 
         return
