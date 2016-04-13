@@ -14,7 +14,7 @@ class RNN():
     """
     A class providing basic functionality for RNN's.
     """
-    def __init__(self, input_size, hidden_size, output_size, learning_rate=0.5, sigma_init=0.2, **kwargs):
+    def __init__(self, input_size, hidden_size, output_size, learning_rate=0.5, sigma_init=0.2, embeddings=False, **kwargs):
         """
         This class provides functionality for RNNs in Theano.
 
@@ -36,20 +36,21 @@ class RNN():
         :param sigma_init:      parameter for initialising
                                 weight matrices
         :param learning_rate:   learning rate for training
+        :param embeddings:      cotrain word embeddinsg if set to true
 
         Kwargs:
-        :param embeddings:  if cotraining of word embeddings is desired
-                            one can give in an initial word embeddings
-                            matrix by passing passing an argument with
-                            the name embeddings
-        :param classifier:  a softmax classifier is put on top of the
-                            network to map the input back to the correct
-                            size. One can provide initial values for
-                            the classifier by passing an argument
-                            with the name "classifier"
+        :param embeddings_init: one can give in an initial word embeddings
+                                matrix by passing passing an argument with
+                                the name embeddings
+        :param classifier:      a softmax classifier is put on top of the
+                                network to map the input back to the correct
+                                size. One can provide initial values for
+                                the classifier by passing an argument
+                                with the name "classifier"
         """
 
         self.learning_rate = learning_rate
+        self.train_embeddings = embeddings
 
         # weights from input to hidden
         self.U = theano.shared(
@@ -93,8 +94,8 @@ class RNN():
                 name = 'b2'
         )
 
-        # weights to co-train embeddings
-        embeddings_value = kwargs.get('embeddings', np.identity(input_size).astype(theano.config.floatX))
+        # weights for word embeddings
+        embeddings_value = kwargs.get('embeddings_init', np.identity(input_size).astype(theano.config.floatX))
         self.embeddings = theano.shared(
                 value = embeddings_value,
                 name = 'embeddings'
@@ -114,9 +115,10 @@ class RNN():
         self.activations = OrderedDict(zip(['hidden_t','output_t'], [hidden_t, output_t]))
 
         # store dimensions of network
-        self.input_size = input_size
+        self.embeddings_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
+        self.input_size = embeddings_value.shape[1]
         
     def generate_forward_pass(self):
         """
@@ -159,34 +161,39 @@ class RNN():
 
     def generate_comparison_training1_function(self):
 
-        # generate comparison matrix
-        self.comparison = 
+        # add comparison layer and softmax classifier for training
+        self.add_training_framework()
 
-        # generate softmax classifier on top
-        
         # set trainable the trainable parameters for this configuration
-        # (in this case: all weight matrices, softmax classifier and comparison matrix)
+        self.set_network_parameters(self.train_embeddings)
+        self.add_trainable_parameters(('comparison', self.comparison), ('classifier', self.classifier), ('b3', self.b3), ('b4', self.b4))
 
         # generate symbolic variables for input of training function
+        batch = T.tensor3("batch", dtype=theano.config.floatX)  # tensor 3dim
+        comparison_sequences = T.matrix("comparison_sequences", dtype=theano.config.floatX)  # tensor 2-dim
+        targets = T.vector("targets", dtype=theano.config.floatX)
         
-        # generate output for batch
-
+        # generate output for batch, take last slice to get final representations
+        output_sequences = self.return_outputs(batch)[-1]
+        
         # apply comparison matrix
+        comparison_layer = T.nnet.sigmoid(T.dot(output_sequences, self.comparison) + self.b3)
 
         # use softmax layer to compute outputs
+        outputs = T.nnet.softmax(T.dot(comparison_layer, self.classifier) + self.b4)
 
         # compare with target outputs using cross_entropy
+        error = T.mean(T.nnet.categorical_crossentropy(outputs, targets))
 
         # compute gradients for all trainable parameters
+        grads = T.grad(error, self.params.values())
+        gradients = OrderedDict(zip(self.params.keys(), grads))
 
-        # store weight updates in ordered dictionary
+        # compute weight updates
+        updates = self.compute_weight_updates(gradients)
 
-        # generate givens dictionary
-        
         # generate update function
-        self.training_step_comparison1 = theano.function([batch1, target], updates=updates, givens=givens)
-
-        raise NotImplementedError("Implement this function")
+        self.training_step_comparison1 = theano.function([batch, comparison_sequences, targets], updates=updates, givens={})
 
         return
 
@@ -343,6 +350,68 @@ class RNN():
             self.params[name] = var
 
         return
+
+    def add_training_framework(self):
+        """
+        Add comparison layer and classifier and
+        corresponding biases to parameters of 
+        network to do comparison training.
+        """
+
+        # following Bowman, set size comparison layer
+        # to 3 times hidden_size
+        size_comparison_layer = self.hidden_size
+
+        # generate comparison matrix
+        self.comparison = theano.shared(
+                value = self.sigma_init*np.random.normal(
+                    2*self.output_size, size_comparison_layer
+                ).astype(theano.config.floatX),
+                name='comparison'
+        )
+
+        # classifier to compare two inputs
+        self.classifier = theano.shared(
+                value = self.sigma_init*np.random.normal(
+                    size_comparison_layer, 3
+                ).astype(theano.config.floatX),
+                name='classifier'
+        )
+
+        # biasses for classifier and comparison layer
+        self.b3 = theano.shared(
+                value = np.random.normal(
+                    0, self.sigma_init, size_comparison_layer
+                ).astype(theano.config.floatX),
+                name='b3'
+        )
+
+        self.b4 = theano.shared(
+                value = np.random.normal(
+                    0, self.sigma_init, size_comparison_layer
+                ).astype(theano.config.floatX),
+                name='b4'
+        )
+
+        return
+
+    def compute_weight_updates(self, gradients):
+        """
+        Compute the weight updates given the gradients,
+        using the adagrad parameters stored as attributes
+        of the network.
+        Return an ordered dictionary with updates for
+        all parameters.
+        """
+        new_params = OrderedDict()
+        for param in self.params:
+            new_histgrad = self.histgrad[param] + T.sqr(gradients[param])
+            new_param_value = self.params[param] - self.learning_rate*gradients[param]/(T.sqrt(new_histgrad) + 0.000001)
+            new_params[self.params[param]] = new_param_value
+            new_params[self.histgrad[param]] = new_histgrad
+
+        return new_params
+
 
     def set_histgrad(self):
         """
