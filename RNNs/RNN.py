@@ -72,7 +72,7 @@ class RNN():
         self.W = theano.shared(
                 value = np.random.normal(
                     0, sigma_init,
-                    (hidden_size, input_size)
+                    (hidden_size, output_size)
                 ).astype(theano.config.floatX),
                 name='W'
         )
@@ -88,7 +88,7 @@ class RNN():
         # bias for output layer
         self.b2 = theano.shared(
                 value = np.random.normal(
-                    0, sigma_init, input_size
+                    0, sigma_init, output_size
                 ).astype(theano.config.floatX),
                 name = 'b2'
         )
@@ -107,7 +107,7 @@ class RNN():
                 name = 'hidden_t'
         )
         output_t = theano.shared(
-                value = np.zeros(input_size).astype(theano.config.floatX),
+                value = np.zeros(output_size).astype(theano.config.floatX),
                 name = 'output_t'
         )
 
@@ -116,6 +116,7 @@ class RNN():
         # store dimensions of network
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.output_size = output_size
         
     def generate_forward_pass(self):
         """
@@ -159,6 +160,7 @@ class RNN():
     def generate_comparison_training1_function(self):
 
         # generate comparison matrix
+        self.comparison = 
 
         # generate softmax classifier on top
         
