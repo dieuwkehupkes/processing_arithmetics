@@ -134,6 +134,7 @@ class RNN():
         """
         # TODO make this description more elaborate
 
+        
         # set trainable parameters network
 
         # generate symbolic input variables
@@ -316,25 +317,24 @@ class RNN():
         softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
         return softmax
 
-    def set_network_parameters(self, word_embeddings, classifier):
+    def set_network_parameters(self, word_embeddings):
         """
-        If co training of word embeddings is desired,
-        add word-embeddings matrix to trainable parameters
-        of the network.
+        Set trainable parameters of the network.
         """
-
-        # TODO dit verschilt misschien ook per klasse?
-
         # store the parameters of the network
         self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
 
         if word_embeddings:
             self.params['embeddings'] = self.embeddings
 
-        if classifier:
-            self.params['classifier'] = self.classifier
+        return
 
-        # store history of gradients for adagrad
+    def set_histgrad(self):
+        """
+        Initialise historical grad for training with
+        adagrad.
+        """
+
         histgrad = []
         for param in self.params:
             init_grad = np.zeros_like(self.params[param].get_value(), dtype=theano.config.floatX)

@@ -98,7 +98,7 @@ class SRN(RNN):
         """
         raise NotImplementedError("Function not implemented yet")
 
-    def set_network_parameters(self, word_embeddings=None, classifier=None):
+    def set_network_parameters(self, word_embeddings=None):
         # TODO This method should be moved to superclass!
         """
         If co training of word embeddings is desired,
@@ -106,31 +106,7 @@ class SRN(RNN):
         of the network.
         """
 
-        # store the parameters of the network
-        self.params = OrderedDict([('U', self.U), ('V', self.V), ('W', self.W), ('b1', self.b1), ('b2', self.b2)])
-
-        if word_embeddings:
-            self.params['embeddings'] = self.embeddings
-
-        if classifier:
-            self.params['classifier'] = self.classifier
-
-        # store history of gradients for adagrad
-        histgrad = []
-        for param in self.params:
-            init_grad = np.zeros_like(self.params[param].get_value(), dtype=theano.config.floatX)
-            name = "hist_grad_" + param
-            histgrad.append((param, theano.shared(init_grad, name=name)))
-
-        self.histgrad = OrderedDict(histgrad)
+        # set default network parameters of network using superclass method
+        RNN.set_network_parameters(self, word_embeddings)
 
         return
-
-    def output(self):
-        output = self.activations['output_t'].get_value()
-        return output
-
-    def hidden(self):
-        hidden = self.activations['hidden_t'].get_value()
-        return hidden
-
