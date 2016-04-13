@@ -329,6 +329,19 @@ class RNN():
 
         return
 
+    def add_trainable_parameters(self, *args):
+        """
+        Add arguments in arg to trainable parameters
+        of the network.
+        :param args:    a tuple with a name (string) and a
+                        shared variable that is set as attribute
+                        of the network
+        """
+        for name, var in args:
+            self.params[name] = var
+
+        return
+
     def set_histgrad(self):
         """
         Initialise historical grad for training with
