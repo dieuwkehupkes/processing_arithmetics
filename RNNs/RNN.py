@@ -137,36 +137,41 @@ class RNN():
         """
         # TODO make this description more elaborate
 
-        
         # set trainable parameters network
+        self.set_network_parameters(self.train_embeddinsg)
+        self.set_histgrad()
 
         # generate symbolic input variables
+        batch = T.tensor3("batch", dtype=theano.config.floatX)
+        targets = T.matrix("targets", dtype=theano.config.floatX)
 
         # generate output sequences for input using forward function (symbolic)
+        output_sequences = self.return_outputs(batch)[-1]
 
-        # compare with target outputs, generate error signal
+        # compute mean squared error
+        error = T.sum(T.sqr(output_sequences - targets))
 
         # compute gradients
+        grads = T.grad(error, self.params.values())
+        gradients = OrderedDict(zip(self.params.keys(), grads))
 
         # compute weight updates and store in ordered dictionary
-        
-        # make givens dictionary
+        updates = self.compute_weight_updates(gradients)
 
-        self.train = self.training_step_standard([input_sequences], updates=updates, givens=givens)
-
-        raise NotImplementedError("implement function generate_standard_training_function")
+        # generate update function
+        self.training_step_standard = theano.function([batch, targets], updates=updates, givens={})
 
         return
 
-
     def generate_comparison_training1_function(self):
-
-        # add comparison layer and softmax classifier for training
-        self.add_training_framework()
-
+        """
+        Describe what this function does.
+        """
         # set trainable the trainable parameters for this configuration
         self.set_network_parameters(self.train_embeddings)
+        self.add_training_framework()
         self.add_trainable_parameters(('comparison', self.comparison), ('classifier', self.classifier), ('b3', self.b3), ('b4', self.b4))
+        self.set_histgrad()
 
         # generate symbolic variables for input of training function
         batch = T.tensor3("batch", dtype=theano.config.floatX)  # tensor 3dim
