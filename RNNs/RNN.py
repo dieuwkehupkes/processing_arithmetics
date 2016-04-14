@@ -206,7 +206,7 @@ class RNN():
 
         return
 
-    def standerd_training(self, inputs, targets, no_iterations, batchsize, word_embeddings=True):
+    def standerd_training(self, inputs, targets, no_iterations, batch_size, word_embeddings=True):
         """
         Train the network to store predict an output
         given an input sequence
@@ -220,27 +220,12 @@ class RNN():
 
         # iterate no_iterations times
         for iteration in xrange(0, no_iterations):
-            batch, targets = 
+            batches, targets = self.make_batches(batch_size, inputs, targets)
 
-            self.iteration(inputs, batchsize)
-
-        return
-
-    def iteration(self, batchsize, input_sequences):
-        """
-        Slice data in minibatches and perform one
-        training iteration.
-        :param input_sequences: The sequences we want to
-                                store in the network
-        """
-        batches, _ = self.make_batches(batchsize, input_sequences)
-
-        # loop over minibatches, update parameters
-        for batch in batches:
-            self.training_step_standard(batch) 
+            for batch, target in itertools.izip(batches, targets):
+                self.training_step_standard(batch, target)
 
         return
-
 
     def comparison_training1(self, input_sequences1, target_sequence, no_iterations, batch_size):
         """
