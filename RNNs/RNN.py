@@ -133,19 +133,20 @@ class RNN():
     def generate_standard_training_function(self):
         """
         Generate a function that allows standard training
-        of the network with batches and backpropagation
+        of the network with batches and backpropagation.
+        Create functions to print intermediate steps.
         """
         # TODO make this description more elaborate
 
         # set trainable parameters network
-        self.set_network_parameters(self.train_embeddinsg)
+        self.set_network_parameters(self.train_embeddings)
         self.set_histgrad()
 
         # generate symbolic input variables
         batch = T.tensor3("batch", dtype=theano.config.floatX)
         targets = T.matrix("targets", dtype=theano.config.floatX)
 
-        # generate output sequences for input using forward function (symbolic)
+        # generate output sequences for batch
         output_sequences = self.return_outputs(batch)[-1]
 
         # compute mean squared error
@@ -160,6 +161,9 @@ class RNN():
 
         # generate update function
         self.training_step_standard = theano.function([batch, targets], updates=updates, givens={})
+
+        # generate some functions to output intermediate behaviour
+        self.compute_error = theano.function([batch, targets], error)
 
         return
 
@@ -202,17 +206,41 @@ class RNN():
 
         return
 
-    def train(self, input_sequences, no_iterations, batchsize, some_other_params=None):
+    def standerd_training(self, inputs, targets, no_iterations, batchsize, word_embeddings=True):
         """
-        Train the network to store input_sequences
-        :param input_sequences  
-        :param no_iterations    
+        Train the network to store predict an output
+        given an input sequence
+        :param inputs:  sequence of input sequences
+        :type inputs: theano.tensor3
+        :param no_iterations:   number of iterations
+        :param word_embeddings: set to true to cotrain word embeddings
         """
-        # TODO write function description
+        # generate training function
+        self.generate_standard_training_function()
+
+        # iterate no_iterations times
         for iteration in xrange(0, no_iterations):
-            self.iteration(input_sequences, batchsize)
+            batch, targets = 
+
+            self.iteration(inputs, batchsize)
 
         return
+
+    def iteration(self, batchsize, input_sequences):
+        """
+        Slice data in minibatches and perform one
+        training iteration.
+        :param input_sequences: The sequences we want to
+                                store in the network
+        """
+        batches, _ = self.make_batches(batchsize, input_sequences)
+
+        # loop over minibatches, update parameters
+        for batch in batches:
+            self.training_step_standard(batch) 
+
+        return
+
 
     def comparison_training1(self, input_sequences1, target_sequence, no_iterations, batch_size):
         """
@@ -227,8 +255,7 @@ class RNN():
         # iterate for no_iterations steps
         for iteration in xrange(0, no_iterations):
             # create new batches
-            batches, indices = self.make_batches(input_sequences1, batch_size)
-            targets, _ = self.make_batches(target_sequence, indices)
+            batches, targets = self.make_batches(batch_size, input_sequences1, targets)
 
         for batch1, target in itertools.izip(batches, targets):
             # update weights for current batch
@@ -249,9 +276,7 @@ class RNN():
         # iterate for no_iterations steps
         for iteration in xrange(0, no_iterations):
             # create new batches
-            batches1, indices = self.make_batches(input_sequences1, batch_size)
-            batches2, _ = self.make_batches(input_sequences2, batch_size, indices=indices)
-            targets, _ = self.make_batches(target_sequence, batch_size, indices=indices)
+            batches1, batches2, targets = self.make_batches(batch_size, input_sequences1, input_sequences2, targets)
 
             for batch1, batch2, target in itertools.izip(batches1, batches2, targets):
                 # update weights for current batch
@@ -259,43 +284,34 @@ class RNN():
 
         return
 
-    def iteration(self, input_sequences, batchsize):
+    def make_batches(self, batchsize, *input_sequences):
         """
-        Slice data in minibatches and perform one
-        training iteration.
-        :param input_sequences: The sequences we want to
-                                store in the network
+        Make batches from input sequences. 
         """
-        batches, _ = self.make_batches(input_sequences, batchsize)
+        # TODO check if inputsequences have the same length
 
-        # loop over minibatches, update parameters
-        for batch in batches:
-            self.training_step_standard(batch) 
-
-        return
-
-    def make_batches(self, input_sequences, batchsize, **kwargs):
-        """
-        Make batches from input sequence. 
-        """
         # create indices for batches
         data_size = len(input_sequences)
         indices = kwargs.get(indices, np.random.permutation(data_size))
 
-        # create array for batches
         batches = []
-        to, fro = 0, batchsize
-        while fro <= data_size:
-            batch = input_sequences[indices[to:fro]]
-            batches.append(batch)
-            to = fro
-            fro += batchsize
+        for input_sequence in input_sequences:
+            # create array for batches
+            new_batches = []
+            to, fro = 0, batchsize
+            while fro <= data_size:
+                batch = input_sequence[indices[to:fro]]
+                new_batches.append(batch)
+                to = fro
+                fro += batchsize
 
-        # last batch
-        batch = input_sequences[to:]
-        batches.append(batch)
+            # last batch
+            batch = input_sequences[to:]
+            new_batches.append(batch)
 
-        return batches, indices
+            batches.append(new_batches)
+
+        return batches
     
     def prediction(self, output_vector):
         """
