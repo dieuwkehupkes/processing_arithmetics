@@ -1,5 +1,6 @@
 from keras.models import Sequential
 from keras.layers import SimpleRNN
+from keras.utils.visualize_util import plot
 import numpy as np
 
 # generate input data
@@ -11,18 +12,18 @@ E = np.array([0, 0, 1])
 null = np.array([0,0,0])
 
 # define padding function
-def padd(array, length=10):
+def pad(array, length=10):
     l = len(array)
     l2 = len(array[0])
     padded_array = np.concatenate((np.zeros((length-l,l2)), array))
     return padded_array
 
-s1 = padd(np.array([a,b]))
-s2 = padd(np.array([a,a,b,b]))
-s3 = padd(np.array([a,a,a,b,b,b]))
-s4 = padd(np.array([a,a,a,a,b,b,b,b]))
-s5 = padd(np.array([a,a,a,a,a,b,b,b,b,b]))
-s6 = padd(np.array([a,a,b,a,b,b]))
+s1 = pad(np.array([a,b]))
+s2 = pad(np.array([a,a,b,b]))
+s3 = pad(np.array([a,a,a,b,b,b]))
+s4 = pad(np.array([a,a,a,a,b,b,b,b]))
+s5 = pad(np.array([a,a,a,a,a,b,b,b,b,b]))
+s6 = pad(np.array([a,a,b,a,b,b]))
 
 # weight matrices
 U = np.array([[0.5, -5, -5], [-5, -1, 5],[-5, -5, -5]])
@@ -34,6 +35,7 @@ weights = [U, V, out]
 model = Sequential()
 model.add(SimpleRNN(3, input_dim=3, input_length=10, return_sequences=True, activation='relu', weights=weights))
 model.compile(loss='mean_squared_error', optimizer='sgd')
+# plot(model, to_file='model.png')
 
 outputs = model.predict(np.array([s5]), batch_size=1, verbose=1)
 print(outputs)
