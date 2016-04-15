@@ -19,10 +19,10 @@ seq1, l1 = np.array([a,b,d]), 'abd'
 seq2, l2 = np.array([f,b,i]), 'fbi'
 seq3, l3 = np.array([a, b, b, d]), 'abbd'
 seq4, l4 = np.array([f, b, b, i]), 'fbbi'
-seq5, l5 = np.array([a, b, b, d]), 'abbbd'
-seq6, l6 = np.array([f, b, b, i]), 'fbbbi'
-seq7, l7 = np.array([a, b, b, d]), 'abbbbd'
-seq8, l8 = np.array([f, b, b, i]), 'fbbbbi'
+seq5, l5 = np.array([a, b, b, b, d]), 'abbbd'
+seq6, l6 = np.array([f, b, b, b, i]), 'fbbbi'
+seq7, l7 = np.array([a, b, b, b, b, d]), 'abbbbd'
+seq8, l8 = np.array([f, b, b, b, b, i]), 'fbbbbi'
 
 
 training_sequence1 = np.array([seq1, seq2])
