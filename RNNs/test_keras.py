@@ -55,7 +55,7 @@ model.add(Dense(10, activation='softmax'))
 
 # compile model
 print('compile model')
-model.compile(loss='sparse_categorical_crossentropy', optimizer='adagrad')
+model.compile(loss='sparse_categorical_crossentropy', optimizer='adagrad', metrics=['accuracy'])
 
 # train model
 print('train model')
