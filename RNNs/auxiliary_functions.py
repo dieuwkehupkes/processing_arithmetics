@@ -7,6 +7,15 @@ classes.
 import numpy as np
 import theano.tensor as T
 
+# define padding function
+def pad(array, length):
+    l = len(array)
+    try:
+        l2 = len(array[0])
+        padded_array = np.concatenate((np.zeros((length-l,l2)), array))
+    except TypeError:
+        padded_array = np.concatenate((np.zeros((length-l,)), array))
+    return padded_array
 
 def piecewise_linear(input_vector):
     """
