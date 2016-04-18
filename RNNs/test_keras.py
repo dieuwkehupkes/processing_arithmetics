@@ -3,8 +3,9 @@ from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM
 from keras.utils.visualize_util import plot
 from auxiliary_functions import pad
 import numpy as np
-import matplotlib.pyplot as plt
 import theano
+import matplotlib.pyplot as plt
+from TrainingHistory import TrainingHistory
 
 # GENERATE TEST/TRAINING DATA
 
@@ -58,9 +59,11 @@ model.compile(loss='sparse_categorical_crossentropy', optimizer='adagrad')
 
 # train model
 print('train model')
-model.fit(x=training_sequence4, y=targets1, batch_size=2, nb_epoch=1000, verbose=0, shuffle=True, callbacks=[history])
+history = TrainingHistory()
+model.fit(x=training_sequence4, y=targets1, batch_size=2, nb_epoch=3000, verbose=0, shuffle=True, callbacks=[history])
 
-plt.plot(history.predictions[0], label='prediction')
+plt.plot(history.losses, label='loss')
+plt.show()
 
 outputs = model.predict_classes(training_sequence4, batch_size=2)
 print(outputs)
