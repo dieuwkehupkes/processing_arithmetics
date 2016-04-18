@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import SimpleRNN, Embedding, Dense
+from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM
 from keras.utils.visualize_util import plot
 from auxiliary_functions import pad
 import numpy as np
@@ -9,7 +9,7 @@ import theano
 # GENERATE TEST/TRAINING DATA
 
 # Lexicon
-a, b, c, d, e, f, g, h, i, j = np.identity(10, float)
+a, b, c, d, e, f, g, h, i, j = np.arange(10)
 
 # generate sequences, padd them to same length
 seq1, l1 = pad(np.array([a,b,d]), 6), 'abd'
@@ -36,93 +36,31 @@ training_options = {'1': (training_sequence1, seq1, seq2, l1, l2),
 
 
 # GENERATE NETWORK
+input_size = 10
+hidden_size = 8
+seq_length = 6
+classes = 10
 
 model = Sequential()
 # create layer that maps integer between 0-10 to vector of length 8
 # generates outputs of shape (batch_dim, 5, 8)
-# model.add(Dense(8, input_dim=10))
+model.add(Embedding(10, 8, input_length=5))
 
-# Add RNN, output dimensions
-model.add(SimpleRNN(output_dim=8, input_length=6, input_dim=10))
+# Add RNN
+model.add(GRU(8))
+
+# add softmax layer
 model.add(Dense(10, activation='softmax'))
 
 # compile model
 print('compile model')
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
-
-print('training sequences')
-print training_sequence4
-print targets4
-
-exit()
+model.compile(loss='sparse_categorical_crossentropy', optimizer='adagrad')
 
 # train model
 print('train model')
-model.fit(x=training_sequence4, y=targets4, batch_size=2, nb_epoch=20, verbose=2, shuffle=True)
+model.fit(x=training_sequence4, y=targets1, batch_size=2, nb_epoch=1000, verbose=0, shuffle=True, callbacks=[history])
 
+plt.plot(history.predictions[0], label='prediction')
 
-"""
-stepsize = 5
-batchsize = 2
-train_opt = '4'
-rounds = np.arange(0, 500, stepsize)
-error, error1, error2 = [], [], []
-prediction1, prediction2, prediction_rand = [], [], []
-
-training_seq, test_seq1, test_seq2, label1, label2 = training_options[train_opt]
-
-test_seqs = np.array([test_seq1, test_seq2])
-
-for round in rounds:
-
-    rand_sequence = [lexicon[k] for k in np.random.randint(0, 10, size=12)]
-
-    err1, err2 = network.compute_error(np.array(test_seqs))
-    error1.append(err1)
-    error2.append(err2)
-    error.append((err1 + err2)/2)
-
-    # print "error, batch", err
-    # raw_input()
-    pred_e1, pred_e2 = network.prediction_error_diff(np.array(test_seqs))
-    prediction1.append(pred_e1)
-    prediction2.append(pred_e2)
-    
-    pred1, pred2 = network.predictions(np.array(test_seqs))
-    true_pred1, true_pred2 = network.target_predictions(np.array(test_seqs))
-    # print "\nprediction sequence 1", pred1, "\ttrue prediction sequence 1", true_pred1
-    # print "prediction sequence 2", pred2, "\ttrue prediction sequence 2", true_pred2
-    # raw_input()
-    # print "prediction error 1", pred1
-    # print "prediction error 2", pred2
-    # raw_input()
-    err = network.compute_error(np.array([test_seq1, test_seq2]))
-
-    # pred1 = network.prediction_error_diff(np.array([test_seq1]))
-    # pred2 = network.prediction_error_diff(np.array([test_seq2]))
-    # prediction1.append(pred1)
-    # prediction2.append(pred2)
-    pred = network.prediction_error_diff(np.array([test_seq1, test_seq2]))
-
-    # print "\ninput map: ", network.print_input_map(test_seqs)
-    print "network predictions: ", network.print_predictions(test_seqs)
-    print "target predictions: ", network.print_target_predictions(test_seqs)
-    raw_input()
-
-    network.train(training_seq, stepsize, batchsize)
-
-print "\nSSE:", error[-1]
-
-print "prediction rate sequence 1:", prediction1[-1]
-print "prediction rate sequence 2:", prediction2[-1]
-
-plt.plot(rounds, error1, label=label1+" cross entropy")
-plt.plot(rounds, error2, label=label2+" cross entropy")
-# plt.plot(rounds, prediction1, label=label1 + " prediction error")
-# plt.plot(rounds, prediction2, label=label2 + " prediction error")
-plt.legend(loc=2)
-# plt.ylim(ymin=0)
-plt.xlabel("number of training rounds")
-plt.ylabel("sum squared error/prediction error")
-plt.show()
-"""
+outputs = model.predict_classes(training_sequence4, batch_size=2)
+print(outputs)
