@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+\usepackage[english]{babel}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage[round,authoryear]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{microtype}
+
+\author{Dieuwke Hupkes}
+\title{Experiments}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Datasets}
+
+I define the following set of languages:
+
+\begin{table}[!ht]
+\begin{tabular}{|lccl|}
+    \hline
+    \textbf{Name} & \textit{Numeric leaves} & \textit{Tree depth} & \textit{Example}\\
+    $L_2$ & 2 & 1 & ($x_1$ op $x_1$)\\
+    $L_3$ & 3 & 2 & (($x_1$ op $x_2$) op $x_3$)\\
+    $L_4$ & 4 & 3 & (($x_1$ op $x_2$) op ($x_3$ op $x_4$))\\
+    \dots& & &\\
+    \hline
+\end{tabular}
+\end{table}
+
+\noindent Where $x_i\in\{-19,19\}$, and op$\in\{+,-\}$. The meaning $y$ of e sentences is the result of the arithmetic expression expressed by the languag. We restrict the languages to include only expressions such that $y\in\{-60,60\}$.\\
+
+\noindent The datasets the networks are trained on are subsets of the languages defined above:
+
+\begin{table}[ht!]
+\begin{tabular}{llll}
+    \textbf{Name} & \textit{Restriction} & \textit{Example} &\\
+    $L_i+$ & op $==+$ & $(\ldots(x_1 + x_2) + \dots x_i)$ & No structural ambiguity\\
+    $L_i$rb & only right branching trees & $(\ldots(x_1$ op $x_2)$ op $x_3)$ op $\ldots x_i)$ & No structural ambiguity \\
+    $L_i$lb & only left branching trees & $(x_1$ op $(x_2$ op ($\ldots$ op $(x_{i-1}$ op $x_i)\ldots)$ & No structural ambiguity \\
+
+\end{tabular}
+\end{table}
+
+\section{Architectures}
+
+Put pictures of the 4 architectures (use code Sara)
+
+\section{Experiments}
+
+I will start by running a sequence of experiments to determine if the networks can learn to compose the meaning of sentences from the structurally non ambiguous languages $L_2$ and $L_3+$. I will compare the results of different architectures on these languages, starting with A1 and A2 and then expanding to A3 and A4.
+
+\begin{table}[!ht]
+\begin{tabular}{|llcccll|}
+    \hline
+    Language & Architecture & $N_{hidden}$ & $N_{out}$ & $N_{in}$ & Embeddings & co-training\\
+    $L_2$ & A1 & ? & ? & 2 & random & no\\
+    $L_2$ & A1 & ? & ? & 2 & random & yes\\
+    $L_2$ & A1 & ? & ? & 10 & random & yes\\
+    $L_2$ & A1 & ? & ? & 10 & random & no\\
+    $L_3+$ & A1 & ? & ? & 2 & random & no\\
+    $L_3+$ & A1 & ? & ? & 2 & random & yes\\
+    $L_3+$ & A1 & ? & ? & 10 & random & yes\\
+    $L_3+$ & A1 & ? & ? & 10 & random & no\\
+\hline
+\end{tabular}
+
+\end{table}
+
+% \bibliography{../bib.bib}
+
+\end{document}
