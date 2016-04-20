@@ -1,6 +1,7 @@
 """
-Collection of auxiliary functions used in different
-classes.
+Collection of auxiliary functions.
+
+Describe functions?
 """
 
 
@@ -12,29 +13,53 @@ def pad(array, length):
     l = len(array)
     try:
         l2 = len(array[0])
+        print "length", l2
         padded_array = np.concatenate((np.zeros((length-l,l2)), array))
     except TypeError:
-        padded_array = np.concatenate((np.zeros((length-l,)), array))
+        try:
+            padded_array = np.concatenate((np.zeros((length-l,)), array))
+        except ValueError:
+            raise ValueError("Array cannot be padded to shorter length")
+    except ValueError:
+        raise ValueError("Array cannot be padded to shorter length")
     return padded_array
 
-def piecewise_linear(input_vector):
+
+def generate_embeddings_matrix(input_dim, input_size, encoding):
     """
-    For every element in input_vector, return
-    f(net)  = net   iff 0 <= net <= 1
-            = 0     iff net < 0 
-            = 1     iff net > 1
+    Generate matrix that maps integers representing one-hot
+    vectors to word-embeddings.
+    :param input_length:    size of the input layer
+    :param input_dim:       dimensionality of the one-hot vectors 
+    :param encoding:        gray or random or None
+    More elaborate description of how this works?
     """
-    clipped = T.clip(input_vector, 0, 1)
-    return clipped
+    # if encoding == random, let keras generate the embedding matrix
+    if encoding == 'random':
+        return None
+    # if encoding == None, generate matrix that maps
+    # input to one-hot vectors (this is only possible when
+    # input_size == input_dim
+
+    if encoding is None:
+        assert input_size == input_dim, "Identity encoding not possible if input size does not equal input dimension" 
+        return np.identity(input_size)
+
+    # return GrayCode, raise exception if input_size is too small
+    if encoding == 'Gray' or encoding == 'gray':
+        return grayCode(input_dim, input_size)
 
 
-def softmax_tensor(input_tensor):
-    """
-    Softmax function that can be applied to a 
-    three dimensional tensor.
-    """
-    d0, d1, d2 = input_tensor.shape
-    reshaped = T.reshape(input_tensor, (d0*d1, d2))
-    softmax_reshaped = T.nnet.softmax(reshaped)
-    softmax = T.reshape(softmax_reshaped, newshape=input_tensor.shape)
-    return softmax
+def grayCode(n, length):
+    grays = [[0.0],[1.0]]
+    while len(grays) < n+1:
+        pGrays = grays[:]
+        grays = [[0.0]+gray for gray in pGrays]+[[1.0]+gray for gray in pGrays[::-1]]
+
+    # pad to right length
+    gray_code = np.array([pad(gray, length) for gray in grays])
+    return gray_code
+
+if __name__ == '__main__':
+    print grayCode(10, 7)
+
