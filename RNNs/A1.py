@@ -1,12 +1,13 @@
 # imports
 from keras.models import Graph
-from keras.layers import SimpleRnn, Embedding, Dense, GRU, LSTM
+from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM
 from TrainingHistory import TrainingHistory
 from auxiliary_functions import generate_embeddings_matrix
+from generate_training_data import generate_training_data
 import matplotlib.pyplot as plt
 
 # network details
-architecture        = A1            # Trainings architecture
+architecture        = 'A1'            # Trainings architecture (change this)
 recurrent_layer     = GRU           # options: SimpleRNN, GRU, LSTM
 size_hidden         = 10            # size of the hidden layer
 size_compare        = 10            # size of comparison layer
@@ -28,18 +29,20 @@ batch_size          = 100           # batchsize during training
 validation_split    = 0.1           # fraction of data to use for testing
 verbose             = 0             # verbosity mode
 optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
-# provide a dictionary that maps languages (\in L_i, L_i+, L_i-, L_irb, L_ilb for 1<i<8)
-# to number of sentences to generate from that language
+# provide a dictionary that maps languages to number of sentences to
+# generate for that language. 
+# languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 languages           = {}            # dict L -> N
 
 # GENERATE TRAINING DATA
 # TODO write a function to generate this
-X_train             = None          # inputs, numpy array
-Y_train             = None          # target, numpy array
+X_train, Y_train = generate_training_data(languages, architecture)
 
 # Generate embeddings matrix
+# TODO change this such that it also includes brackets and operators
 W_embeddings = generate_embeddings_matrix(input_dim, input_size, encoding)
 
+exit()
 # Generate model
 history, model = trainings_architecture()
 
@@ -68,10 +71,3 @@ def A1():
     model.fit({'input':X_train, 'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, callbacks=[history], validation_split=validation_split, shuffle=True)
 
     return history, model
-
-
-def A2():
-    # Create model
-    model = Graph()
-    model.add_input(name='input', input_shape(1,), dtype='int')     # input layer
-    model.add_node(Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=embeddings
