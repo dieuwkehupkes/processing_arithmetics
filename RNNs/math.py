@@ -76,7 +76,6 @@ class mathTreebank():
     def __str__(self):
         """
         """
-        raise NotImplementedError("implement string function")
 
 
 class mathExpression(Tree):
@@ -88,12 +87,16 @@ class mathExpression(Tree):
             except IndexError:
                 Tree.__init__(self, 'operator', [random.choice(operators)])
         else:
-            left = random.randint(1, length-1)
-            right = length - left
-            children = [mathExpression(l,operators, digits) for l in [left,right]]
+            if branching == 'left':
+                left, right = length-1, 1
+            elif branching == 'right':
+                left, right = 1, length-1
+            else:
+                left = random.randint(1, length-1)
+                right = length - left
+            children = [mathExpression(l,operators, digits, branching) for l in [left,right]]
             operator = random.choice(operators)
             children.insert(1, mathExpression(1, [operator], []))
-            # children.insert(1,Tree('operator',[operator]))
             Tree.__init__(self,operator,children)
 
     def solve(self):
