@@ -50,14 +50,17 @@ def generate_embeddings_matrix(input_dim, input_size, encoding):
         return grayCode(input_dim, input_size)
 
 
-def grayCode(n, length):
+def grayCode(n, length=None):
     grays = [[0.0],[1.0]]
     while len(grays) < n+1:
         pGrays = grays[:]
         grays = [[0.0]+gray for gray in pGrays]+[[1.0]+gray for gray in pGrays[::-1]]
 
     # pad to right length
-    gray_code = np.array([pad(gray, length) for gray in grays])
+    if length:
+        gray_code = [pad(gray, length) for gray in grays]
+    else:
+        gray_code = [gray for gray in grays]
     return gray_code
 
 if __name__ == '__main__':
