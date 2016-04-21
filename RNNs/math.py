@@ -58,12 +58,15 @@ class mathTreebank():
         :param lengths:         number of numeric leaves of expressions
         """
         examples = []
+        digits = [str(i) for i in digits]
         while len(examples) < n:
-            l = random.choice(self.lengths)
+            l = random.choice(lengths)
             tree = mathExpression(l, operators, digits, branching=branching)
             answer = tree.solve()
-            if answer is None: continue
-            if str(answer) not in self.digits: continue
+            if answer is None:
+                continue
+            if not (min <= answer <= max):
+                continue
             examples.append((tree,answer))
         return examples
 
@@ -71,11 +74,19 @@ class mathTreebank():
         """
         Add examples to treebank.
         """
-        self.examples.append(self.generateExamples(operators=operators, digits=digits, branching=branching, min=min, max=max, n=n, lengths=lengths))
+        self.examples += self.generateExamples(operators=operators, digits=digits, branching=branching, min=min, max=max, n=n, lengths=lengths)
 
-    def __str__(self):
+    def write_to_file(self, filename):
         """
+        Generate a file containing the treebank.
+        Every tree element is separated by spaces, a tab
+        separates the answer from the sentence. E.g
+        ( ( 5 + 6 ) - 3 )   8
         """
+        f = open(filename, 'wb')
+        for example in self.examples:
+            f.write(str(example[0])+'\t'+str(example[1])+'\n')
+        f.close()
 
 
 class mathExpression(Tree):
@@ -130,3 +141,6 @@ def install(thetaFile, kind='RNN', d=0):
 
 digits = [str(i) for i in np.arange(-5,5)]
 ops = ['+','-']
+m = mathTreebank()
+m.addExamples(n=5, lengths=[5], branching='left')
+m.write_to_file('treebank')
