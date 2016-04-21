@@ -43,7 +43,7 @@ def generate_training_data(languages, architecture):
         X.append(input_seq)
         Y.append(answer)
 
-    return X, Y
+    return np.array(X), np.array(Y)
 
 def parse_language(language_str):
     """
