@@ -43,36 +43,44 @@ class TopNode():
         return 'TopNode: '+str(self.root)
 
 class mathTreebank():
-    def __init__(self, operators, digits, n=1000, lengths=range(1,6)):
-        self.lengths = lengths
-        self.n = n
-        self.operators = operators
-        self.grammar = {operator:{'(digit, '+operator+', digit)':5} for operator in self.operators+['is']}
-        self.digits = [str(i) for i in digits]
+    def __init__(self):
+        self.examples = []      # create attribute containing examples of the treebank
 
-    def getVoc(self):
-        return self.digits+self.operators+['UNKNOWN']       #,'is']
-
-    def getGrammar(self):
-        return self.grammar
-
-    def getExamples(self, n=0, operators = [],digits=[]):
-        if n == 0 : n = self.n
-        if operators == []: operators = self.operators
-        if digits == []: digits = self.digits
+    def generateExamples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+        """
+        :param operators:       operators to be used in
+                                arithmetic expressions \in {+,-,\,*}
+        :param digits:          range with digits (list)
+        :param branching:       set to 'left' or 'right' to restrict branching of trees
+        :param n:               number of sentences in tree bank
+        :param min:             min outcome of the composition function
+        :param max:             max outcome of the composition function
+        :param lengths:         number of numeric leaves of expressions
+        """
         examples = []
         while len(examples) < n:
             l = random.choice(self.lengths)
-            tree = mathExpression(l,operators, digits)
+            tree = mathExpression(l, operators, digits, branching=branching)
             answer = tree.solve()
             if answer is None: continue
             if str(answer) not in self.digits: continue
             examples.append((tree,answer))
         return examples
 
+    def addExamples(self, operators=['+','-'], digits=np.arange(-19,19), branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+        """
+        Add examples to treebank.
+        """
+        self.examples.append(self.generateExamples(operators=operators, digits=digits, branching=branching, min=min, max=max, n=n, lengths=lengths))
+
+    def __str__(self):
+        """
+        """
+        raise NotImplementedError("implement string function")
+
 
 class mathExpression(Tree):
-    def __init__(self,length, operators, digits):
+    def __init__(self,length, operators, digits, branching=None):
         if length < 1: print 'whatup?'
         if length == 1:
             Tree.__init__(self,'digit',[random.choice(digits)])
@@ -107,6 +115,21 @@ class mathExpression(Tree):
                 return children[0] % children[1]
             else:
                 raise Exception('Cannot deal with operator '+str(operator))
+
+    def solve2(self):
+        """
+        Evaluate the expression
+        """
+        return eval(self.__str__())
+
+    def __str__(self):
+        """
+        Return string representation of tree.
+        """
+        if len(self) > 1:
+            return '( '+' '.join([str(child) for child in self])+' )'
+        else:
+          return self[0]
 
 
 """
