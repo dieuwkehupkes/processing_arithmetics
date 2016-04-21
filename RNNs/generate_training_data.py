@@ -5,18 +5,8 @@ arithmetic task.
 from arithmetics import mathTreebank
 from arithmetics import mathExpression
 import re
+import numpy as np
 
-def generate_treebank(languages, architecture):
-    """
-    Generate training examples.
-    :param language_dict:   dictionary mapping languages to number of samples
-    """
-    treebank = mathTreebank()
-    for name, N in languages.items():
-        lengths, operators, branching = parse_language(name)
-        treebank.addExamples(operators, branching=branching, lengths=lengths, n=N) 
-
-    return treebank
 
 def generate_training_data(languages, architecture):
     """
@@ -31,7 +21,7 @@ def generate_training_data(languages, architecture):
     operators = [treebank.operators]
     digits.sort()
     N = len(digits) + len(operators) + 2
-    d_map = zip(digits+treebank + ['(',')'], np.arange(1, N+1))
+    d_map = zip(digits+operators+ ['(',')'], np.arange(1, N+1))
 
     # create empty input and targets
     X, Y = [], []
@@ -44,6 +34,18 @@ def generate_training_data(languages, architecture):
         Y.append(answer)
 
     return np.array(X), np.array(Y)
+
+def generate_treebank(languages, architecture):
+    """
+    Generate training examples.
+    :param language_dict:   dictionary mapping languages to number of samples
+    """
+    treebank = mathTreebank()
+    for name, N in languages.items():
+        lengths, operators, branching = parse_language(name)
+        treebank.addExamples(operators, branching=branching, lengths=lengths, n=N) 
+
+    return treebank
 
 def parse_language(language_str):
     """
