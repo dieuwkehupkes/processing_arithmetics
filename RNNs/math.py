@@ -83,40 +83,20 @@ class mathExpression(Tree):
     def __init__(self,length, operators, digits, branching=None):
         if length < 1: print 'whatup?'
         if length == 1:
-            Tree.__init__(self,'digit',[random.choice(digits)])
+            try:
+                Tree.__init__(self,'digit',[random.choice(digits)])
+            except IndexError:
+                Tree.__init__(self, 'operator', [random.choice(operators)])
         else:
             left = random.randint(1, length-1)
             right = length - left
             children = [mathExpression(l,operators, digits) for l in [left,right]]
             operator = random.choice(operators)
-            children.insert(1,Tree('operator',[operator]))
+            children.insert(1, mathExpression(1, [operator], []))
+            # children.insert(1,Tree('operator',[operator]))
             Tree.__init__(self,operator,children)
 
     def solve(self):
-        if self.height() == 2:
-            try: return int(self[0])
-            except DeprecationWarning:
-                print self
-                sys.exit()
-        else:
-            children = [c.solve() for c in [self[0],self[2]]]
-            if None in children: return None
-            operator = self.label()
-            if operator == '+':
-                return children[0]+children[1]
-            elif operator == '-':
-                return children[0]-children[1]
-            elif operator == 'times':
-                return children[0]*children[1]
-            elif operator == 'div':
-                try: return children[0]//children[1]     # floor division
-                except: return None
-            elif operator == 'modulo':
-                return children[0] % children[1]
-            else:
-                raise Exception('Cannot deal with operator '+str(operator))
-
-    def solve2(self):
         """
         Evaluate the expression
         """
@@ -144,3 +124,6 @@ def install(thetaFile, kind='RNN', d=0):
     if initWordsBin: print 'initialize words with Gray code'
     print 'load theta..', thetaFile
 """
+
+digits = [str(i) for i in np.arange(-5,5)]
+ops = ['+','-']
