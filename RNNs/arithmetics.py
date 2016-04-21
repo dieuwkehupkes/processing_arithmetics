@@ -46,7 +46,9 @@ class TopNode():
 
 class mathTreebank():
     def __init__(self):
-        self.examples = []      # create attribute containing examples of the treebank
+        self.examples = []          # attribute containing examples of the treebank
+        self.operators = set([])    # attribute containing operators in the treebank
+        self.digits = set([])       # digits in the treebank
 
     def generateExamples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
         """
@@ -61,6 +63,8 @@ class mathTreebank():
         """
         examples = []
         digits = [str(i) for i in digits]
+        self.digits.union(set(digits))
+        self.operators.union(set(operators))
         while len(examples) < n:
             l = random.choice(lengths)
             tree = mathExpression(l, operators, digits, branching=branching)
