@@ -51,18 +51,6 @@ model.add_node(Dense(1, activation=output_activation), name='output', input='com
 model.compile(loss={'output':'mean_squared_error'}, metrics=['accuracy'], optimizer=optimizer)
 model.summary()
 
-# for layer in model.layers:
-#     try:
-#         print(layer.get_config())
-#         print(layer.get_weights()[0].shape)
-#         print(layer.get_weights())
-#         print('\n')
-#     except:
-#         print "next"
-#         print layer.get_config()
-# 
-# exit()
-
 # train the model
 history = TrainingHistory()
 model.fit({'input':X_train, 'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_split=validation_split, shuffle=True)
