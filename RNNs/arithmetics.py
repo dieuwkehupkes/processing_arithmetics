@@ -54,7 +54,7 @@ class mathTreebank():
         """
         f = open(filename, 'wb')
         for expression, answer in self.examples:
-            f.write(str(expression)+'\t'+str(answer)+'\n')
+            f.write(str(expression)+'\t'+str(example[1])+'\n')
         f.close()
 
 
@@ -113,4 +113,4 @@ if __name__ == '__main__':
     ops = ['+','-']
     m = mathTreebank()
     m.addExamples(n=5, lengths=[5], branching='left')
-m.write_to_file('treebank')
+    m.write_to_file('treebank')
