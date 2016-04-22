@@ -17,11 +17,13 @@ def generate_training_data(languages, architecture):
     treebank = generate_treebank(languages, architecture)
 
     # create map from digits and operators to integers
-    digits = [treebank.digits]
-    operators = [treebank.operators]
+    digits = list(treebank.digits)
+    N_digits = len(digits)
+    operators = list(treebank.operators)
+    N_operators = len(operators)
     digits.sort()
-    N = len(digits) + len(operators) + 2
-    d_map = zip(digits+operators+ ['(',')'], np.arange(1, N+1))
+    N = N_digits + N_operators + 2
+    d_map = dict(zip(digits+operators+['(',')'], np.arange(1, N+1)))
 
     # create empty input and targets
     X, Y = [], []
@@ -29,11 +31,12 @@ def generate_training_data(languages, architecture):
     # loop over examples
     for expression, answer in treebank.examples:
         input_seq = [d_map[i] for i in str(expression).split()]
-        answer = d_map[str(answer)]
+        answer = str(answer)
         X.append(input_seq)
         Y.append(answer)
 
-    return np.array(X), np.array(Y)
+    return np.array(X), np.array(Y), N_digits, N_operators
+
 
 def generate_treebank(languages, architecture):
     """
