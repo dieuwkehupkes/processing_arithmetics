@@ -15,16 +15,16 @@ output_activation   = 'linear'      # activation function of output layer
 
 # INPUT
 embeddings          = True          # set to true for cotraining of embeddings
-encoding            = 'random'      # options: random, gray
+encoding            = 'Gray'        # options: random, gray
 mask_zero           = True          # set to true to apply masking to input
-input_size          = 2             # input dimensionality
+input_size          = 6             # input dimensionality
 # Compute input dimension and input length from training data
 
 # TRAINING
 nb_epoch            = 500           # number of iterations
 batch_size          = 20            # batchsize during training
 validation_split    = 0.1           # fraction of data to use for testing
-verbose             = 1             # verbosity mode
+verbose             = 0             # verbosity mode
 optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
 # provide a dictionary that maps languages to number of sentences to
 # generate for that language. 
@@ -50,6 +50,18 @@ model.add_node(Dense(1, activation=output_activation), name='output', input='com
 # compile model
 model.compile(loss={'output':'mean_squared_error'}, metrics=['accuracy'], optimizer=optimizer)
 model.summary()
+
+# for layer in model.layers:
+#     try:
+#         print(layer.get_config())
+#         print(layer.get_weights()[0].shape)
+#         print(layer.get_weights())
+#         print('\n')
+#     except:
+#         print "next"
+#         print layer.get_config()
+# 
+# exit()
 
 # train the model
 history = TrainingHistory()

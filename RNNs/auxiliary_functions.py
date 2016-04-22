@@ -44,11 +44,11 @@ def generate_embeddings_matrix(N_digits, N_operators, input_size, encoding):
 
     if encoding is None:
         assert input_size == N_digits + N_operators + 2, "Identity encoding not possible if input size does not equal input dimension" 
-        return np.identity(input_size)
+        return [np.identity(input_size)]
 
     # return GrayCode, raise exception if input_size is too small
     if encoding == 'Gray' or encoding == 'gray':
-        return grayEmbeddings(N_digits, N_operators, input_size)
+        return [grayEmbeddings(N_digits, N_operators, input_size)]
 
 
 def grayEmbeddings(N_digits, N_operators, input_size):
@@ -63,7 +63,7 @@ def grayEmbeddings(N_digits, N_operators, input_size):
     # extend with random vectors for operators and brackets
     grayDigits.extend([np.random.random_sample(input_size)*.2-.1 for i in xrange(N_operators+2)])
 
-    return grayDigits
+    return np.array(grayDigits)
 
 
 def grayCode(n, length=None):
@@ -72,11 +72,14 @@ def grayCode(n, length=None):
         pGrays = grays[:]
         grays = [[0.0]+gray for gray in pGrays]+[[1.0]+gray for gray in pGrays[::-1]]
 
+    # reduce to length n
+    grays = grays[1:n+2]
+
     # pad to right length
     if length:
-        gray_code = [pad(gray, length) for gray in grays[1:]]   # skip first
+        gray_code = [pad(gray, length) for gray in grays]
     else:
-        gray_code = [gray for gray in grays[1:]]                # skip first
+        gray_code = [gray for gray in grays]
     return gray_code
 
 if __name__ == '__main__':
