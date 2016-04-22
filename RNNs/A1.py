@@ -21,26 +21,22 @@ input_size          = 2             # input dimensionality
 # Compute input dimension and input length from training data
 
 # TRAINING
-nb_epoch            = 5000          # number of iterations
-batch_size          = 20           # batchsize during training
+nb_epoch            = 500           # number of iterations
+batch_size          = 20            # batchsize during training
 validation_split    = 0.1           # fraction of data to use for testing
 verbose             = 1             # verbosity mode
 optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
 # provide a dictionary that maps languages to number of sentences to
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
-languages           = {'L_2':1000}            # dict L -> N
+languages           = {'L_2':5, 'L_3':5}            # dict L -> N
 
 # GENERATE TRAINING DATA
 X_train, Y_train, N_digits, N_operators = generate_training_data(languages, architecture)
 
 # Generate embeddings matrix
-# TODO change this such that it also includes brackets and operators
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
 input_dim = N_operators + N_digits + 3      # TODO WHY?????
-print input_dim
-
-# TODO write function to compute this
 input_length = len(X_train[0])
 
 # Create model
