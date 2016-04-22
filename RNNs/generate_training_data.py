@@ -4,6 +4,7 @@ arithmetic task.
 """
 from arithmetics import mathTreebank
 from arithmetics import mathExpression
+import keras.preprocessing.sequence
 import re
 import numpy as np
 
@@ -34,6 +35,9 @@ def generate_training_data(languages, architecture):
         answer = str(answer)
         X.append(input_seq)
         Y.append(answer)
+
+    # pad sequences to have the same length
+    keras.preprocessing.sequence.pad_sequences(X, dtype='int32')
 
     return np.array(X), np.array(Y), N_digits, N_operators
 
