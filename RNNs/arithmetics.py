@@ -26,8 +26,8 @@ class mathTreebank():
         """
         examples = []
         digits = [str(i) for i in digits]
-        self.digits.union(set(digits))
-        self.operators.union(set(operators))
+        self.digits = self.digits.union(set(digits))
+        self.operators = self.operators.union(set(operators))
         while len(examples) < n:
             l = random.choice(lengths)
             tree = mathExpression(l, operators, digits, branching=branching)
