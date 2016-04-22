@@ -53,8 +53,8 @@ class mathTreebank():
         ( ( 5 + 6 ) - 3 )   8
         """
         f = open(filename, 'wb')
-        for example in self.examples:
-            f.write(str(example[0])+'\t'+str(example[1])+'\n')
+        for expression, answer in self.examples:
+            f.write(str(expression)+'\t'+str(answer)+'\n')
         f.close()
 
 
@@ -108,8 +108,9 @@ def install(thetaFile, kind='RNN', d=0):
     print 'load theta..', thetaFile
 """
 
-digits = [str(i) for i in np.arange(-5,5)]
-ops = ['+','-']
-m = mathTreebank()
-m.addExamples(n=5, lengths=[5], branching='left')
+if __name__ == '__main__':
+    digits = [str(i) for i in np.arange(-5,5)]
+    ops = ['+','-']
+    m = mathTreebank()
+    m.addExamples(n=5, lengths=[5], branching='left')
 m.write_to_file('treebank')
