@@ -25,12 +25,13 @@ def pad(array, length):
     return padded_array
 
 
-def generate_embeddings_matrix(input_dim, input_size, encoding):
+def generate_embeddings_matrix(N_digits, N_operators, input_size, encoding):
     """
     Generate matrix that maps integers representing one-hot
     vectors to word-embeddings.
-    :param input_length:    size of the input layer
-    :param input_dim:       dimensionality of the one-hot vectors 
+    :param N_digits:        number of distinct digits in input
+    :param N_operators:     number of operators
+    :param input_size:      dimensionality of embeddings
     :param encoding:        gray or random or None
     More elaborate description of how this works?
     """
@@ -42,12 +43,27 @@ def generate_embeddings_matrix(input_dim, input_size, encoding):
     # input_size == input_dim
 
     if encoding is None:
-        assert input_size == input_dim, "Identity encoding not possible if input size does not equal input dimension" 
+        assert input_size == N_digits + N_operators + 2, "Identity encoding not possible if input size does not equal input dimension" 
         return np.identity(input_size)
 
     # return GrayCode, raise exception if input_size is too small
     if encoding == 'Gray' or encoding == 'gray':
-        return grayCode(input_dim, input_size)
+        return grayEmbeddings(N_digits, N_operators, input_size)
+
+
+def grayEmbeddings(N_digits, N_operators, input_size):
+    """
+    Generate embeddings where numbers are encoded with
+    reflected binary code. both embeddings and brackets are
+    randomly initialised with values between -0.1 and 0.1
+    """
+    # generate graycode for digits
+    grayDigits = grayCode(N_digits, input_size)
+
+    # extend with random vectors for operators and brackets
+    grayDigits.extend([np.random.random_sample(input_size)*.2-.1 for i in xrange(N_operators+2)])
+
+    return grayDigits
 
 
 def grayCode(n, length=None):
@@ -58,9 +74,9 @@ def grayCode(n, length=None):
 
     # pad to right length
     if length:
-        gray_code = [pad(gray, length) for gray in grays]
+        gray_code = [pad(gray, length) for gray in grays[1:]]   # skip first
     else:
-        gray_code = [gray for gray in grays]
+        gray_code = [gray for gray in grays[1:]]                # skip first
     return gray_code
 
 if __name__ == '__main__':
