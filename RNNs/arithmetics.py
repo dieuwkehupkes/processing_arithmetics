@@ -39,7 +39,7 @@ class mathTreebank():
             examples.append((tree,answer))
         return examples
 
-    def addExamples(self, operators=['+','-'], digits=np.arange(-19,19), branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+    def addExamples(self, operators=['+','-'], digits=np.arange(-19,20), branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
         """
         Add examples to treebank.
         """
