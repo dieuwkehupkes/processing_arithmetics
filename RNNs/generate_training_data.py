@@ -24,7 +24,7 @@ def generate_training_data(languages, architecture):
     N_operators = len(operators)
     digits.sort()
     N = N_digits + N_operators + 2
-    d_map = dict(zip(digits+operators+['(',')'], np.arange(1, N+1)))
+    d_map = dict(zip(digits+operators+['(',')'], np.arange(0, N)))
 
     # create empty input and targets
     X, Y = [], []
