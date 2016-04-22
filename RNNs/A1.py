@@ -15,7 +15,7 @@ output_activation   = 'linear'      # activation function of output layer
 
 # INPUT
 embeddings          = True          # set to true for cotraining of embeddings
-encoding            = 'Gray'        # options: random, gray
+encoding            = 'gray'        # options: random, gray
 mask_zero           = True          # set to true to apply masking to input
 input_size          = 6             # input dimensionality
 # Compute input dimension and input length from training data
@@ -36,7 +36,7 @@ X_train, Y_train, N_digits, N_operators = generate_training_data(languages, arch
 
 # Generate embeddings matrix
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
-input_dim = N_operators + N_digits + 3      # TODO WHY?????
+input_dim = N_operators + N_digits + 2
 input_length = len(X_train[0])
 
 # Create model
