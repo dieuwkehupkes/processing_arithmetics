@@ -73,7 +73,7 @@ def grayCode(n, length=None):
         grays = [[0.0]+gray for gray in pGrays]+[[1.0]+gray for gray in pGrays[::-1]]
 
     # reduce to length n
-    grays = grays[1:n+2]
+    grays = grays[1:n+1]
 
     # pad to right length
     if length:
