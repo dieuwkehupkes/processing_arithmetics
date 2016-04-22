@@ -41,7 +41,7 @@ input_dim = N_operators + N_digits + 3      # TODO WHY?????
 print input_dim
 
 # TODO write function to compute this
-input_length        = 5
+input_length = len(X_train[0])
 
 # Create model
 model = Graph()
