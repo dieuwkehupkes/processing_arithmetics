@@ -6,43 +6,6 @@ import random
 import os
 from collections import defaultdict
 
-"""
-class TopNode():
-    def __init__(self, nw,answer):
-        self.root = nw
-        self.answer = answer
-
-    def activate(self,theta):
-        self.root.root.forward(theta,activateIn = True, activateOut = False)
-
-    def train(self, theta, gradient, activate=True, target = None, fixWords=False, fixWeights=False):
-        if target is None: target = self.answer
-        error = self.error(theta, target, activate)
-        prediction = self.root.root.a
-        true = theta[('word',)][target]
-
-        delta = -(true-prediction)
-        gradient[('word',)][target] -= delta
-        delta = np.multiply(delta,self.root.root.ad)
-        self.root.root.backprop(theta,delta,gradient,addOut=False,moveOn=True, fixWords = fixWords,fixWeights=fixWeights)
-        return error
-
-
-    def error(self,theta, target, activate=True):
-        if target is None: target = self.answer
-        if activate: self.activate(theta)
-        prediction = self.root.root.a
-        true = theta[('word',)][target]
-        length = np.linalg.norm(true-prediction)
-        return .5*length*length
-
-    def evaluate(self,theta, target, sample=1):
-        if target is None: target = self.answer
-        return self.error(theta,target,True)
-
-    def __str__(self):
-        return 'TopNode: '+str(self.root)
-"""
 
 class mathTreebank():
     def __init__(self):
