@@ -1,6 +1,6 @@
 # imports
-from keras.models import Graph
-from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM
+from keras.models import Graph, Model
+from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM, Input
 from TrainingHistory import TrainingHistory
 from auxiliary_functions import generate_embeddings_matrix
 from generate_training_data import generate_training_data
@@ -39,13 +39,23 @@ W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, enc
 input_dim = N_operators + N_digits + 2
 input_length = len(X_train[0])
 
+# create model
+input_layer = Input(shape=(1,), dtype='int32', name='input')        # input layer
+embeddings = Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=embeddings, name='embeddings')(input_layer)      # embeddings layer
+recurrent = recurrent_layer(size_hidden, name='recurrent_layer')(embeddings)        # recurrent layer
+comparison = Dense(size_compare, name='comparison')(recurrent)               # comparison layer
+output_layer = Dense(1, activation=output_activation, name='output')(comparison)
+
+model = Model(input=input_layer,  output=output_layer)
+
+
 # Create model
-model = Graph()
-model.add_input(name='input', input_shape=(1,), dtype='int')        # input layer
-model.add_node(Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=embeddings), name='embeddings', input='input')      # embeddings layer
-model.add_node(recurrent_layer(size_hidden), name='recurrent_layer', input='embeddings')    # recurrent layer
-model.add_node(Dense(size_compare), name='comparison', input='recurrent_layer')         # comparison layer
-model.add_node(Dense(1, activation=output_activation), name='output', input='comparison', create_output=True)
+# model = Graph()
+# model.add_input(name='input', input_shape=(1,), dtype='int')        # input layer
+# model.add_node(Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=embeddings), name='embeddings', input='input')      # embeddings layer
+# model.add_node(recurrent_layer(size_hidden), name='recurrent_layer', input='embeddings')    # recurrent layer
+# model.add_node(Dense(size_compare), name='comparison', input='recurrent_layer')         # comparison layer
+# model.add_node(Dense(1, activation=output_activation), name='output', input='comparison', create_output=True)
 
 # compile model
 model.compile(loss={'output':'mean_squared_error'}, metrics=['accuracy'], optimizer=optimizer)
@@ -53,7 +63,7 @@ model.summary()
 
 # train the model
 history = TrainingHistory()
-model.fit({'input':X_train, 'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_split=validation_split, shuffle=True)
+model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_split=validation_split, shuffle=True)
 
 # plot results
 plt.plot(history.losses, label='loss')
