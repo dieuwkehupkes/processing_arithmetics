@@ -43,8 +43,8 @@ I define the following set of languages:
     \hline
     $L_i+$ & \textit{op} $==+$ & $(.(.(x_1 + x_2) + \dots x_i)$ & Structurally non ambiguous\\
     $L_i-$ & \textit{op} $==-$ & $(.(.(x_1 - x_2) - \dots x_i)$ &\\
-    $L_i$rb & only right branching trees & $(.(.(x_1$ \textit{op} $x_2)$ \textit{op} $x_3)$ \textit{op} $\ldots x_i)$ & Structurally non ambiguous\\
-    $L_i$lb & only left branching trees & $(x_1$ \textit{op} $(x_2$ \textit{op} ($\ldots$ \textit{op} $(x_{i-1}$ \textit{op} $x_i).).)$ & Structurally non ambiguous\\
+    $L_i$right & only right branching trees & $(.(.(x_1$ \textit{op} $x_2)$ \textit{op} $x_3)$ \textit{op} $\ldots x_i)$ & Structurally non ambiguous\\
+    $L_i$left & only left branching trees & $(x_1$ \textit{op} $(x_2$ \textit{op} ($\ldots$ \textit{op} $(x_{i-1}$ \textit{op} $x_i).).)$ & Structurally non ambiguous\\
 \end{tabular}
 \end{table}
 
@@ -71,7 +71,7 @@ I use four different architectures (explanation?):
 
 \section{Experiments}
 
-I will start by running a sequence of experiments to determine if the networks can learn to compose the meaning of sentences from the structurally non ambiguous languages $L_2$, $L_3+$, $L_3lb$ and $L_3rb$. Depending on the results I will move on to more complicated languages
+I will start by running a sequence of experiments to determine if the networks can learn to compose the meaning of sentences from the structurally non ambiguous languages $L_2$, $L_3+$, $L_3left$ and $L_3right$. Depending on the results I will move on to more complicated languages
 In principle, I would like to do all (possible) combinations that can be made by combining elements from the following table,\footnote{Of course excluding non-sensical combinations, such as Gray encoding in two dimennions} starting with architectures A1 and A2 and then expanding to A3 and A4.
 
 \begin{table}[!ht]
@@ -82,8 +82,8 @@ In principle, I would like to do all (possible) combinations that can be made by
     SRN & $L_2$   & A1    & 10    & Random    & fixed\\
     GRU & $L_3+$  & A2    & 6     & Gray      & trained\\
     LSTM & & A3    & 2     & one-hot? &\\
-    & $L_3rb$ & A4    & & &\\
-    & $L_3lb$ &    & & &\\
+    & $L_3right$ & A4    & & &\\
+    & $L_3left$ &    & & &\\
     \hline
 \end{tabular}
 \end{table}
