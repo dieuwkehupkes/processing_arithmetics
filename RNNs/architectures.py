@@ -1,5 +1,6 @@
 from keras.models import Model
 from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM, Input
+from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
 from generate_training_data import generate_training_data
 from auxiliary_functions import generate_embeddings_matrix
@@ -29,6 +30,7 @@ def A1(languages, input_size, size_hidden, size_compare, recurrent, encoding, tr
 
     # TRAIN THE MODEL
     history = TrainingHistory()
+    # early_stopping = EarlyStopping(monitor='val_loss', patience=20)
     model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_split=validation_split, shuffle=True)
 
     return history
@@ -61,7 +63,8 @@ def A2(languages, input_size, size_hidden, size_compare, recurrent, encoding, tr
 
     # TRAIN THE MODEL
     history = TrainingHistory()
-    model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_split=validation_split, shuffle=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=2)
+    model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history, early_stopping], validation_split=validation_split, shuffle=True)
 
     return history
 
@@ -78,3 +81,5 @@ def A4(languages, input_size, size_hidden, mask_zero, cotrain, recurrent_layer, 
     Write Description.
     """
     raise NotImplementedError
+
+
