@@ -33,7 +33,6 @@ class Training():
         print(self.model.summary())
 
 
-
 class A1(Training):
     """
     Give description.
@@ -78,55 +77,47 @@ class A1(Training):
         self.trainings_history = history            # set trainings_history as attribute
 
 
-def A2(languages, input_size, size_hidden, size_compare, recurrent, encoding, trainable_embeddings, trainable_comparison, mask_zero, optimizer, validation_split, batch_size, nb_epoch, verbose):
+class A2(Training):
     """
-    Write Description.
+    Give description.
     """
-    # GENERATE TRAINING DATA
-    X, Y, N_digits, N_operators = generate_training_data(languages, architecture='A1')
 
-    # SPLIT TRAINING & VALIDATION DATA
-    split_at = int(len(X)) * (1. - validation_split)
-    X_train, X_val = X[:split_at], X[split_at:]
-    Y_train, Y_val = Y[:split_at], Y[split_at:]
+    def _build(self, W_embeddings):
+        """
+        Build the trainings architecture around
+        the model.
+        """
+        # create input layer
+        input_layer = Input(shape=(1,), dtype='int32', name='input')
 
-    # GENERATE EMBEDDINGS MATRIX
-    W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
-    input_dim = N_operators + N_digits + 2
-    input_length = len(X_train[0])
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size, input_length=self.input_length, weights=W_embeddings, mask_zero=self.mask_zero, trainable=self.cotrain_embeddings, name='embeddings')(input_layer) 
+        
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer')(embeddings)
 
-    # CREATE MODEL
-    input_layer = Input(shape=(1,), dtype='int32', name='input')        # input layer
-    embeddings = Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=trainable_embeddings, name='embeddings')(input_layer)      # embeddings layer
-    recurrent = recurrent(size_hidden, name='recurrent_layer')(embeddings)        # recurrent layer
-    comparison = Dense(size_compare, name='comparison')(recurrent)               # comparison layer
-    output_layer = Dense(120, activation='softmax', name='output', trainable=trainable_comparison)(comparison)
+        # create comparison layer
+        comparison = Dense(self.size_compare, name='comparison', trainable=self.cotrain_comparison)(recurrent)
 
-    model = Model(input=input_layer,  output=output_layer)
+        # create output layer
+        output_layer = Dense(120, activation='softmax', name='output')(comparison)
 
-    # COMPILE MODEL
-    model.compile(loss={'output':'sparse_categorical_crossentropy'}, metrics=['accuracy'], optimizer=optimizer)
-    model.summary()
+        # create model
+        self.model = Model(input=input_layer, output=output_layer)
 
-    # TRAIN THE MODEL
-    history = TrainingHistory()
-    early_stopping = EarlyStopping(monitor='val_loss', patience=20)
-    model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history, early_stopping], validation_data=(X_val, Y_val), shuffle=True)
+        # compile
+        self.model.compile(loss={'output':'sparse_categorical_crossentropy'}, optimizer=self.optimizer)
 
-    return history
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
+        """
+        Fit the model.
+        """
+        history = TrainingHistory()
+        X_train, Y_train = training_data
 
+        # fit model
+        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
 
-def A3(languages, input_size, size_hidden, mask_zero, cotrain, recurrent_layer, size_compare, optimizer, batch_size, nb_epoch, verbose, validation_split, encoding):
-    """
-    Write Description.
-    """
-    raise NotImplementedError
-
-
-def A4(languages, input_size, size_hidden, mask_zero, cotrain, recurrent_layer, size_compare, optimizer, batch_size, nb_epoch, verbose, validation_split, encoding):
-    """
-    Write Description.
-    """
-    raise NotImplementedError
-
+        self.trainings_history = history            # set trainings_history as attribute
+        
 
