@@ -1,6 +1,9 @@
 # imports
-from keras.layers import SimpleRNN, GRU, LSTM
-from architectures import A1, A2, A3, A4
+from keras.models import Model
+from keras.layers import SimpleRNN, GRU, LSTM, Input, Embedding, Dense
+from architectures import A1
+from generate_training_data import generate_training_data
+from auxiliary_functions import generate_embeddings_matrix
 import matplotlib.pyplot as plt
 
 # network details
@@ -12,7 +15,7 @@ size_compare        = 10            # size of comparison layer
 # INPUT
 cotrain_embeddings  = True          # set to true for cotraining of embeddings
 cotrain_comparison  = True          # set to true for cotraining of comparison layer
-encoding            = 'gray'        # options: random, gray
+encoding            = 'random'        # options: random, gray
 mask_zero           = True          # set to true to apply masking to input
 input_size          = 6             # input dimensionality
 # Compute input dimension and input length from training data
@@ -27,14 +30,58 @@ optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, ada
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 # languages           = {'L_2':5, 'L_3':5}            # dict L -> N
-languages           = {'L_2':2000}                    # dict L -> N
+languages_train             = {'L_2':2000}                    # dict L -> N
+languages_val               = None
 
-history = architecture(languages=languages, input_size=input_size, size_hidden=size_hidden, size_compare=size_compare, recurrent=recurrent_layer, encoding=encoding, trainable_embeddings=cotrain_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer, validation_split=validation_split, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose)
+
+#########################################################################################
+#########################################################################################
+
+
+# GENERATE TRAINING DATA
+X, Y, N_digits, N_operators = generate_training_data(languages_train, architecture='A1')
+
+# Split training and validation data or use diff validation data
+# TODO implement use diff validation data
+# TODO I suppose this doesn't work for architecture 3 and 4, adapt this later
+split_at = int(len(X)) * (1. - validation_split)
+X_train, X_val = X[:split_at], X[split_at:]
+Y_train, Y_val = Y[:split_at], Y[split_at:]
+
+# COMPUTE NETWORK DIMENSIONS
+input_dim = N_operators + N_digits + 2
+input_length = len(X_train[0])
+
+
+# GENERATE EMBEDDINGS MATRIX
+W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
+
+# training = A1(input_dim=input_dim, input_size=input_size, input_length=input_length, size_compare=size_compare, W_embeddings=W_embeddings, trainable_embeddings=cotrain_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
+
+# CREATE BASIC MODEL
+"""
+input_layer = Input(shape=(1,), dtype='int32', name='input')
+embeddings = Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=cotrain_embeddings, name='embeddings')(input_layer) 
+recurrent = recurrent_layer(size_hidden, name='recurrent_layer')(embeddings)
+
+comparison = Dense(size_compare, name='comparison', trainable=True)(recurrent)
+output_layer = Dense(1, activation='linear', name='output')(comparison)
+
+model = Model(input=input_layer, output=output_layer) 
+model.compile(loss={'output':'mean_squared_error'}, optimizer='adagrad')
+"""
+
+# CREATE TRAININGS ARCHITECTURE
+training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input_length=input_length, size_hidden=size_hidden, size_compare=size_compare, W_embeddings=W_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
+
+training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch)
 
 # plot results
-plt.plot(history.losses, label='loss training set')
-plt.plot(history.val_losses, label='loss validation set')
+# TODO put this in a function
+plt.plot(training.trainings_history.losses, label='loss training set')
+plt.plot(training.trainings_history.val_losses, label='loss validation set')
 plt.title("Loss function over epoch")
 plt.xlabel("Epoch")
 plt.ylabel("Sum squared error")
 plt.show()
+

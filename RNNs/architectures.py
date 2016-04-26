@@ -5,51 +5,77 @@ from TrainingHistory import TrainingHistory
 from generate_training_data import generate_training_data
 from auxiliary_functions import generate_embeddings_matrix
 
-def A1(languages, input_size, size_hidden, size_compare, recurrent, encoding, trainable_embeddings, trainable_comparison, mask_zero, optimizer, validation_split, batch_size, nb_epoch, verbose):
+class Training():
+    """
+    Give elaborate description
+    """
+    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare, W_embeddings, trainable_embeddings=True, trainable_comparison=True, mask_zero=True, optimizer='adagrad'):
 
-    # GENERATE TRAINING DATA
-    X, Y, N_digits, N_operators = generate_training_data(languages, architecture='A1')
+        # set attributes
+        self.recurrent_layer = recurrent_layer
+        self.input_dim = input_dim
+        self.input_size = input_size
+        self.input_length = input_length
+        self.size_hidden = size_hidden
+        self.size_compare = size_compare
+        self.cotrain_comparison = trainable_comparison
+        self.cotrain_embeddings = trainable_embeddings
+        self.mask_zero = mask_zero
+        self.optimizer = optimizer
+        
+        # build model
+        self._build(W_embeddings)
 
-    # SPLIT TRAINING & VALIDATION DATA
-    split_at = int(len(X)) * (1. - validation_split)
-    X_train, X_val = X[:split_at], X[split_at:]
-    Y_train, Y_val = Y[:split_at], Y[split_at:]
+    def _build(self, W_embeddings):
+        pass
 
-    # GENERATE EMBEDDINGS MATRIX
-    W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
-    input_dim = N_operators + N_digits + 2
-    input_length = len(X_train[0])
+    def model_summary(self):
+        print(self.model.summary())
 
-    # CREATE MODEL
-    input_layer = Input(shape=(1,), dtype='int32', name='input')        # input layer
-    embeddings = Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=trainable_embeddings, name='embeddings')(input_layer)      # embeddings layer
-    recurrent = recurrent(size_hidden, name='recurrent_layer')(embeddings)        # recurrent layer
-    comparison = Dense(size_compare, name='comparison', trainable=trainable_comparison)(recurrent)               # comparison layer
-    output_layer = Dense(1, activation='linear', name='output')(comparison)
 
-    model = Model(input=input_layer,  output=output_layer)
 
-    # COMPILE MODEL
-    model.compile(loss={'output':'mean_squared_error'}, metrics=['accuracy'], optimizer=optimizer)
-    model.summary()
+class A1(Training):
+    """
+    Give description.
+    """
 
-    # print("predictions and targets before training:\n")
-    # predictions = model.predict(X_val)
-    # for prediction in xrange(len(predictions)):
-        # print('%s\t\t%s' % (str(predictions[prediction][0]), str(Y_val[prediction])))
+    def _build(self, W_embeddings):
+        """
+        Build the trainings architecture around
+        the model.
+        """
+        # create input layer
+        input_layer = Input(shape=(1,), dtype='int32', name='input')
 
-    # TRAIN THE MODEL
-    history = TrainingHistory()
-    early_stopping = EarlyStopping(monitor='val_loss', patience=20)
-    model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_data=(X_val, Y_val), shuffle=True)
-    # model.fit({'input':X_train}, {'output':Y_train}, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose, callbacks=[history], validation_split=0.1, shuffle=True)
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size, input_length=self.input_length, weights=W_embeddings, mask_zero=self.mask_zero, trainable=self.cotrain_embeddings, name='embeddings')(input_layer) 
+        
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer')(embeddings)
 
-    print("\n\n\npredictions after training:\n")
-    predictions = model.predict(X_val)
-    for prediction in xrange(len(predictions)):
-        print('%s\t\t%s' % (str(predictions[prediction][0]), str(Y_val[prediction])))
+        # create comparison layer
+        comparison = Dense(self.size_compare, name='comparison', trainable=self.cotrain_comparison)(recurrent)
 
-    return history
+        # create output layer
+        output_layer = Dense(1, activation='linear', name='output')(comparison)
+
+        # create model
+        self.model = Model(input=input_layer, output=output_layer)
+
+        # compile
+        self.model.compile(loss={'output':'mean_squared_error'}, optimizer=self.optimizer)
+
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
+        """
+        Fit the model.
+        """
+        history = TrainingHistory()
+        X_train, Y_train = training_data
+
+        # fit model
+        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
+
+        self.trainings_history = history            # set trainings_history as attribute
 
 
 def A2(languages, input_size, size_hidden, size_compare, recurrent, encoding, trainable_embeddings, trainable_comparison, mask_zero, optimizer, validation_split, batch_size, nb_epoch, verbose):
