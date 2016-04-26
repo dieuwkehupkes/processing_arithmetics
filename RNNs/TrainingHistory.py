@@ -1,6 +1,8 @@
 from keras.callbacks import Callback
 
 class TrainingHistory(Callback):
+    """
+    """
     def on_train_begin(self, logs={}):
         self.losses = []
         self.val_losses = []

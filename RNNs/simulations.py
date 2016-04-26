@@ -21,7 +21,7 @@ input_size          = 6             # input dimensionality
 # Compute input dimension and input length from training data
 
 # TRAINING
-nb_epoch            = 100          # number of iterations
+nb_epoch            = 10          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -52,24 +52,8 @@ Y_train, Y_val = Y[:split_at], Y[split_at:]
 input_dim = N_operators + N_digits + 2
 input_length = len(X_train[0])
 
-
 # GENERATE EMBEDDINGS MATRIX
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
-
-# training = A1(input_dim=input_dim, input_size=input_size, input_length=input_length, size_compare=size_compare, W_embeddings=W_embeddings, trainable_embeddings=cotrain_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
-
-# CREATE BASIC MODEL
-"""
-input_layer = Input(shape=(1,), dtype='int32', name='input')
-embeddings = Embedding(input_dim=input_dim, output_dim=input_size, input_length=input_length, weights=W_embeddings, mask_zero=mask_zero, trainable=cotrain_embeddings, name='embeddings')(input_layer) 
-recurrent = recurrent_layer(size_hidden, name='recurrent_layer')(embeddings)
-
-comparison = Dense(size_compare, name='comparison', trainable=True)(recurrent)
-output_layer = Dense(1, activation='linear', name='output')(comparison)
-
-model = Model(input=input_layer, output=output_layer) 
-model.compile(loss={'output':'mean_squared_error'}, optimizer='adagrad')
-"""
 
 # CREATE TRAININGS ARCHITECTURE
 training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input_length=input_length, size_hidden=size_hidden, size_compare=size_compare, W_embeddings=W_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
@@ -77,6 +61,8 @@ training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input
 training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch)
 
 # plot results
+training.plot_training_history()
+"""
 # TODO put this in a function
 plt.plot(training.trainings_history.losses, label='loss training set')
 plt.plot(training.trainings_history.val_losses, label='loss validation set')
@@ -84,4 +70,5 @@ plt.title("Loss function over epoch")
 plt.xlabel("Epoch")
 plt.ylabel("Sum squared error")
 plt.show()
+"""
 

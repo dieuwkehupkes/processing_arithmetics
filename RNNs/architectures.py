@@ -1,10 +1,12 @@
 from keras.models import Model
+# from keras.metrics import binary_accuracy, mean_squared_error
 from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM, Input
 from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
 from generate_training_data import generate_training_data
 from auxiliary_functions import generate_embeddings_matrix
 import matplotlib.pyplot as plt
+import theano
 
 class Training():
     """
@@ -83,19 +85,24 @@ class A1(Training):
 
         # compile
         self.loss_function = 'mean_squared_error'
-        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer)
+        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer, metrics=['accuracy'])
+
+        print self.model.get_config()
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
         """
         Fit the model.
         """
-        history = TrainingHistory()
         X_train, Y_train = training_data
+        history = TrainingHistory()
 
         # fit model
         self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
 
         self.trainings_history = history            # set trainings_history as attribute
+
+    def discrete_prediction(y_true, y_pred):
+        return theano.tensor.mean(theano.tensor.square(y_pred-y_true), axis=1)
 
 
 class A2(Training):
