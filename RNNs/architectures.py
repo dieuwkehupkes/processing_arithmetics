@@ -4,6 +4,7 @@ from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
 from generate_training_data import generate_training_data
 from auxiliary_functions import generate_embeddings_matrix
+import matplotlib.pyplot as plt
 
 class Training():
     """
@@ -31,6 +32,25 @@ class Training():
 
     def model_summary(self):
         print(self.model.summary())
+
+    def visualise_embeddings(self):
+        raise NotImplementedError()
+
+    def plot_training_history(self, save_to_file=False):
+        """
+        Plot loss on the last training
+        of the network.
+        """
+        plt.plot(self.trainings_history.losses, label='Training set')
+        plt.plot(self.trainings_history.val_losses, label='Validation set')
+        plt.title("Loss during last training")
+        plt.xlabel("Epoch")
+        plt.ylabel(self.loss_function)
+        plt.axhline(xmin=0)
+        plt.show()
+
+        if save_to_file:
+            raise NotImplementedError()
 
 
 class A1(Training):
@@ -62,7 +82,8 @@ class A1(Training):
         self.model = Model(input=input_layer, output=output_layer)
 
         # compile
-        self.model.compile(loss={'output':'mean_squared_error'}, optimizer=self.optimizer)
+        self.loss_function = 'mean_squared_error'
+        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer)
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
         """
@@ -106,7 +127,8 @@ class A2(Training):
         self.model = Model(input=input_layer, output=output_layer)
 
         # compile
-        self.model.compile(loss={'output':'sparse_categorical_crossentropy'}, optimizer=self.optimizer)
+        self.loss_function = 'sparse_categorical_crossentropy'
+        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer)
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
         """
