@@ -38,7 +38,7 @@ class Training:
     def visualise_embeddings(self):
         raise NotImplementedError()
 
-    def save_model(self, filename):
+    def save_to_file(self, filename):
         """Save model to file"""
         json_string = self.model.to_json()
         f = open('filename', 'w')
@@ -61,7 +61,6 @@ class Training:
         plt.legend()
         plt.show()
 
-
     def plot_loss(self, save_to_file=False):
         """
         Plot loss on the last training
@@ -75,9 +74,6 @@ class Training:
         plt.axhline(xmin=0)
         plt.legend()
         plt.show()
-
-        if save_to_file:
-            raise NotImplementedError()
 
 
 class A1(Training):
