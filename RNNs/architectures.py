@@ -41,9 +41,9 @@ class Training:
     def save_to_file(self, filename):
         """Save model to file"""
         json_string = self.model.to_json()
-        f = open('filename', 'w')
+        f = open(filename, 'w')
         f.write(json_string)
-        self.model.save('filename'+'_weights.h5')
+        self.model.save(filename+'_weights.h5')
         f.close()
 
     def plot_prediction_error(self, save_to_file=False):
