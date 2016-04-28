@@ -1,14 +1,11 @@
 from keras.models import Model
-# from keras.metrics import binary_accuracy, mean_squared_error
-from keras.layers import SimpleRNN, Embedding, Dense, GRU, LSTM, Input
-from keras.callbacks import EarlyStopping
+from keras.models import model_from_json
+from keras.layers import Embedding, Dense, Input
+# from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
-from generate_training_data import generate_training_data
-from auxiliary_functions import generate_embeddings_matrix
 import matplotlib.pyplot as plt
-import theano
 
-class Training():
+class Training:
     """
     Give elaborate description
     """
@@ -25,6 +22,9 @@ class Training():
         self.cotrain_embeddings = trainable_embeddings
         self.mask_zero = mask_zero
         self.optimizer = optimizer
+        self.trainings_history = None
+        self.model = None
+        self.loss_function = None
         
         # build model
         self._build(W_embeddings)
@@ -38,7 +38,31 @@ class Training():
     def visualise_embeddings(self):
         raise NotImplementedError()
 
-    def plot_training_history(self, save_to_file=False):
+    def save_model(self, filename):
+        """Save model to file"""
+        json_string = self.model.to_json()
+        f = open('filename', 'w')
+        f.write(json_string)
+        self.model.save('filename'+'_weights.h5')
+        f.close()
+
+    def plot_prediction_error(self, save_to_file=False):
+        """
+        Plot the prediction error during the last training
+        round of the network
+        :param save_to_file:    file name to save file to
+        """
+        plt.plot(self.trainings_history.prediction_error, label="Training set")
+        plt.plot(self.trainings_history.val_prediction_error, label="Validation set")
+        plt.title("Prediction error during last training round")
+        plt.xlabel("Epoch")
+        plt.ylabel("Prediction Error")
+        plt.axhline(xmin=0)
+        plt.legend()
+        plt.show()
+
+
+    def plot_loss(self, save_to_file=False):
         """
         Plot loss on the last training
         of the network.
@@ -49,6 +73,7 @@ class Training():
         plt.xlabel("Epoch")
         plt.ylabel(self.loss_function)
         plt.axhline(xmin=0)
+        plt.legend()
         plt.show()
 
         if save_to_file:
@@ -85,9 +110,9 @@ class A1(Training):
 
         # compile
         self.loss_function = 'mean_squared_error'
-        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer, metrics=['accuracy'])
+        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer, metrics=['mean_squared_prediction_error'])
 
-        print self.model.get_config()
+        # print self.model.get_config()
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
         """
@@ -98,17 +123,22 @@ class A1(Training):
 
         # fit model
         self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
+        self.loss_function = None
 
         self.trainings_history = history            # set trainings_history as attribute
-
-    def discrete_prediction(y_true, y_pred):
-        return theano.tensor.mean(theano.tensor.square(y_pred-y_true), axis=1)
 
 
 class A2(Training):
     """
     Give description.
     """
+
+    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare, W_embeddings,
+                 trainable_embeddings=True, trainable_comparison=True, mask_zero=True, optimizer='adagrad'):
+        Training.__init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
+                          W_embeddings, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
+                          optimizer='adagrad')
+        self.trainings_history = None            # set trainings_history as attribute
 
     def _build(self, W_embeddings):
         """
@@ -147,6 +177,6 @@ class A2(Training):
         # fit model
         self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
 
-        self.trainings_history = history            # set trainings_history as attribute
+        self.trainings_history = history
         
 

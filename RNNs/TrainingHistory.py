@@ -1,19 +1,20 @@
 from keras.callbacks import Callback
 
+
+# noinspection PyAttributeOutsideInit
 class TrainingHistory(Callback):
     """
     """
     def on_train_begin(self, logs={}):
         self.losses = []
         self.val_losses = []
-        self.accuracy = []
-        self.val_accuracy = []
+        self.prediction_error = []
+        self.val_prediction_error = []
         self.i = 0
     
     def on_epoch_end(self, batch, logs={}):
         self.losses.append(logs.get('loss'))
         self.val_losses.append(logs.get('val_loss'))
-        self.accuracy.append(logs.get('acc'))
-        self.val_accuracy.append(logs.get('val_acc'))
+        self.prediction_error.append(logs.get('mean_squared_prediction_error'))
+        self.val_prediction_error.append(logs.get('mean_squared_prediction_error'))
         self.i += 1
-        
