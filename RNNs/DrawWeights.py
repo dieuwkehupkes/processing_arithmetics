@@ -20,9 +20,9 @@ class DrawWeights(Callback):
             print "Weights of layer %s cannot be visualised" % self.model.layers[self.layer_id].name
         self.imgs = []
 
-    def on_batch_end(self, batch, logs={}):
+    def on_epoch_end(self, epoch, logs={}):
         # Get a snapshot of the weight matrix every 5 batches
-        if batch % 5 == 0:
+        if epoch % 5 == 0:
             # Access the full weight matrix
             weights = self.model.layers[self.layer_id].get_weights()[self.param_id]
             # Create the frame and add it to the animation
