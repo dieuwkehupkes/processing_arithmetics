@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 2000          # number of iterations
+nb_epoch            = 20          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -27,8 +27,14 @@ optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, ada
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 # languages           = {'L_2':5, 'L_3':5}            # dict L -> N
-languages_train             = {'L_2':2000}                    # dict L -> N
+languages_train             = {'L_2': 2000}                    # dict L -> N
 languages_val               = None
+
+# VISUALISATION
+embeddings_animation = False
+plot_loss = True
+plot_prediction = True
+
 
 
 #########################################################################################
@@ -55,9 +61,11 @@ W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, enc
 # CREATE TRAININGS ARCHITECTURE
 training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input_length=input_length, size_hidden=size_hidden, size_compare=size_compare, W_embeddings=W_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
 
-training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch)
+training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch, embeddings_animation=embeddings_animation)
 
 # plot results
-training.plot_loss()
-training.plot_prediction_error()
+if plot_loss:
+    training.plot_loss()
+if plot_prediction:
+    training.plot_prediction_error()
 
