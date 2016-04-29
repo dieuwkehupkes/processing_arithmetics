@@ -41,7 +41,7 @@ def generate_training_data(languages, architecture):
     # pad sequences to have the same length
     X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32')
 
-    return X_padded, np.array(Y), N_digits, N_operators
+    return X_padded, np.array(Y), N_digits, N_operators, d_map
 
 
 def generate_treebank(languages, architecture):

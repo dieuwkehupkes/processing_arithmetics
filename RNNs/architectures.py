@@ -10,7 +10,7 @@ class Training:
     """
     Give elaborate description
     """
-    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare, W_embeddings, trainable_embeddings=True, trainable_comparison=True, mask_zero=True, optimizer='adagrad'):
+    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare, W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True, optimizer='adagrad'):
 
         # set attributes
         self.recurrent_layer = recurrent_layer
@@ -19,6 +19,7 @@ class Training:
         self.input_length = input_length
         self.size_hidden = size_hidden
         self.size_compare = size_compare
+        self.dmap = dmap
         self.cotrain_comparison = trainable_comparison
         self.cotrain_embeddings = trainable_embeddings
         self.mask_zero = mask_zero
@@ -74,6 +75,28 @@ class Training:
         plt.ylabel(self.loss_function)
         plt.axhline(xmin=0)
         plt.legend()
+        plt.show()
+
+    def plot_embeddings(self):
+        """
+        Plot embeddings of the network (only available for
+        2 dimensional embeddings)
+        :return:
+        """
+        weights = self.model.layers[1].get_weights()[0]
+        assert weights.shape[1] == 2, "visualise embeddings only available for 2d embeddings"
+        # use dmap to determine labels
+        dmap_inverted = dict(zip(self.dmap.values(), self.dmap.keys()))
+        i = 0
+        for weight_set in weights:
+            xy = tuple(weight_set)
+            print xy
+            x, y = xy
+            plt.plot(x, y, 'o')
+            plt.annotate(dmap_inverted[i], xy=xy)
+            plt.xlim([-0.5,0.5])
+            plt.ylim([-0.5,0.5])
+            i+=1
         plt.show()
 
 

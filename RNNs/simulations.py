@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 20          # number of iterations
+nb_epoch            = 1000          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -32,8 +32,9 @@ languages_val               = None
 
 # VISUALISATION
 embeddings_animation = False
-plot_loss = True
-plot_prediction = True
+plot_loss = False
+plot_prediction = False
+plot_embeddings = True
 
 
 
@@ -42,7 +43,7 @@ plot_prediction = True
 
 
 # GENERATE TRAINING DATA
-X, Y, N_digits, N_operators = generate_training_data(languages_train, architecture='A1')
+X, Y, N_digits, N_operators, d_map = generate_training_data(languages_train, architecture='A1')
 
 # Split training and validation data or use diff validation data
 # TODO implement use diff validation data
@@ -59,7 +60,9 @@ input_length = len(X_train[0])
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, input_size, encoding)
 
 # CREATE TRAININGS ARCHITECTURE
-training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input_length=input_length, size_hidden=size_hidden, size_compare=size_compare, W_embeddings=W_embeddings, trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
+training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input_length=input_length,
+              size_hidden=size_hidden, size_compare=size_compare, W_embeddings=W_embeddings, dmap=d_map,
+              trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
 
 training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch, embeddings_animation=embeddings_animation)
 
@@ -68,4 +71,6 @@ if plot_loss:
     training.plot_loss()
 if plot_prediction:
     training.plot_prediction_error()
+if plot_embeddings:
+    training.plot_embeddings()
 
