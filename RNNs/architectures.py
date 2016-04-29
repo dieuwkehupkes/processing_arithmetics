@@ -4,6 +4,7 @@ from keras.layers import Embedding, Dense, Input
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 class Training:
     """
@@ -107,21 +108,26 @@ class A1(Training):
         # compile
         self.loss_function = 'mean_squared_error'
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
-                           metrics=['mean_squared_prediction_error'])
+                           metrics=['mspe'])
 
         # print self.model.get_config()
 
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1, embeddings_animation=False):
         """
         Fit the model.
+        :param embeddings_animation:    Set to true to visualise the development of
+                                        embeddings during training
         """
         X_train, Y_train = training_data
         history = TrainingHistory()
-        draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
+        callbacks = [history]
+        if embeddings_animation:
+            draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
+            callbacks.append(draw_weights)
 
         # fit model
-        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size,
-                       nb_epoch=epochs, callbacks=[history, draw_weights], verbose=verbosity, shuffle=True)
+        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data, batch_size=batch_size,
+                       nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
         self.loss_function = None
 
         self.trainings_history = history            # set trainings_history as attribute
