@@ -106,7 +106,8 @@ class A1(Training):
 
         # compile
         self.loss_function = 'mean_squared_error'
-        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer, metrics=['mean_squared_prediction_error'])
+        self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
+                           metrics=['mean_squared_prediction_error'])
 
         # print self.model.get_config()
 
@@ -116,10 +117,11 @@ class A1(Training):
         """
         X_train, Y_train = training_data
         history = TrainingHistory()
-        draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=1)
+        draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
 
         # fit model
-        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history, draw_weights], verbose=verbosity, shuffle=True)
+        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size,
+                       nb_epoch=epochs, callbacks=[history, draw_weights], verbose=verbosity, shuffle=True)
         self.loss_function = None
 
         self.trainings_history = history            # set trainings_history as attribute
