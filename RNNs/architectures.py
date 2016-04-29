@@ -1,8 +1,8 @@
 from keras.models import Model
-from keras.models import model_from_json
 from keras.layers import Embedding, Dense, Input
 # from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
+from DrawWeights import DrawWeights
 import matplotlib.pyplot as plt
 
 class Training:
@@ -116,9 +116,10 @@ class A1(Training):
         """
         X_train, Y_train = training_data
         history = TrainingHistory()
+        draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=1)
 
         # fit model
-        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
+        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history, draw_weights], verbose=verbosity, shuffle=True)
         self.loss_function = None
 
         self.trainings_history = history            # set trainings_history as attribute
