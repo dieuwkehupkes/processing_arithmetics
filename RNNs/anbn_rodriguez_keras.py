@@ -1,4 +1,5 @@
 from keras.models import Sequential
+from keras.models import model_from_json
 from keras.layers import SimpleRNN
 from keras.utils.visualize_util import plot
 import numpy as np
@@ -39,3 +40,7 @@ model.compile(loss='mean_squared_error', optimizer='sgd')
 
 outputs = model.predict(np.array([s5]), batch_size=1, verbose=1)
 print(outputs)
+
+json_model = model.to_json()
+open('anbn.json', 'w').write(json_model)
+model.save_weights('anbn_weights.h5')

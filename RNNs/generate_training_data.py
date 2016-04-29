@@ -7,6 +7,7 @@ from arithmetics import mathExpression
 import keras.preprocessing.sequence
 import re
 import numpy as np
+import random
 
 
 def generate_training_data(languages, architecture):
@@ -16,6 +17,7 @@ def generate_training_data(languages, architecture):
     """
     # generate treebank with examples
     treebank = generate_treebank(languages, architecture)
+    random.shuffle(treebank.examples)
 
     # create map from digits and operators to integers
     digits = list(treebank.digits)
