@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 1000          # number of iterations
+nb_epoch            = 1500          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -33,8 +33,8 @@ languages_val               = None
 # VISUALISATION
 embeddings_animation = False
 plot_loss = False
-plot_prediction = False
-plot_embeddings = True
+plot_prediction = True
+plot_embeddings = 2000
 
 
 
@@ -64,7 +64,7 @@ training = A1(recurrent_layer, input_dim=input_dim, input_size=input_size, input
               size_hidden=size_hidden, size_compare=size_compare, W_embeddings=W_embeddings, dmap=d_map,
               trainable_comparison=cotrain_comparison, mask_zero=mask_zero, optimizer=optimizer)
 
-training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch, embeddings_animation=embeddings_animation)
+training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=batch_size, epochs=nb_epoch, embeddings_animation=embeddings_animation, plot_embeddings=plot_embeddings)
 
 # plot results
 if plot_loss:

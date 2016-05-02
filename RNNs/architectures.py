@@ -3,6 +3,7 @@ from keras.layers import Embedding, Dense, Input
 # from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
+from PlotEmbeddings import PlotEmbeddings
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -135,11 +136,13 @@ class A1(Training):
 
         # print self.model.get_config()
 
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1, embeddings_animation=False):
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1, embeddings_animation=False, plot_embeddings=False):
         """
         Fit the model.
-        :param embeddings_animation:    Set to true to visualise the development of
-                                        embeddings during training
+        :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
+                                        after training.
+        :param plot_eebeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+                                        embeddings.
         """
         X_train, Y_train = training_data
         history = TrainingHistory()
@@ -147,6 +150,13 @@ class A1(Training):
         if embeddings_animation:
             draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
             callbacks.append(draw_weights)
+
+        if plot_embeddings:
+            if plot_embeddings == True:
+                pass
+            else:
+                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap)
+                callbacks.append(embeddings_plot)
 
         # fit model
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data, batch_size=batch_size,
