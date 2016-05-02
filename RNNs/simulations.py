@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 1500          # number of iterations
+nb_epoch            = 3500          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -27,14 +27,15 @@ optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, ada
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 # languages           = {'L_2':5, 'L_3':5}            # dict L -> N
-languages_train             = {'L_2': 2000}                    # dict L -> N
-languages_val               = None
+languages_train             = {'L_2+': 2000, 'L4+':2000, 'L6+': 2000}                    # dict L -> N
+languages_val               = {'L_4+': 500}
+# languages_val               = None
 
 # VISUALISATION
 embeddings_animation = False
 plot_loss = False
 plot_prediction = True
-plot_embeddings = 2000
+plot_embeddings = 500
 
 
 
@@ -45,12 +46,19 @@ plot_embeddings = 2000
 # GENERATE TRAINING DATA
 X, Y, N_digits, N_operators, d_map = generate_training_data(languages_train, architecture='A1')
 
-# Split training and validation data or use diff validation data
-# TODO implement use diff validation data
-# TODO I suppose this doesn't work for architecture 3 and 4, adapt this later
-split_at = int(len(X)* (1. - validation_split))
-X_train, X_val = X[:split_at], X[split_at:]
-Y_train, Y_val = Y[:split_at], Y[split_at:]
+# GENERATE VALIDATION DATA
+if languages_val:
+    # generate validation data if dictionary is provided
+    X_train, Y_train = X, Y
+    maxlen = X_train.shape[1]
+    X_val, Y_val, _, _, _ = generate_training_data(languages_val, architecture='A1', pad_to=maxlen)
+
+else:
+    # split data in training and validation data
+    # TODO I suppose this doesn't work for architecture 3 and 4, adapt this later
+    split_at = int(len(X)* (1. - validation_split))
+    X_train, X_val = X[:split_at], X[split_at:]
+    Y_train, Y_val = Y[:split_at], Y[split_at:]
 
 # COMPUTE NETWORK DIMENSIONS
 input_dim = N_operators + N_digits + 2

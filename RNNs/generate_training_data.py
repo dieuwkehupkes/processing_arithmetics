@@ -10,10 +10,15 @@ import numpy as np
 import random
 
 
-def generate_training_data(languages, architecture):
+def generate_training_data(languages, architecture, pad_to=None):
     """
     Take a treebank object and return numpy
     arrays with training data.
+    :param languages:       dictionary mapping languages (str name) to numbers
+    :param architecture:    architecture for which to generate training data
+    :param pad_to:          length to pad training data to
+    :return:                tuple, input, output, number of digits, number of operators
+                            map from input symbols to integers
     """
     # generate treebank with examples
     treebank = generate_treebank(languages, architecture)
@@ -39,7 +44,7 @@ def generate_training_data(languages, architecture):
         Y.append(answer)
 
     # pad sequences to have the same length
-    X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32')
+    X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
     return X_padded, np.array(Y), N_digits, N_operators, d_map
 
