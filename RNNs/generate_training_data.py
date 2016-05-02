@@ -44,6 +44,7 @@ def generate_training_data(languages, architecture, pad_to=None):
         Y.append(answer)
 
     # pad sequences to have the same length
+    assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
     X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
     return X_padded, np.array(Y), N_digits, N_operators, d_map
