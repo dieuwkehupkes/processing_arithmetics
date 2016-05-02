@@ -90,16 +90,49 @@ In principle, I would like to do all (possible) combinations that can be made by
 
 \section{Results}
 
-I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. The trainingset contains 1800 sentences, validation set contains 200 sentences. Batchsize = 24. During most runs the prediction error (= the sum squared differences between the true outcome and the rounded scalar prediction of the network) on the validation set stays high for a while and then rapidly decreases to a value close to 0. 
+\subsection{L2}
 
-\begin{figure}
+I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. 
+The trainingset contains 1800 sentences, validation set contains 200 sentences, batchsize during training was 24. 
+During most runs the prediction error (= the sum squared differences between the true outcome and the rounded scalar prediction of the network) on the validation set stays high for a while and then rapidly decreases to a value close to 0. 
+Examples of learned embeddings are depicted in \ref{fig:L3_embeddings} and \ref{fig:L3_embeddings2}.
+
+\begin{figure}[!ht]
         \includegraphics[scale=0.9]{L2_embeddings.png}
-    \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After training, the mean squared prediction error on the 200 sentences in the validation set was 0.05}
+        \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After training, the mean squared prediction error on the 200 sentences in the validation set was 0.05}\label{fig:L3_embeddings}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[!ht]
         \includegraphics[scale=0.5]{L2_embeddings2.png}
-    \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After 1500 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.76}
+        \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After 1500 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.76}\label{fig:L3_embeddings2}
+\end{figure}
+
+\subsection{Training L+ languages SRN}
+
+I did a couple runs with structurally unambiguous plus languages. 
+Settings of the network were still the same: size\_hidden = 20, size\_compare=10, size\_embeddings = 2. 
+I trained for 1000 epochs.\\
+
+The numbers are still more or less ordered, but not as strongely as before. 
+The brackets and + do not get a meaningful embedding (they are both very close to 0), which is sensible because in the + languages they do not contribute to the meaning of the sentence.
+Examples of learned embeddings are shown in Figure \ref{fig:SRN_L2L3L6_testL5} and Figure \ref{fig:SRN_L2L3L4_testL5}.\\
+
+It seems the simple recurrent network does not really learn a very general solution for the addition operator: when the sentence length of the test items is shorter than the longest training item (even though the exact length was not in the trainingset) the network performs the task with a very low training error. 
+When the sentence length is longer than the longest training item, the network does not learn to perform the task.
+
+\begin{figure}[!ht]
+        \includegraphics[scale=0.8]{SRN_L2L3L6.png}
+        \caption{Learned embeddings for SRN trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L6+ sentences, and tested on 500 L4 sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.056}\label{fig:SRN_L2L3L6_testL5}
+\end{figure}
+
+\begin{figure}[!ht]
+        \includegraphics[scale=0.8]{SRN_L2L3L4.png}
+        \caption{Learned embeddings for SRN trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 24.1 (the mspe of the trainingset was 0.006).}\label{fig:trainingL2L3L4_testL5}
+\end{figure}
+
+\begin{figure}[!ht]
+        % \includegraphics[scale=0.8]{trainingL2L3L5_testL4.png}
+        \caption{Learned embeddings for network with GRU layer trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.04}\label{fig:GRU_L2L3L4}
 \end{figure}
 
 \end{document}
