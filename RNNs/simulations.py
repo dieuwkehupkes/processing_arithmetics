@@ -6,7 +6,7 @@ from auxiliary_functions import generate_embeddings_matrix
 
 # network details
 architecture        = A1            # Trainings architecture
-recurrent_layer     = SimpleRNN     # options: SimpleRNN, GRU, LSTM
+recurrent_layer     = SimpleRNN   # options: SimpleRNN, GRU, LSTM
 size_hidden         = 20            # size of the hidden layer
 size_compare        = 10            # size of comparison layer
 
@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 3500          # number of iterations
+nb_epoch            = 1000          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -27,8 +27,9 @@ optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, ada
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 # languages           = {'L_2':5, 'L_3':5}            # dict L -> N
-languages_train             = {'L_2+': 2000, 'L4+':2000, 'L6+': 2000}                    # dict L -> N
-languages_val               = {'L_4+': 500}
+languages_train             = {'L_2+': 2000, 'L3+':2000, 'L6+': 2000, 'L5+':1}                 # dict L -> N
+languages_val               = {'L5+':500}
+#languages_val               = {'L_4+': 500}
 # languages_val               = None
 
 # VISUALISATION
@@ -42,6 +43,7 @@ plot_embeddings = 500
 #########################################################################################
 #########################################################################################
 
+# TODO fix this such that sequences get padded correctly (and test data sequences do not get padded)
 
 # GENERATE TRAINING DATA
 X, Y, N_digits, N_operators, d_map = generate_training_data(languages_train, architecture='A1')
@@ -79,6 +81,4 @@ if plot_loss:
     training.plot_loss()
 if plot_prediction:
     training.plot_prediction_error()
-if plot_embeddings:
-    training.plot_embeddings()
 
