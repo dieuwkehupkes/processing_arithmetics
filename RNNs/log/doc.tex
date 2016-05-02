@@ -90,6 +90,16 @@ In principle, I would like to do all (possible) combinations that can be made by
 
 \section{Results}
 
-Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2, language = L2, trainingset contains 1800 sentences, validation set contains 200 sentences. This task is learned (almost) to perfection after 2000 iterations (actually it is more or less converged already after 1000 iterations.
+I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. The trainingset contains 1800 sentences, validation set contains 200 sentences. Batchsize = 24. During most runs the prediction error (= the sum squared differences between the true outcome and the rounded scalar prediction of the network) on the validation set stays high for a while and then rapidly decreases to a value close to 0. 
+
+\begin{figure}
+        \includegraphics[scale=0.9]{L2_embeddings.png}
+    \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After training, the mean squared prediction error on the 200 sentences in the validation set was 0.05}
+\end{figure}
+
+\begin{figure}
+        \includegraphics[scale=0.5]{L2_embeddings2.png}
+    \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After 1500 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.76}
+\end{figure}
 
 \end{document}
