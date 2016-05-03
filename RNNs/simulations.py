@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 1000          # number of iterations
+nb_epoch            = 100          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -35,9 +35,11 @@ languages_val               = {'L5+':500}
 # VISUALISATION
 embeddings_animation = False
 plot_loss = False
-plot_prediction = True
-plot_embeddings = 500
+plot_prediction = False
+plot_embeddings = 50
 
+# SAVE MODEL
+save_model = 'SimpleRNN_L2L3L5'
 
 
 #########################################################################################
@@ -82,3 +84,9 @@ if plot_loss:
 if plot_prediction:
     training.plot_prediction_error()
 
+# save model
+if save_model:
+    if save_model == True: save_model = 'model'
+    model_json = training.model.to_json()
+    open(save_model + '.json', 'w').write(model_json )
+    training.model.save_weights(save_model + '_weights.h5')
