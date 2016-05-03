@@ -24,6 +24,15 @@ def pad(array, length):
         raise ValueError("Array cannot be padded to shorter length")
     return padded_array
 
+def max_length(N):
+    """
+    Compute length of arithmetic expression
+    with N numeric leaves
+    :param N: number of numeric leaves of expression
+    """
+    l = 4*N-3
+    return l
+
 
 def generate_embeddings_matrix(N_digits, N_operators, input_size, encoding):
     """

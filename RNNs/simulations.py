@@ -2,7 +2,7 @@
 from keras.layers import SimpleRNN, GRU, LSTM
 from architectures import A1
 from generate_training_data import generate_training_data
-from auxiliary_functions import generate_embeddings_matrix
+from auxiliary_functions import generate_embeddings_matrix, max_length
 
 # network details
 architecture        = A1            # Trainings architecture
@@ -18,7 +18,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 100          # number of iterations
+nb_epoch            = 1500          # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 verbose             = 1             # verbosity mode
@@ -27,19 +27,18 @@ optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, ada
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 # languages           = {'L_2':5, 'L_3':5}            # dict L -> N
-languages_train             = {'L_2+': 2000, 'L3+':2000, 'L6+': 2000, 'L5+':1}                 # dict L -> N
+languages_train             = {'L_2+': 2000, 'L3+':2000, 'L4+': 2000}                 # dict L -> N
 languages_val               = {'L5+':500}
-#languages_val               = {'L_4+': 500}
-# languages_val               = None
+maxlen                      = max_length(5)
 
 # VISUALISATION
 embeddings_animation = False
 plot_loss = False
 plot_prediction = False
-plot_embeddings = 50
+plot_embeddings = True
 
 # SAVE MODEL
-save_model = 'SimpleRNN_L2L3L5'
+save_model = 'SimpleRNN_L2+L3+L4+'
 
 
 #########################################################################################
@@ -48,13 +47,12 @@ save_model = 'SimpleRNN_L2L3L5'
 # TODO fix this such that sequences get padded correctly (and test data sequences do not get padded)
 
 # GENERATE TRAINING DATA
-X, Y, N_digits, N_operators, d_map = generate_training_data(languages_train, architecture='A1')
+X, Y, N_digits, N_operators, d_map = generate_training_data(languages_train, architecture='A1', pad_to=maxlen)
 
 # GENERATE VALIDATION DATA
 if languages_val:
     # generate validation data if dictionary is provided
     X_train, Y_train = X, Y
-    maxlen = X_train.shape[1]
     X_val, Y_val, _, _, _ = generate_training_data(languages_val, architecture='A1', pad_to=maxlen)
 
 else:
