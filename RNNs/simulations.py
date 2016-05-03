@@ -27,9 +27,9 @@ optimizer           = 'adagrad'     # sgd, rmsprop, adagrad, adadelta, adam, ada
 # generate for that language. 
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 # languages           = {'L_2':5, 'L_3':5}            # dict L -> N
-languages_train             = {'L_2+': 2000, 'L3+':2000, 'L4+': 2000}                 # dict L -> N
+languages_train             = {'L_2+': 2000, 'L3+':2000, 'L6+': 2000}                 # dict L -> N
 languages_val               = {'L5+':500}
-maxlen                      = max_length(5)
+maxlen                      = max_length(6)
 
 # VISUALISATION
 embeddings_animation = False
@@ -38,7 +38,7 @@ plot_prediction = False
 plot_embeddings = True
 
 # SAVE MODEL
-save_model = 'SimpleRNN_L2+L3+L4+'
+save_model = 'SimpleRNN_L2+L3+L6+'
 
 
 #########################################################################################
@@ -81,6 +81,8 @@ if plot_loss:
     training.plot_loss()
 if plot_prediction:
     training.plot_prediction_error()
+if plot_embeddings == True:
+    training.plot_embeddings()
 
 # save model
 if save_model:
