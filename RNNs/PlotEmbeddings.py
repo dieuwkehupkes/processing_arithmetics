@@ -42,7 +42,7 @@ class PlotEmbeddings(Callback):
             x, y = xy
             plt.plot(x, y, 'o')
             plt.annotate(self.dmap[i], xy=xy)
-            plt.xlim([xmin,xmax])
-            plt.ylim([ymin,ymax])
+            plt.xlim([xmin, xmax])
+            plt.ylim([ymin, ymax])
             i+=1
         plt.show()

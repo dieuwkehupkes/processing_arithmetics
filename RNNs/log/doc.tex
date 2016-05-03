@@ -90,6 +90,8 @@ In principle, I would like to do all (possible) combinations that can be made by
 
 \section{Results}
 
+General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
+
 \subsection{L2}
 
 I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. 
@@ -133,6 +135,11 @@ When the sentence length is longer than the longest training item, the network d
 \begin{figure}[!ht]
         \includegraphics[scale=0.8]{GRU_L2L3L4.png}
         \caption{Learned embeddings for network with GRU layer trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.04}\label{fig:GRU_L2L3L4}
+\end{figure}
+
+\begin{figure}[!ht]
+    \includegraphics[scale=0.5]{SRN_L3left.png}
+    \caption{Simple recurrent layer getraind op L3left, training error was nog tamelijk hoog (rond de 5).}
 \end{figure}
 
 \end{document}
