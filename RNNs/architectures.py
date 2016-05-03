@@ -86,6 +86,9 @@ class Training:
         """
         weights = self.model.layers[1].get_weights()[0]
         assert weights.shape[1] == 2, "visualise embeddings only available for 2d embeddings"
+        # find limits
+        xmin, ymin = 1.1 * weights.max(axis=0)
+        xmax, ymax = 1.1 * weights.min(axis=0)
         # use dmap to determine labels
         dmap_inverted = dict(zip(self.dmap.values(), self.dmap.keys()))
         i = 0
@@ -95,8 +98,8 @@ class Training:
             x, y = xy
             plt.plot(x, y, 'o')
             plt.annotate(dmap_inverted[i], xy=xy)
-            plt.xlim([-0.5,0.5])
-            plt.ylim([-0.5,0.5])
+            plt.xlim([xmin,xmax])
+            plt.ylim([ymin,ymax])
             i+=1
         plt.show()
 

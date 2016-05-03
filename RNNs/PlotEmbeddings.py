@@ -32,7 +32,9 @@ class PlotEmbeddings(Callback):
         Plot weights
         """
         weights = self.model.layers[1].get_weights()[0]
-        limits = 1.2 * max(weights.max(), -weights.min())
+        # find limits
+        xmin, ymin = 1.1 * weights.max(axis=0)
+        xmax, ymax = 1.1 * weights.min(axis=0)
         plt.clf()
         i = 0
         for weight_set in weights:
@@ -40,7 +42,7 @@ class PlotEmbeddings(Callback):
             x, y = xy
             plt.plot(x, y, 'o')
             plt.annotate(self.dmap[i], xy=xy)
-            plt.xlim([-limits,limits])
-            plt.ylim([-limits,limits])
+            plt.xlim([xmin,xmax])
+            plt.ylim([ymin,ymax])
             i+=1
         plt.show()
