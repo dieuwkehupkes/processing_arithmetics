@@ -4,6 +4,7 @@ from keras.layers import Embedding, Dense, Input
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
+from Logger import Logger
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -103,6 +104,35 @@ class Training:
             i+=1
         plt.show()
 
+    def generate_callbacks(self, embeddings_animation, plot_embeddings, print_every):
+        """
+        Generate sequence of callbacks to use during training
+        :param embeddings_animation:        set to true to generate visualisation of embeddings
+        :param plot_embeddings:             generate scatter plot of embeddings every plot_embeddings epochs
+        :param print_every:                 print summary of results every print_every epochs
+        :return:
+        """
+
+        history = TrainingHistory()
+        callbacks = [history]
+
+        if embeddings_animation:
+            draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
+            callbacks.append(draw_weights)
+
+        if plot_embeddings:
+            if plot_embeddings == True:
+                pass
+            else:
+                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap)
+                callbacks.append(embeddings_plot)
+
+        if print_every:
+            logger = Logger(print_every)
+            callbacks.append(logger)
+
+        return callbacks
+
 
 class A1(Training):
     """
@@ -139,35 +169,24 @@ class A1(Training):
 
         # print self.model.get_config()
 
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1, embeddings_animation=False, plot_embeddings=False):
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1, embeddings_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
                                         after training.
-        :param plot_eebeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
                                         embeddings.
         """
         X_train, Y_train = training_data
-        history = TrainingHistory()
-        callbacks = [history]
-        if embeddings_animation:
-            draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
-            callbacks.append(draw_weights)
 
-        if plot_embeddings:
-            if plot_embeddings == True:
-                pass
-            else:
-                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap)
-                callbacks.append(embeddings_plot)
+        callbacks = self.generate_callbacks(embeddings_animation, plot_embeddings, logger)
 
         # fit model
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data, batch_size=batch_size,
                        nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
         self.loss_function = None
 
-        self.trainings_history = history            # set trainings_history as attribute
-
+        self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
 class A2(Training):
     """
