@@ -12,7 +12,9 @@ class Training:
     """
     Give elaborate description
     """
-    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare, W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True, optimizer='adagrad'):
+    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
+                 W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
+                optimizer='adagrad'):
 
         # set attributes
         self.recurrent_layer = recurrent_layer
@@ -29,7 +31,7 @@ class Training:
         self.trainings_history = None
         self.model = None
         self.loss_function = None
-        
+
         # build model
         self._build(W_embeddings)
 
@@ -148,7 +150,10 @@ class A1(Training):
         input_layer = Input(shape=(1,), dtype='int32', name='input')
 
         # create embeddings
-        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size, input_length=self.input_length, weights=W_embeddings, mask_zero=self.mask_zero, trainable=self.cotrain_embeddings, name='embeddings')(input_layer) 
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                               name='embeddings')(input_layer)
         
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer')(embeddings)
@@ -169,7 +174,8 @@ class A1(Training):
 
         # print self.model.get_config()
 
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1, embeddings_animation=False, plot_embeddings=False, logger=False):
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
+              embeddings_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
