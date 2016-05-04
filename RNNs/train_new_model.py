@@ -36,11 +36,16 @@ input_length = len(X_train[0])
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, settings.input_size, settings.encoding)
 
 # CREATE TRAININGS ARCHITECTURE
-training = A1(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size, input_length=input_length,
-              size_hidden=settings.size_hidden, size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=d_map,
-              trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero, optimizer=settings.optimizer)
+training = A1(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
+              input_length=input_length, size_hidden=settings.size_hidden,
+              size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=d_map,
+              trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
+              optimizer=settings.optimizer)
 
-training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=settings.batch_size, epochs=settings.nb_epoch, embeddings_animation=settings.embeddings_animation, plot_embeddings=settings.plot_embeddings, logger=settings.print_every)
+training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val),
+               batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,
+               embeddings_animation=settings.embeddings_animation, plot_embeddings=settings.plot_embeddings,
+               logger=settings.print_every)
 
 # plot results
 if settings.plot_loss:
@@ -64,14 +69,14 @@ if settings.save_model:
     training.model.save_weights(model_string + '_weights.h5')
 
 print('Model summary:')
-print('Recurrent layer: ' + str(settings.recurrent_layer))
-print('Size hidden layer: ' + settings.size_hidden)
-print('Size comparison layer: ' + settings.size_compare)
-print('Initialisation embeddings: ' + settings.encoding)
-print('Size embeddings: ' + settings.input_size)
-print('Batch size: ' + settings.batch_size)
-print('Number of epochs: ' + settings.nb_epoch)
-print('Optimizer: ' + settings.optimizer)
+print('Recurrent layer: %s' % str(settings.recurrent))
+print('Size hidden layer: %i' % settings.size_hidden)
+print('Size comparison layer: %i' % settings.size_compare)
+print('Initialisation embeddings: %s' % settings.encoding)
+print('Size embeddings: %i' % settings.input_size)
+print('Batch size: %i' % settings.batch_size)
+print('Number of epochs: %i' % settings.nb_epoch)
+print('Optimizer: %s' % settings.optimizer)
 print('Trained on:')
-for language, nr in settings.languages_train:
+for language, nr in settings.languages_train.items():
     print('%i sentences from %s' % (nr, language))
