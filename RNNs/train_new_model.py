@@ -40,7 +40,7 @@ training = A1(settings.recurrent_layer, input_dim=input_dim, input_size=settings
               size_hidden=settings.size_hidden, size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=d_map,
               trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero, optimizer=settings.optimizer)
 
-training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=settings.batch_size, epochs=settings.nb_epoch, embeddings_animation=settings.embeddings_animation, plot_embeddings=settings.plot_embeddings)
+training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val), batch_size=settings.batch_size, epochs=settings.nb_epoch, embeddings_animation=settings.embeddings_animation, plot_embeddings=settings.plot_embeddings, logger=settings.print_every)
 
 # plot results
 if settings.plot_loss:
@@ -57,7 +57,7 @@ if settings.save_model:
     for language in settings.languages_train.keys():
         model_string += language
 
-    model_string += "-"+settings.recurrent_layer
+    model_string += "-"+str(settings.recurrent_layer)
 
     model_json = training.model.to_json()
     open(model_string + '.json', 'w').write(model_json )

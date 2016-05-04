@@ -16,5 +16,5 @@ class TrainingHistory(Callback):
         self.losses.append(logs.get('loss'))
         self.val_losses.append(logs.get('val_loss'))
         self.prediction_error.append(logs.get('mean_squared_prediction_error'))
-        self.val_prediction_error.append(logs.get('mean_squared_prediction_error'))
+        self.val_prediction_error.append(logs.get('val_mean_squared_prediction_error'))
         self.i += 1
