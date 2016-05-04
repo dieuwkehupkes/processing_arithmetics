@@ -144,7 +144,7 @@ class A1(Training):
         Fit the model.
         :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
                                         after training.
-        :param plot_eebeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
                                         embeddings.
         """
         X_train, Y_train = training_data
