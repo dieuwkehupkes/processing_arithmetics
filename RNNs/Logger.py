@@ -19,9 +19,9 @@ class Logger(Callback):
         self.i = 0
     
     def on_epoch_end(self, epoch, logs={}):
-        if epoch %  self.N:
+        if epoch % self.N == 0:
             # give summary of current results
-            print('Epoch%i' % epoch)
+            print('Epoch %i' % epoch)
             print('training loss: %f - val loss: %f - training mspe: %f - val mspe: %f'
                   % (logs.get('loss'), logs.get('val_loss'),
                      logs.get('mean_squared_prediction_error'),
