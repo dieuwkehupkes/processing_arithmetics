@@ -71,26 +71,51 @@ I use four different architectures (explanation?):
 
 \section{Experiments}
 
-I will start by running a sequence of experiments to determine if the networks can learn to compose the meaning of sentences from the structurally non ambiguous languages $L_2$, $L_3+$, $L_3left$ and $L_3right$. Depending on the results I will move on to more complicated languages
-In principle, I would like to do all (possible) combinations that can be made by combining elements from the following table,\footnote{Of course excluding non-sensical combinations, such as Gray encoding in two dimennions} starting with architectures A1 and A2 and then expanding to A3 and A4.
+There are a couple questions I would like to answer:\begin{enumerate}
+\item Can a recurrent network (setup A1) learn to generalise to sentence lengths that weren't in the training set?
+\item Can a recurrent language learn right branching languages (and generalise to longer phrases)
+\item Can a rerurrent network learn the full arithmetic language? How is the solution encoded?
+\end{enumerate}
 
-\begin{table}[!ht]
-\begin{tabular}{|c|c|c|c|c|c|}
-    \hline
-    \textbf{Network} & \textbf{Language} & \textbf{Architecture} & \textbf{Dimensionality} & \textbf{Initialisation} & \textbf{Embeddings}\\
-    \hline
-    SRN & $L_2$   & A1    & 10    & Random    & fixed\\
-    GRU & $L_3+$  & A2    & 6     & Gray      & trained\\
-    LSTM & & A3    & 2     & one-hot? &\\
-    & $L_3right$ & A4    & & &\\
-    & $L_3left$ &    & & &\\
-    \hline
-\end{tabular}
-\end{table}
+To answer these questions I should figure out what appropriate training regimes are and what the impact is of initialisation and the size of the hidden and comparison layer. Also I will need to find some methods to analyse the internal dynamics of the network (correlatie tussen activatie units oid? welke gewichten zijn hoog? eigenwaardes weights matrix?)
 
 \section{Results}
 
+In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.
+
+\subsection{L2}
+
+Different operators, but no structural ambiguity: finite state.
+
+Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
+
+No gates or memory units are necessary to learn the L2 language. 
+How well and how quickly depend on the size of the hidden layer (as is to be expected).
+For 10 hidden units the results vary, training sometimes converges much quicker than other times, but in all runs I did a prediction error of at least less than 0.5 was reached.
+With 15 hidden units the network generally converges much faster, and reaches a higher accuracy (although still seems quite dependent on initialisation).\\
+
+Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddings the embeddings are always on an (almost) ordered line, with the plus and minus far away from each other on different sides of the line (for an example see Figure \ref{fig:L2_embeddings}).
+
+\begin{figure}[!ht]
+    \includegraphics{L2_embeddings.png}
+    \caption{Learned embeddings for a network with 15 simple recurrent units and a comparison layer of size 2. The network was trained on 1800 L2 sentences for 5000 epochs, batch size 24. After training, the mspe of the validation set (200 different L2 sentences) was 0.01.}
+\end{figure}
+
+\subsection{L+}
+
+No structural ambiguity, but longer sentences, finite state.\\
+
+Training on L2+, L3+, L4+, training error 0.03, prediction error 3.3 15 HL
+Training on L2+, L3+, L4+, training error 0.03, prediction error 1.4 15 HL (of 20? check in model)
+
+Check if the network can generalise and with what training regime:
+- train L2+, L3+ and L4+, test if it can generalise to L5+, test for different hidden layer sizes
+- train L2+, L3+ and L6+, test if it can generalise to L5+, test if it can generalise to L7+, test for different hidden layer sizes
+
+-subsection{L3b}
+
 General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
+
 
 \subsection{L2}
 
@@ -98,11 +123,6 @@ I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_
 The trainingset contains 1800 sentences, validation set contains 200 sentences, batchsize during training was 24. 
 During most runs the prediction error (= the sum squared differences between the true outcome and the rounded scalar prediction of the network) on the validation set stays high for a while and then rapidly decreases to a value close to 0. 
 Examples of learned embeddings are depicted in \ref{fig:L3_embeddings} and \ref{fig:L3_embeddings2}.
-
-\begin{figure}[!ht]
-        \includegraphics[scale=0.9]{L2_embeddings.png}
-        \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After training, the mean squared prediction error on the 200 sentences in the validation set was 0.05}\label{fig:L3_embeddings}
-\end{figure}
 
 \begin{figure}[!ht]
         \includegraphics[scale=0.5]{L2_embeddings2.png}
