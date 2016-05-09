@@ -1,6 +1,6 @@
 import argparse
 from generate_training_data import generate_training_data
-from auxiliary_functions import generate_embeddings_matrix
+from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import A1
 
 parser = argparse.ArgumentParser()
@@ -11,6 +11,9 @@ args = parser.parse_args()
 
 # import parameters
 settings = __import__(args.settings)
+
+# print model summary
+print_sum(settings)
 
 # GENERATE TRAINING DATA
 X, Y, N_digits, N_operators, d_map = generate_training_data(settings.languages_train, architecture='A1', pad_to=settings.maxlen)
@@ -68,15 +71,5 @@ if settings.save_model:
     open(model_string + '.json', 'w').write(model_json )
     training.model.save_weights(model_string + '_weights.h5')
 
-print('Model summary:')
-print('Recurrent layer: %s' % str(settings.recurrent))
-print('Size hidden layer: %i' % settings.size_hidden)
-print('Size comparison layer: %i' % settings.size_compare)
-print('Initialisation embeddings: %s' % settings.encoding)
-print('Size embeddings: %i' % settings.input_size)
-print('Batch size: %i' % settings.batch_size)
-print('Number of epochs: %i' % settings.nb_epoch)
-print('Optimizer: %s' % settings.optimizer)
-print('Trained on:')
-for language, nr in settings.languages_train.items():
-    print('%i sentences from %s' % (nr, language))
+print_sum(settings)
+
