@@ -73,24 +73,24 @@ I use four different architectures (explanation?):
 
 There are a couple questions I would like to answer:\begin{enumerate}
 \item Can a recurrent network (setup A1) learn to generalise to sentence lengths that weren't in the training set?
-\item Can a recurrent language learn right branching languages (and generalise to longer phrases)
-\item Can a rerurrent network learn the full arithmetic language? How is the solution encoded?
+\item Can a recurrent network learn right branching languages (and generalise to longer phrases)
+\item Can a recurrent network learn the full arithmetic language? How is the solution encoded?
 \end{enumerate}
 
 To answer these questions I should figure out what appropriate training regimes are and what the impact is of initialisation and the size of the hidden and comparison layer. Also I will need to find some methods to analyse the internal dynamics of the network (correlatie tussen activatie units oid? welke gewichten zijn hoog? eigenwaardes weights matrix?)
 
 \section{Results}
 
-In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.
+In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.\\
+
+\noindent Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
 
 \subsection{L2}
 
-Different operators, but no structural ambiguity: finite state.
+Different operators, but no structural ambiguity: finite state.\\
 
-Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
-
-No gates or memory units are necessary to learn the L2 language. 
-How well and how quickly depend on the size of the hidden layer (as is to be expected).
+\noindent No gates or memory units are necessary to learn the L2 language. 
+How well and how quickly depends on the size of the hidden layer (as is to be expected).
 For 10 hidden units the results vary, training sometimes converges much quicker than other times, but in all runs I did a prediction error of at least less than 0.5 was reached.
 With 15 hidden units the network generally converges much faster, and reaches a higher accuracy (although still seems quite dependent on initialisation).\\
 
@@ -98,7 +98,7 @@ Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddin
 
 \begin{figure}[!ht]
     \includegraphics{L2_embeddings.png}
-    \caption{Learned embeddings for a network with 15 simple recurrent units and a comparison layer of size 2. The network was trained on 1800 L2 sentences for 5000 epochs, batch size 24. After training, the mspe of the validation set (200 different L2 sentences) was 0.01.}
+    \caption{Learned embeddings for a network with 15 simple recurrent units and a comparison layer of size 2. The network was trained on 1800 L2 sentences for 5000 epochs, batch size 24. After training, the mspe of the validation set (200 different L2 sentences) was 0.01.}\label{fig:L2_embeddings}
 \end{figure}
 
 \subsection{L+}
@@ -112,54 +112,54 @@ Check if the network can generalise and with what training regime:
 - train L2+, L3+ and L4+, test if it can generalise to L5+, test for different hidden layer sizes
 - train L2+, L3+ and L6+, test if it can generalise to L5+, test if it can generalise to L7+, test for different hidden layer sizes
 
--subsection{L3b}
+\subsection{L3b}
 
 General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
 
 
-\subsection{L2}
-
-I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. 
-The trainingset contains 1800 sentences, validation set contains 200 sentences, batchsize during training was 24. 
-During most runs the prediction error (= the sum squared differences between the true outcome and the rounded scalar prediction of the network) on the validation set stays high for a while and then rapidly decreases to a value close to 0. 
-Examples of learned embeddings are depicted in \ref{fig:L3_embeddings} and \ref{fig:L3_embeddings2}.
-
-\begin{figure}[!ht]
-        \includegraphics[scale=0.5]{L2_embeddings2.png}
-        \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After 1500 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.76}\label{fig:L3_embeddings2}
-\end{figure}
-
-\subsection{Training L+ languages SRN}
-
-I did a couple runs with structurally unambiguous plus languages. 
-Settings of the network were still the same: size\_hidden = 20, size\_compare=10, size\_embeddings = 2. 
-I trained for 1000 epochs.\\
-
-The numbers are still more or less ordered, but not as strongely as before. 
-The brackets and + do not get a meaningful embedding (they are both very close to 0), which is sensible because in the + languages they do not contribute to the meaning of the sentence.
-Examples of learned embeddings are shown in Figure \ref{fig:SRN_L2L3L6_testL5} and Figure \ref{fig:SRN_L2L3L4_testL5}.\\
-
-It seems the simple recurrent network does not really learn a very general solution for the addition operator: when the sentence length of the test items is shorter than the longest training item (even though the exact length was not in the trainingset) the network performs the task with a very low training error. 
-When the sentence length is longer than the longest training item, the network does not learn to perform the task.
-
-\begin{figure}[!ht]
-        \includegraphics[scale=0.8]{SRN_L2L3L6.png}
-        \caption{Learned embeddings for SRN trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L6+ sentences, and tested on 500 L4 sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.056}\label{fig:SRN_L2L3L6_testL5}
-\end{figure}
-
-\begin{figure}[!ht]
-        \includegraphics[scale=0.8]{SRN_L2L3L4.png}
-        \caption{Learned embeddings for SRN trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 24.1 (the mspe of the trainingset was 0.006).}\label{fig:SRN_L2L3L4_testL5}
-\end{figure}
-
-\begin{figure}[!ht]
-        \includegraphics[scale=0.8]{GRU_L2L3L4.png}
-        \caption{Learned embeddings for network with GRU layer trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.04}\label{fig:GRU_L2L3L4}
-\end{figure}
-
-\begin{figure}[!ht]
-    \includegraphics[scale=0.5]{SRN_L3left.png}
-    \caption{Simple recurrent layer getraind op L3left, training error was nog tamelijk hoog (rond de 5).}
-\end{figure}
-
+% \subsection{L2}
+% 
+% I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. 
+% The trainingset contains 1800 sentences, validation set contains 200 sentences, batchsize during training was 24. 
+% During most runs the prediction error (= the sum squared differences between the true outcome and the rounded scalar prediction of the network) on the validation set stays high for a while and then rapidly decreases to a value close to 0. 
+% Examples of learned embeddings are depicted in \ref{fig:L3_embeddings} and \ref{fig:L3_embeddings2}.
+% 
+% \begin{figure}[!ht]
+%         \includegraphics[scale=0.5]{L2_embeddings2.png}
+%         \caption{Learned embeddings for network trained on 1800 L2 sentences and tested on 200 different L2 sentences. After 1500 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.76}\label{fig:L3_embeddings2}
+% \end{figure}
+% 
+% \subsection{Training L+ languages SRN}
+% 
+% I did a couple runs with structurally unambiguous plus languages. 
+% Settings of the network were still the same: size\_hidden = 20, size\_compare=10, size\_embeddings = 2. 
+% I trained for 1000 epochs.\\
+% 
+% The numbers are still more or less ordered, but not as strongely as before. 
+% The brackets and + do not get a meaningful embedding (they are both very close to 0), which is sensible because in the + languages they do not contribute to the meaning of the sentence.
+% Examples of learned embeddings are shown in Figure \ref{fig:SRN_L2L3L6_testL5} and Figure \ref{fig:SRN_L2L3L4_testL5}.\\
+% 
+% It seems the simple recurrent network does not really learn a very general solution for the addition operator: when the sentence length of the test items is shorter than the longest training item (even though the exact length was not in the trainingset) the network performs the task with a very low training error. 
+% When the sentence length is longer than the longest training item, the network does not learn to perform the task.
+% 
+% \begin{figure}[!ht]
+%         \includegraphics[scale=0.8]{SRN_L2L3L6.png}
+%         \caption{Learned embeddings for SRN trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L6+ sentences, and tested on 500 L4 sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.056}\label{fig:SRN_L2L3L6_testL5}
+% \end{figure}
+% 
+% \begin{figure}[!ht]
+%         \includegraphics[scale=0.8]{SRN_L2L3L4.png}
+%         \caption{Learned embeddings for SRN trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 24.1 (the mspe of the trainingset was 0.006).}\label{fig:SRN_L2L3L4_testL5}
+% \end{figure}
+% 
+% \begin{figure}[!ht]
+%         \includegraphics[scale=0.8]{GRU_L2L3L4.png}
+%         \caption{Learned embeddings for network with GRU layer trained on 2000 L2+ sentences, 2000 L3+ sentences and 2000 L4+ sentences, and tested on 500 L5+ sentences. After 1000 epochs, the mean squared prediction error on the 200 sentences in the validation set was 0.04}\label{fig:GRU_L2L3L4}
+% \end{figure}
+% 
+% \begin{figure}[!ht]
+%     \includegraphics[scale=0.5]{SRN_L3left.png}
+%     \caption{Simple recurrent layer getraind op L3left, training error was nog tamelijk hoog (rond de 5).}
+% \end{figure}
+% 
 \end{document}
