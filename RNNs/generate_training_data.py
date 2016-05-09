@@ -10,10 +10,10 @@ import numpy as np
 import random
 
 
-def generate_training_data(languages, architecture, pad_to=None):
+def generate_training_data(languages, architecture, dmap, digits, pad_to=None):
     """
-    Take a treebank object and return numpy
-    arrays with training data.
+    Take a dictionary that maps languages to number of sentences and
+     return numpy arrays with training data.
     :param languages:       dictionary mapping languages (str name) to numbers
     :param architecture:    architecture for which to generate training data
     :param pad_to:          length to pad training data to
@@ -24,21 +24,12 @@ def generate_training_data(languages, architecture, pad_to=None):
     treebank = generate_treebank(languages, architecture)
     random.shuffle(treebank.examples)
 
-    # create map from digits and operators to integers
-    digits = list(treebank.digits)
-    N_digits = len(digits)
-    operators = list(treebank.operators)
-    N_operators = len(operators)
-    digits.sort()
-    N = N_digits + N_operators + 2
-    d_map = dict(zip(digits+operators+['(',')'], np.arange(0, N)))
-
     # create empty input and targets
     X, Y = [], []
 
     # loop over examples
     for expression, answer in treebank.examples:
-        input_seq = [d_map[i] for i in str(expression).split()]
+        input_seq = [dmap[i] for i in str(expression).split()]
         answer = str(answer)
         X.append(input_seq)
         Y.append(answer)
@@ -47,7 +38,69 @@ def generate_training_data(languages, architecture, pad_to=None):
     assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
     X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
-    return X_padded, np.array(Y), N_digits, N_operators, d_map
+    return X_padded, np.array(Y)
+
+
+def generate_test_data(languages, architecture, dmap, digits, pad_to=None):
+    """
+    Take a dictionary that maps language names to number of sentences and return numpy array
+    with test data.
+    :param languages:       dictionary mapping language names to numbers
+    :param architecture:    architecture for which to generate test data
+    :param pad_to:          desired length of test sequences
+    :return:                list of tuples containing test set sames, inputs and targets
+    """
+    test_data = []
+    for name, N in languages.items():
+        X, Y = [], []
+        treebank = mathTreebank()
+        lengths, operators, branching = parse_language(name)
+        treebank.addExamples(operators, branching=branching, lengths=lengths,n=N)
+
+        for expr, answ in treebank.examples:
+            input_seq = [dmap[i] for i in str(expr).split()]
+            answer = str(answ)
+            X.append(input_seq)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+        test_data.append((name, X_padded, np.array(Y)))
+
+    return test_data
+
+
+def generate_dmap(digits, *languages):
+    """
+    Generate a map mapping the words in training and testset to one-hot vectors
+    :param digits:      array with digits to be used
+    :param languages: variable number of dictionaries mapping language names
+    to numbers
+    :return: dictionary mapping numbers and operators (str) to vectors
+    """
+    operators = set([])
+    for language_dict in languages:
+        for name in language_dict.keys():
+            plusmin = re.compile('\+')
+            op = plusmin.search(name)
+            if op:
+                new_operators = [op.group()]
+            else:
+                new_operators = ['+','-']
+        operators = operators.union(set(new_operators))
+
+    # create map from digits and operators to integers
+    operators = list(operators)
+    N_operators = len(operators)
+    digits = list(digits)
+    digits.sort()
+    digits = [str(i) for i in digits]
+    N_digits = len(digits)
+    N = N_digits + N_operators + 2
+    dmap = dict(zip(digits+operators+['(',')'], np.arange(0, N)))
+
+    return dmap, N_operators, N_digits
 
 
 def generate_treebank(languages, architecture):

@@ -81,9 +81,9 @@ To answer these questions I should figure out what appropriate training regimes 
 
 \section{Results}
 
-In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.\\
+Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
 
-\noindent Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
+\noindent In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.
 
 \subsection{L2}
 
@@ -92,7 +92,7 @@ Different operators, but no structural ambiguity: finite state.\\
 \noindent No gates or memory units are necessary to learn the L2 language. 
 How well and how quickly depends on the size of the hidden layer (as is to be expected).
 For 10 hidden units the results vary, training sometimes converges much quicker than other times, but in all runs I did a prediction error of at least less than 0.5 was reached.
-With 15 hidden units the network generally converges much faster, and reaches a higher accuracy (although still seems quite dependent on initialisation).\\
+With 15 hidden units the network generally converges faster, and reaches a higher accuracy (although still seems quite dependent on initialisation).\\
 
 Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddings the embeddings are always on an (almost) ordered line, with the plus and minus far away from each other on different sides of the line (for an example see Figure \ref{fig:L2_embeddings}).
 
@@ -105,18 +105,18 @@ Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddin
 
 No structural ambiguity, but longer sentences, finite state.\\
 
-Training on L2+, L3+, L4+, training error 0.03, prediction error 3.3 15 HL
-Training on L2+, L3+, L4+, training error 0.03, prediction error 1.4 15 HL (of 20? check in model)
+Training on L2+, L3+, L4+, training error 0.03, prediction error 3.3 15 HL\\
+Training on L2+, L3+, L4+, training error 0.03, prediction error 1.4 15 HL\\
 
 Check if the network can generalise and with what training regime:
 - train L2+, L3+ and L4+, test if it can generalise to L5+, test for different hidden layer sizes
 - train L2+, L3+ and L6+, test if it can generalise to L5+, test if it can generalise to L7+, test for different hidden layer sizes
 
-\subsection{L3b}
+% \subsection{L3b}
 
-General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
-
-
+% General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
+% 
+% 
 % \subsection{L2}
 % 
 % I ran a few run with Architecture 1, size\_hidden = 20, size\_compare=10, size\_embeddings = 2 and language = L2. 

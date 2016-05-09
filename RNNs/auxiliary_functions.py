@@ -4,9 +4,24 @@ Collection of auxiliary functions.
 Describe functions?
 """
 
-
 import numpy as np
-import theano.tensor as T
+
+
+# function to print summary of results
+def print_sum(settings):
+    print('Model summary:')
+    print('Recurrent layer: %s' % str(settings.recurrent_layer))
+    print('Size hidden layer: %i' % settings.size_hidden)
+    print('Size comparison layer: %i' % settings.size_compare)
+    print('Initialisation embeddings: %s' % settings.encoding)
+    print('Size embeddings: %i' % settings.input_size)
+    print('Batch size: %i' % settings.batch_size)
+    print('Number of epochs: %i' % settings.nb_epoch)
+    print('Optimizer: %s' % settings.optimizer)
+    print('Trained on:')
+    for language, nr in settings.languages_train.items():
+        print('%i sentences from %s' % (nr, language))
+
 
 # define padding function
 def pad(array, length):
@@ -23,6 +38,7 @@ def pad(array, length):
     except ValueError:
         raise ValueError("Array cannot be padded to shorter length")
     return padded_array
+
 
 def max_length(N):
     """
@@ -52,27 +68,28 @@ def generate_embeddings_matrix(N_digits, N_operators, input_size, encoding):
     # input_size == input_dim
 
     if encoding is None:
-        assert input_size == N_digits + N_operators + 2, "Identity encoding not possible if input size does not equal input dimension" 
+        assert input_size == N_digits + N_operators + 2,\
+            "Identity encoding not possible if input size does not equal input dimension"
         return [np.identity(input_size)]
 
     # return GrayCode, raise exception if input_size is too small
     if encoding == 'Gray' or encoding == 'gray':
-        return [grayEmbeddings(N_digits, N_operators, input_size)]
+        return [gray_embeddings(N_digits, N_operators, input_size)]
 
 
-def grayEmbeddings(N_digits, N_operators, input_size):
+def gray_embeddings(N_digits, N_operators, input_size):
     """
     Generate embeddings where numbers are encoded with
     reflected binary code. both embeddings and brackets are
     randomly initialised with values between -0.1 and 0.1
     """
     # generate graycode for digits
-    grayDigits = grayCode(N_digits, input_size)
+    gray_digits = grayCode(N_digits, input_size)
 
     # extend with random vectors for operators and brackets
-    grayDigits.extend([np.random.random_sample(input_size)*.2-.1 for i in xrange(N_operators+2)])
+    gray_digits.extend([np.random.random_sample(input_size)*.2-.1 for i in xrange(N_operators+2)])
 
-    return np.array(grayDigits)
+    return np.array(gray_digits)
 
 
 def grayCode(n, length=None):
