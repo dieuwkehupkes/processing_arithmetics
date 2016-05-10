@@ -64,23 +64,22 @@ if settings.plot_embeddings == True:
 
 print_sum(settings)
 
-# save model
-if settings.save_model:
-    # generate name for model
-    model_string = ''
-    for language in settings.languages_train.keys():
-        model_string += language
-
-    model_string += "-"+str(settings.recurrent_layer)
-
-    model_json = training.model.to_json()
-    open(model_string + '.json', 'w').write(model_json )
-    training.model.save_weights(model_string + '_weights.h5')
-
 if settings.languages_test:
     # generate test data
     test_data = generate_test_data(settings.languages_test, architecture='A1',
                                    dmap=dmap, digits=settings.digits, pad_to=settings.maxlen)
     for name, X, Y in test_data:
         print("Accuracy for for test set %s: %s " % (name, str(training.model.evaluate(X, Y))))
+
+# save model
+if settings.save_model:
+    save = raw_input("Save model? y/n")
+    if save == 'n' or save == 'N':
+        pass
+    if save == 'y' or save == 'Y':
+        model_string = raw_input("Provide filename (without extension)")
+        model_json = training.model.to_json()
+        open(model_string + '.json', 'w').write(model_json )
+        training.model.save_weights(model_string + '_weights.h5')
+
 
