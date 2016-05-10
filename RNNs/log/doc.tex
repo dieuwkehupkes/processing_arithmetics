@@ -97,7 +97,7 @@ With 15 hidden units the network generally converges faster, and reaches a highe
 Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddings the embeddings are always on an (almost) ordered line, with the plus and minus far away from each other on different sides of the line (for an example see Figure \ref{fig:L2_embeddings}).
 
 \begin{figure}[!ht]
-    \includegraphics{L2_embeddings.png}
+    \includegraphics[scale=0.7]{L2_embeddings.png}
     \caption{Learned embeddings for a network with 15 simple recurrent units and a comparison layer of size 2. The network was trained on 1800 L2 sentences for 5000 epochs, batch size 24. After training, the mspe of the validation set (200 different L2 sentences) was 0.01.}\label{fig:L2_embeddings}
 \end{figure}
 
@@ -105,14 +105,38 @@ Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddin
 
 No structural ambiguity, but longer sentences, finite state.\\
 
-Training on L2+, L3+, L4+, training error 0.03, prediction error 3.3 15 HL\\
-Training on L2+, L3+, L4+, training error 0.03, prediction error 1.4 15 HL\\
+I switched the optimizer to adam, the prediction error is more all over the place (and seems to be not entirely converged at the end of the training). 
+The network generally decreases its error at the start of the training much faster, but also finds more non generalisable solutions?
+It seems that the network is better able to generalise if longer test sequences are included in training
 
-Check if the network can generalise and with what training regime:
-- train L2+, L3+ and L4+, test if it can generalise to L5+, test for different hidden layer sizes
-- train L2+, L3+ and L6+, test if it can generalise to L5+, test if it can generalise to L7+, test for different hidden layer sizes
+\begin{tabular}{lcccc}
+    trained on & mspe training & mspe test L4+ & mspe L5+ & mspe L7+\\
+    L2+, L3+, L6+ & 0.13 & 0.03 & 0.04 & 0.17\\
+    L2+, L3+, L6+ & 0.08 & 0.03 & 0.04 & 0.16\\
+    L2+, L3+, L6+ & 0.04 & 0.01 & 0.02 & 0.13\\
+    \hline
+    L2+, L3+, L4+ & \\
+    L2+, L3+, L4+ & \\
+    L2+, L3+, L4+ & \\
+\end{tabular}
 
-% \subsection{L3b}
+\subsection{L3}
+
+Test if we can train on L3 and predict L2? What does the solution look like.\\
+\noindent Test if we can train on L2, L3 and L4 and predict sentences from L5\\
+\noindent Test if we can train on L2, L3 and L6 and predict sentences from L5 and L7\\
+
+\subsection{What will I monitor?}
+
+I will have to think of some things I can monitor to see what it is actually doing, ideas?\begin{itemize}
+    \item plot the eigenvalue of the recurrent connection matrix?
+    \item kleurenplaatje gewichten van input naar hidden?
+    \item correlaties tussen hidden units?
+    \item correlaties tussen input en hidden units?
+    \item changeability hidden units over tijd?
+    \end{itemize}
+
+
 
 % General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
 % 
