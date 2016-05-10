@@ -88,7 +88,7 @@ def generate_dmap(digits, *languages):
                 new_operators = [op.group()]
             else:
                 new_operators = ['+','-']
-        operators = operators.union(set(new_operators))
+            operators = operators.union(set(new_operators))
 
     # create map from digits and operators to integers
     operators = list(operators)
