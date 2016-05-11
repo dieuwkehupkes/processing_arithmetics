@@ -3,7 +3,6 @@ Functions to generate training data for the
 arithmetic task.
 """
 from arithmetics import mathTreebank
-from arithmetics import mathExpression
 import keras.preprocessing.sequence
 import re
 import numpy as np
@@ -98,15 +97,15 @@ def generate_dmap(digits, *languages):
     digits = [str(i) for i in digits]
     N_digits = len(digits)
     N = N_digits + N_operators + 2
-    dmap = dict(zip(digits+operators+['(',')'], np.arange(0, N)))
-
+    # Add dummy word at first position to get weight updates for first word as well!
+    dmap = dict(zip(digits+operators+['(', ')'], np.arange(1, N+1)))
     return dmap, N_operators, N_digits
 
 
 def generate_treebank(languages, architecture):
     """
     Generate training examples.
-    :param language_dict:   dictionary mapping languages to number of samples
+    :param languages:   dictionary mapping languages to number of samples
     """
     treebank = mathTreebank()
     for name, N in languages.items():
@@ -139,7 +138,7 @@ def parse_language(language_str):
     if branching:
         branching = branching.group()
 
-    return ([n], operators, branching)
+    return [n], operators, branching
 
 if __name__ == '__main__':
     languages = {'L_3lb-':10, 'L_4+':5}
