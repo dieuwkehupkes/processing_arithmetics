@@ -77,26 +77,26 @@ def generate_embeddings_matrix(N_digits, N_operators, input_size, encoding):
         return [gray_embeddings(N_digits, N_operators, input_size)]
 
 
-def gray_embeddings(N_digits, N_operators, input_size):
+def gray_embeddings(n_digits, n_operators, input_size):
     """
     Generate embeddings where numbers are encoded with
     reflected binary code. both embeddings and brackets are
     randomly initialised with values between -0.1 and 0.1
     """
-    # generate graycode for digits
-    gray_digits = grayCode(N_digits, input_size)
+    # generate gray code for digits
+    gray_digits = gray_code(n_digits, input_size)
 
     # extend with random vectors for operators and brackets
-    gray_digits.extend([np.random.random_sample(input_size)*.2-.1 for i in xrange(N_operators+2)])
+    gray_digits.extend([np.random.random_sample(input_size) * .2 - .1 for i in xrange(n_operators + 2)])
 
     return np.array(gray_digits)
 
 
-def grayCode(n, length=None):
-    grays = [[0.0],[1.0]]
+def gray_code(n, length=None):
+    grays = [[0.0], [1.0]]
     while len(grays) < n+1:
-        pGrays = grays[:]
-        grays = [[0.0]+gray for gray in pGrays]+[[1.0]+gray for gray in pGrays[::-1]]
+        pgrays = grays[:]
+        grays = [[0.0]+gray for gray in pgrays]+[[1.0]+gray for gray in pgrays[::-1]]
 
     # reduce to length n
     grays = grays[1:n+1]
@@ -109,5 +109,5 @@ def grayCode(n, length=None):
     return gray_code
 
 if __name__ == '__main__':
-    print grayCode(10, 7)
+    print gray_code(10, 7)
 
