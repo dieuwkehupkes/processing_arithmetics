@@ -16,27 +16,30 @@ settings = __import__(args.settings)
 print_sum(settings)
 
 # GENERATE map from words to vectors
-dmap, N_operators, N_digits = generate_dmap(settings.digits, settings.languages_train, settings.languages_val, settings.languages_test)
+dmap, N_operators, N_digits = generate_dmap(settings.digits, settings.languages_train,
+                                            settings.languages_val, settings.languages_test)
 
 # GENERATE TRAINING DATA
-X, Y = generate_training_data(settings.languages_train, architecture='A1', dmap=dmap, digits=settings.digits, pad_to=settings.maxlen)
+X, Y = generate_training_data(settings.languages_train, architecture='A1', dmap=dmap,
+                              digits=settings.digits, pad_to=settings.maxlen)
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
     # generate validation data if dictionary is provided
     X_train, Y_train = X, Y
-    X_val, Y_val = generate_training_data(settings.languages_val, architecture='A1', dmap=dmap, digits=settings.digits,
+    X_val, Y_val = generate_training_data(settings.languages_val, architecture='A1',
+                                          dmap=dmap, digits=settings.digits,
                                           pad_to=settings.maxlen)
 
 else:
     # split data in training and validation data
     # TODO I suppose this doesn't work for architecture 3 and 4, adapt this later
-    split_at = int(len(X)* (1. - settings.validation_split))
+    split_at = int(len(X) * (1. - settings.validation_split))
     X_train, X_val = X[:split_at], X[split_at:]
     Y_train, Y_val = Y[:split_at], Y[split_at:]
 
 # COMPUTE NETWORK DIMENSIONS
-input_dim = len(dmap)
+input_dim = len(dmap)+1
 input_length = settings.maxlen
 
 # GENERATE EMBEDDINGS MATRIX
@@ -73,7 +76,7 @@ if settings.languages_test:
 
 # save model
 if settings.save_model:
-    save = raw_input("Save model? y/n")
+    save = raw_input("\nSave model? y/n ")
     if save == 'n' or save == 'N':
         pass
     if save == 'y' or save == 'Y':
@@ -81,5 +84,3 @@ if settings.save_model:
         model_json = training.model.to_json()
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')
-
-
