@@ -4,6 +4,7 @@ from keras.layers import Embedding, Dense, Input
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
+from MonitorUpdates import MonitorUpdates
 from Logger import Logger
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
