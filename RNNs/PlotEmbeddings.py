@@ -19,7 +19,7 @@ class PlotEmbeddings(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         # Get a snapshot of the weight matrix every 5 batches
-        if epoch % self.N == 0:
+        if epoch % self.N == 0 and epoch != 0:
             # plot embeddings
             self.plot()
 
@@ -36,13 +36,11 @@ class PlotEmbeddings(Callback):
         xmin, ymin = 1.1 * weights.min(axis=0)
         xmax, ymax = 1.1 * weights.max(axis=0)
         plt.clf()
-        i = 0
-        for weight_set in weights:
-            xy = tuple(weight_set)
+        for i in xrange(1, len(weights)):
+            xy = tuple(weights[i])
             x, y = xy
             plt.plot(x, y, 'o')
             plt.annotate(self.dmap[i], xy=xy)
             plt.xlim([xmin, xmax])
             plt.ylim([ymin, ymax])
-            i+= 1
         plt.show()
