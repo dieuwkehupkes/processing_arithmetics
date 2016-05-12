@@ -22,7 +22,7 @@ class DrawWeights(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         # Get a snapshot of the weight matrix every 5 batches
-        if epoch % 5 == 0:
+        if epoch % 1 == 0:
             # Access the full weight matrix
             weights = self.model.layers[self.layer_id].get_weights()[self.param_id]
             # Create the frame and add it to the animation
@@ -32,5 +32,7 @@ class DrawWeights(Callback):
 
     def on_train_end(self, logs={}):
         # Once the training has ended, display the animation
-        anim = animation.ArtistAnimation(self.fig, self.imgs, interval=10, blit=False, repeat_delay=3000)
+        anim = animation.ArtistAnimation(self.fig, self.imgs, interval=500, blit=False, repeat_delay=3000)
+        pcm = self.ax.get_children()[2]
+        plt.colorbar(pcm, ax=self.ax)
         plt.show()

@@ -54,7 +54,7 @@ training = A1(settings.recurrent_layer, input_dim=input_dim, input_size=settings
 
 training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val),
                batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,
-               embeddings_animation=settings.embeddings_animation, plot_embeddings=settings.plot_embeddings,
+               weights_animation=settings.weights_animation, plot_embeddings=settings.plot_embeddings,
                logger=settings.print_every)
 
 # plot results

@@ -120,10 +120,10 @@ class Training(object):
             i+=1
         plt.show()
 
-    def generate_callbacks(self, embeddings_animation, plot_embeddings, print_every):
+    def generate_callbacks(self, weights_animation, plot_embeddings, print_every):
         """
         Generate sequence of callbacks to use during training
-        :param embeddings_animation:        set to true to generate visualisation of embeddings
+        :param weights_animation:        set to true to generate visualisation of embeddings
         :param plot_embeddings:             generate scatter plot of embeddings every plot_embeddings epochs
         :param print_every:                 print summary of results every print_every epochs
         :return:
@@ -132,8 +132,9 @@ class Training(object):
         history = TrainingHistory()
         callbacks = [history]
 
-        if embeddings_animation:
-            draw_weights = DrawWeights(figsize=(4, 4), layer_id=1, param_id=0)
+        if weights_animation:
+            layer_id, param_id = weights_animation
+            draw_weights = DrawWeights(figsize=(4, 4), layer_id=layer_id, param_id=param_id)
             callbacks.append(draw_weights)
 
         if plot_embeddings:
@@ -189,7 +190,7 @@ class A1(Training):
         # print self.model.get_config()
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
-              embeddings_animation=False, plot_embeddings=False, logger=False):
+              weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
@@ -199,7 +200,7 @@ class A1(Training):
         """
         X_train, Y_train = training_data
 
-        callbacks = self.generate_callbacks(embeddings_animation, plot_embeddings, logger)
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
 
         # fit model
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data, batch_size=batch_size,
