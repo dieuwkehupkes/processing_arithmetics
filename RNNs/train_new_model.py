@@ -64,6 +64,8 @@ if settings.plot_prediction:
     training.plot_prediction_error()
 if settings.plot_embeddings == True:
     training.plot_embeddings()
+if settings.plot_esp:
+    training.plot_esp()
 
 print_sum(settings)
 

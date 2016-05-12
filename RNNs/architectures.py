@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.animation as animation
 
+
 class Training(object):
     """
     Give elaborate description
@@ -81,6 +82,17 @@ class Training(object):
         plt.ylabel(self.loss_function)
         plt.axhline(xmin=0)
         plt.legend()
+        plt.show()
+
+    def plot_esp(self):
+        """
+        Plot the spectral radius of the recurrent connections
+        of the network during training
+        """
+        plt.plot(self.trainings_history.esp)
+        plt.title("Spectral radius of recurrent connections")
+        plt.xlabel("Epoch")
+        plt.ylabel("spectral radius")
         plt.show()
 
     def plot_embeddings(self):
