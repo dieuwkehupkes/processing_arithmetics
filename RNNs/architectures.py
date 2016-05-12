@@ -7,9 +7,10 @@ from PlotEmbeddings import PlotEmbeddings
 from MonitorUpdates import MonitorUpdates
 from Logger import Logger
 import matplotlib.pyplot as plt
+import numpy as np
 import matplotlib.animation as animation
 
-class Training:
+class Training(object):
     """
     Give elaborate description
     """
@@ -194,56 +195,4 @@ class A1(Training):
         self.loss_function = None
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
-
-class A2(Training):
-    """
-    Give description.
-    """
-
-    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare, W_embeddings,
-                 trainable_embeddings=True, trainable_comparison=True, mask_zero=True, optimizer='adagrad'):
-        Training.__init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
-                          W_embeddings, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
-                          optimizer='adagrad')
-        self.trainings_history = None            # set trainings_history as attribute
-
-    def _build(self, W_embeddings):
-        """
-        Build the trainings architecture around
-        the model.
-        """
-        # create input layer
-        input_layer = Input(shape=(1,), dtype='int32', name='input')
-
-        # create embeddings
-        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size, input_length=self.input_length, weights=W_embeddings, mask_zero=self.mask_zero, trainable=self.cotrain_embeddings, name='embeddings')(input_layer) 
-        
-        # create recurrent layer
-        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer')(embeddings)
-
-        # create comparison layer
-        comparison = Dense(self.size_compare, name='comparison', trainable=self.cotrain_comparison)(recurrent)
-
-        # create output layer
-        output_layer = Dense(120, activation='softmax', name='output')(comparison)
-
-        # create model
-        self.model = Model(input=input_layer, output=output_layer)
-
-        # compile
-        self.loss_function = 'sparse_categorical_crossentropy'
-        self.model.compile(loss={'output':self.loss_function}, optimizer=self.optimizer)
-
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1):
-        """
-        Fit the model.
-        """
-        history = TrainingHistory()
-        X_train, Y_train = training_data
-
-        # fit model
-        self.model.fit({'input':X_train}, {'output':Y_train}, validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs, callbacks=[history], verbose=verbosity, shuffle=True)
-
-        self.trainings_history = history
-        
 
