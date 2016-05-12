@@ -12,10 +12,11 @@ parser.add_argument("--metrics", help='provide metrics to be monitored during tr
 
 args = parser.parse_args()
 
-# elsewhere...
+# load model
 model = model_from_json(open(args.architecture).read())
 model.load_weights(args.weights)
 model.compile(optimizer=args.optimizer, loss=args.loss, metrics=[args.metrics])
+
 
 X_val, Y_val, N_digits, N_operators, d_map = pickle.load(open(args.validation_set, 'rb'))
 

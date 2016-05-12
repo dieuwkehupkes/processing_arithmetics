@@ -1,4 +1,4 @@
-from keras.models import Model
+from keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input
 # from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
@@ -15,11 +15,33 @@ class Training(object):
     """
     Give elaborate description
     """
-    def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
+    def __init(self):
+        """
+        Create training architecture
+        """
+
+    def generate_model(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
                  W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
                  dropout_recurrent=0.0, optimizer='adagrad'):
+        """
+        Generate the model to be trained
+        :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
+        :param input_dim:           vocabulary size
+        :param input_size:          dimensionality of the embeddings (input size recurrent layer)
+        :param input_length:        max sequence length
+        :param size_hidden:         size recurrent layer
+        :param size_compare:        size comparison layer
+        :param W_embeddings:        Either an embeddings matrix or None if to be generate by keras layer
+        :param dmap:                A map from vocabulary words to integers
+        :param trainable_embeddings: set to false to fix embedding weights during training
+        :param trainable_comparison: set to false to fix comparison layer weights during training
+        :param mask_zero:            set to true to mask 0 values
+        :param dropout_recurrent:    dropout param for recurrent weights
+        :param optimizer:            optimizer to use during training
+        :return:
+        """
 
-        # set attributes
+        # set network attributes
         self.recurrent_layer = recurrent_layer
         self.input_dim = input_dim
         self.input_size = input_size
@@ -39,8 +61,11 @@ class Training(object):
         # build model
         self._build(W_embeddings)
 
+    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+        raise NotImplementedError()
+
     def _build(self, W_embeddings):
-        pass
+        raise NotImplementedError()
 
     def model_summary(self):
         print(self.model.summary())
@@ -190,6 +215,22 @@ class A1(Training):
                            metrics=['mspe'])
 
         # print self.model.get_config()
+
+    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+        """
+        Add a model with already trained weights
+        :param json_model:      json filename containing model architecture
+        :param model_weights:   h5 file containing model weights
+        :param optimizer:       optimizer to use during training
+        """
+        self.model = model_from_json(open(json_model).read())
+        self.model.load_weights(model_weights)
+        self.loss_function = 'mean_squared_error'
+        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=['mspe'])
+        self.dmap = dmap
+
+        return
+
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
               weights_animation=False, plot_embeddings=False, logger=False):

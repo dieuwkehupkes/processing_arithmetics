@@ -18,6 +18,8 @@ print_sum(settings)
 # GENERATE map from words to vectors
 dmap, N_operators, N_digits = generate_dmap(settings.digits, settings.languages_train,
                                             settings.languages_val, settings.languages_test)
+if settings.pretrained_model:
+    print("\nWarning: dmaps should be equal!\n")
 
 # GENERATE TRAINING DATA
 X, Y = generate_training_data(settings.languages_train, architecture='A1', dmap=dmap,
@@ -46,7 +48,14 @@ input_length = settings.maxlen
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, settings.input_size, settings.encoding)
 
 # CREATE TRAININGS ARCHITECTURE
-training = A1(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
+training = A1()
+
+if settings.pretrained_model:
+    model_string = settings.pretrained_model+ '.json'
+    model_weights = settings.pretrained_model + '_weights.h5'
+    training.add_pretrained_model(model_string, model_weights, optimizer=settings.optimizer, dmap=dmap)
+else:
+    training.generate_model(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
               input_length=input_length, size_hidden=settings.size_hidden,
               size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=dmap,
               trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
@@ -81,8 +90,8 @@ if settings.save_model:
     save = raw_input("\nSave model? y/n ")
     if save == 'n' or save == 'N':
         pass
-    if save == 'y' or save == 'Y':
-        model_string = raw_input("Provide filename (without extension)")
+    elif save == 'y' or save == 'Y':
+        model_string = raw_input("Provide filename (without extension) ")
         model_json = training.model.to_json()
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')

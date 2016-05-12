@@ -17,12 +17,8 @@ encoding            = 'random'        # options: random, gray
 mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
-# PRETRAIN
-# Use this to train an already trained model
-pretrained_model = 'test_model'
-
 # TRAINING
-nb_epoch            = 5            # number of iterations
+nb_epoch            = 500            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
