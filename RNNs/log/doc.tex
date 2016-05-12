@@ -120,6 +120,8 @@ It seems that the network is better able to generalise if longer test sequences 
     L2+, L3+, L4+ & \\
 \end{tabular}
 
+I also tried to train the L+ language with dropout (0.05), that worked very poorly!
+
 \subsection{L3}
 
 Test if we can train on L3 and predict L2? What does the solution look like.\\
@@ -129,11 +131,16 @@ Test if we can train on L3 and predict L2? What does the solution look like.\\
 \subsection{What will I monitor?}
 
 I will have to think of some things I can monitor to see what it is actually doing, ideas?\begin{itemize}
-    \item plot the eigenvalue of the recurrent connection matrix?
-    \item kleurenplaatje gewichten van input naar hidden?
-    \item correlaties tussen hidden units?
-    \item correlaties tussen input en hidden units?
-    \item changeability hidden units over tijd?
+    \item During training:\begin{itemize}
+            \item plot the eigenvalue of the recurrent connection matrix?
+            \item kleurenplaatje gewichten van input naar hidden?
+        \end{itemize}
+    \item While running the network:\begin{itemize}
+            \item correlaties tussen hidden units?
+            \item correlaties tussen input en hidden units?
+            \item changeability hidden units over tijd?
+            \item miss hidden layer activaties plotten voor voorbeelden?
+        \end{itemize}
     \end{itemize}
 
 
