@@ -22,7 +22,7 @@ class DrawWeights(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         # Get a snapshot of the weight matrix every 5 batches
-        if epoch % 1 == 0:
+        if epoch % 5 == 0:
             # Access the full weight matrix
             weights = self.model.layers[self.layer_id].get_weights()[self.param_id]
             # Create the frame and add it to the animation
