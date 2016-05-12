@@ -18,10 +18,11 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # TRAINING
-nb_epoch            = 50            # number of iterations
+nb_epoch            = 10            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
+dropout_recurrent   = 0.05           # fraction of the inputs to drop for recurrent gates
 # provide a dictionary that maps languages to number of sentences to
 # generate for that language.
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
@@ -32,12 +33,12 @@ languages_test              = {'L4+': 500, 'L5+':500, 'L7+':500}                
 maxlen                      = max_length(7)
 
 # VISUALISATION AND LOGS
-weights_animation = (2, 1)           # create an animation of layer weights,
+weights_animation = False           # create an animation of layer weights,
                                     # provide tuple of layer and param_id
 plot_loss = False                   # plot loss
 plot_prediction = True              # plot prediction error
-plot_embeddings = 500               # create scatterplot of embeddings
-plot_esp = True                     # plot spectral radius of recurrent connections
+plot_embeddings = 50               # create scatterplot of embeddings
+plot_esp = False                     # plot spectral radius of recurrent connections
 verbose = 1                         # verbosity mode
 print_every = False                 # print results
 

@@ -50,7 +50,7 @@ training = A1(settings.recurrent_layer, input_dim=input_dim, input_size=settings
               input_length=input_length, size_hidden=settings.size_hidden,
               size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=dmap,
               trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
-              optimizer=settings.optimizer)
+              optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
 
 training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val),
                batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,

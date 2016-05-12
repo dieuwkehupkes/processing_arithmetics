@@ -17,7 +17,7 @@ class Training(object):
     """
     def __init__(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
                  W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
-                optimizer='adagrad'):
+                 dropout_recurrent=0.0, optimizer='adagrad'):
 
         # set attributes
         self.recurrent_layer = recurrent_layer
@@ -30,6 +30,7 @@ class Training(object):
         self.cotrain_comparison = trainable_comparison
         self.cotrain_embeddings = trainable_embeddings
         self.mask_zero = mask_zero
+        self.dropout_recurrent = dropout_recurrent
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
@@ -117,7 +118,7 @@ class Training(object):
             plt.annotate(dmap_inverted[i], xy=xy)
             plt.xlim([xmin,xmax])
             plt.ylim([ymin,ymax])
-            i+=1
+            i += 1
         plt.show()
 
     def generate_callbacks(self, weights_animation, plot_embeddings, print_every):
@@ -171,7 +172,8 @@ class A1(Training):
                                name='embeddings')(input_layer)
         
         # create recurrent layer
-        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer')(embeddings)
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         dropout_U=self.dropout_recurrent)(embeddings)
 
         # create comparison layer
         comparison = Dense(self.size_compare, name='comparison', trainable=self.cotrain_comparison)(recurrent)
