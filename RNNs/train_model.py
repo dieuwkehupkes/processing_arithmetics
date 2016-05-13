@@ -102,3 +102,4 @@ if settings.save_model:
         model_json = training.model.to_json()
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')
+        open(model_string + '.dmap', 'w').write(dmap)
