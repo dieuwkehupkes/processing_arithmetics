@@ -143,6 +143,13 @@ I will have to think of some things I can monitor to see what it is actually doi
         \end{itemize}
     \end{itemize}
 
+\section{Comments, to do}
+
+\begin{itemize}
+    \item Currently it is not possible to check for consistency of teh map between the words in the vocabulary and integers. I should build this at some point, although I am not sure what would be a good way to do so. An option would be to modify the embeddings class and add the dmap as an attribute. Or maybe I could write my own model class that contains that, or always run models as a tuple with the dmap?
+    \item it would be good to make some tests\dots
+\end{itemize}
+
 
 
 % General settings I am using for all simulations: hidden size = 20, size comparison layer = 10, batch size = 24, optimizer = adagrad.
