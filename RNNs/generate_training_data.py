@@ -148,5 +148,5 @@ if __name__ == '__main__':
     dmap, N_operators, N_digits = generate_dmap(digits, languages)
     test_data = generate_training_data(languages, architecture='A1', dmap=dmap, digits=digits, pad_to=max_length(7))
     pickle.dump(test_data, open('test_sets/L3_500.test', 'wb'))
-    pickle.dump(dmap, open('model_test.dmap', 'wb'))
+    # pickle.dump(dmap, open('model_test.dmap', 'wb'))
 
