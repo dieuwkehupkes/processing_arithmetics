@@ -14,13 +14,16 @@ model_dmap = 'model_test.dmap'              # dmap of the embeddings layer of th
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
 loss = 'mse'            # loss function
 metrics = ['mspe']         # metrics to be monitored
+digits = np.arange(-19, 20)
 
 # TEST SETS
-test_set = 'test_sets/L3_500.test'
-
+# test_sets = ['test_sets/L3_500.test']
+test_sets = {'L3': 1}
 
 # PARAMETERS FOR RUNNING
-compute_accuracy = True     # compute accuracy on testset
+compute_accuracy = False     # compute accuracy on testset
+
+compute_correls = True      # compute correlation between hidden unit activations
 
 # - overall accuracy op testset berekenen voor alle metrics
 # - correlatie tussen de hidden units?
