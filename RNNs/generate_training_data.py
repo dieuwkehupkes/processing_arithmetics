@@ -3,10 +3,12 @@ Functions to generate training data for the
 arithmetic task.
 """
 from arithmetics import mathTreebank
+from auxiliary_functions import max_length
 import keras.preprocessing.sequence
 import re
 import numpy as np
 import random
+import pickle
 
 
 def generate_training_data(languages, architecture, dmap, digits, pad_to=None):
@@ -97,7 +99,7 @@ def generate_dmap(digits, *languages):
     digits = [str(i) for i in digits]
     N_digits = len(digits)
     N = N_digits + N_operators + 2
-    # Add dummy word at first position to get weight updates for first word as well!
+    # start counting at 1 to not ignore first word during training
     dmap = dict(zip(digits+operators+['(', ')'], np.arange(1, N+1)))
     return dmap, N_operators, N_digits
 
@@ -141,6 +143,10 @@ def parse_language(language_str):
     return [n], operators, branching
 
 if __name__ == '__main__':
-    languages = {'L_3lb-':10, 'L_4+':5}
-    generate_treebank(languages)
+    languages = {'L_3':500}
+    digits = np.arange(-19, 20)
+    dmap, N_operators, N_digits = generate_dmap(digits, languages)
+    test_data = generate_training_data(languages, architecture='A1', dmap=dmap, digits=digits, pad_to=max_length(7))
+    pickle.dump(test_data, open('test_sets/L3_500.test', 'wb'))
+    pickle.dump(dmap, open('model_test.dmap', 'wb'))
 
