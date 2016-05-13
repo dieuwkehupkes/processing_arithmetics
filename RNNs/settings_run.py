@@ -4,43 +4,27 @@ from auxiliary_functions import max_length
 from architectures import A1
 import numpy as np
 
-# network details
-architecture        = A1            # Trainings architecture
-recurrent_layer     = SimpleRNN   # options: SimpleRNN, GRU, LSTM
-size_hidden         = 15            # size of the hidden layer
-size_compare        = 2            # size of comparison layer
 
-# INPUT
-cotrain_embeddings  = True          # set to true for cotraining of embeddings
-cotrain_comparison  = True          # set to true for cotraining of comparison layer
-encoding            = 'random'        # options: random, gray
-mask_zero           = True          # set to true to apply masking to input
-input_size          = 2             # input dimensionality
+# NETWORK FILES
+model_architecture = 'model_test.json'         # name of file containing model architecture
+model_weights = 'model_test_weights.h5'     # name of file containing model weights
+model_dmap = 'model_test.dmap'              # dmap of the embeddings layer of the model
 
-# TRAINING
-nb_epoch            = 500            # number of iterations
-batch_size          = 24            # batchsize during training
-validation_split    = 0.1          # fraction of data to use for testing
-optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
-dropout_recurrent   = 0.00           # fraction of the inputs to drop for recurrent gates
-# provide a dictionary that maps languages to number of sentences to
-# generate for that language.
-# languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
-digits                      = np.arange(-19,20)
-languages_train             = {'L2': 2000, 'L3':2000}                 # dict L -> N
-languages_val               = {'L4': 500}
-languages_test              = {'L2': 500, 'L3':500, 'L4':500}                            # languages to test on after training
-maxlen                      = max_length(7)
+# SETTINGS OF NETWORK
+optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
+loss = 'mse'            # loss function
+metrics = ['mspe']         # metrics to be monitored
 
-# VISUALISATION AND LOGS
-weights_animation = False           # create an animation of layer weights,
-                                    # provide tuple of layer and param_id
-plot_loss = False                   # plot loss
-plot_prediction = True              # plot prediction error
-plot_embeddings = 250               # create scatterplot of embeddings
-plot_esp = False                     # plot spectral radius of recurrent connections
-verbose = 1                         # verbosity mode
-print_every = False                 # print results
+# TEST SETS
+test_set = 'test_sets/L3_500.test'
 
-# SAVE MODEL
-save_model = True
+
+# PARAMETERS FOR RUNNING
+compute_accuracy = True     # compute accuracy on testset
+
+# - overall accuracy op testset berekenen voor alle metrics
+# - correlatie tussen de hidden units?
+# - run one by one and plot hidden layer activations (animatie/plot) (bij voorkeur met de huidige input op x-as
+# - run one by one and print test items and outcomes?
+one_by_one = True
+
