@@ -2,6 +2,7 @@ import argparse
 from generate_training_data import generate_training_data, generate_test_data, generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import A1
+import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("settings", help="Provide file with settings for model running")
@@ -10,7 +11,13 @@ parser.add_argument("settings", help="Provide file with settings for model runni
 args = parser.parse_args()
 
 # import parameters
-settings = __import__(args.settings)
+import_string = args.settings
+py = re.compile('\.py$')
+if py.search(import_string):
+    # take of .py
+    import_string = import_string[:-3]
+
+settings = __import__(import_string)
 
 # print model summary
 print_sum(settings)
