@@ -2,6 +2,7 @@ import argparse
 from generate_training_data import generate_training_data, generate_test_data, generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import A1
+import pickle
 import re
 
 parser = argparse.ArgumentParser()
@@ -102,4 +103,4 @@ if settings.save_model:
         model_json = training.model.to_json()
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')
-        open(model_string + '.dmap', 'w').write(dmap)
+        pickle.dump(dmap, open(model_string + '.dmap', 'w'))
