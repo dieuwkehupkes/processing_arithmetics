@@ -1,4 +1,6 @@
-from keras.models import model_from_json
+from keras.models import Model, model_from_json
+from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
+from keras.utils.layer_utils import layer_from_config
 from keras import backend as K
 from generate_training_data import generate_test_data
 import argparse
@@ -21,6 +23,7 @@ settings = __import__(import_string)
 # load model
 model = model_from_json(open(settings.model_architecture).read())
 model.load_weights(settings.model_weights)
+# model.layers[2].return_sequences = True
 model.compile(optimizer=settings.optimizer, loss=settings.loss, metrics=settings.metrics)
 
 dmap = pickle.load(open(settings.model_dmap, 'rb'))
@@ -51,16 +54,26 @@ if settings.compute_accuracy:
         print '\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))])
 
 if settings.compute_correls:
-    # truncate model to output hidden layer activations
-    # set return_sequences of hidden layer to true
-    model.layers[2].return_sequences = True
-    hl_activations = K.function([model.layers[0].input, K.learning_phase()],
-                                model.layers[2].get_activations(train=False))
+
+    # check embeddings layer type:
+    layer_type = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}
+    recurrent_layer = layer_type[model.get_config()['layers'][2]['class_name']]
+    rec_config = model.layers[2].get_config()
+
+    embeddings_sequence = recurrent_layer(output_dim=rec_config['output_dim'],
+                                          activation=rec_config['activation'],
+                                          weights=model.layers[2].get_weights(),
+                                          return_sequences=True)(model.layers[1].output)
+
+    truncated_model = Model(input=model.layers[0].input, output=embeddings_sequence)
+    truncated_model.compile(optimizer=settings.optimizer, loss=settings.loss, metrics=settings.metrics)
+
+    # hl_activations = K.function([truncated_model.layers[0].input, K.learning_phase()],
+    #                            truncated_model.layers[2].output)
 
     for name, X_test, Y_test in test_data:
-        # activations = hl_activations([X_test, 0])
-        print hl_activations([X_test, 0])
-
+        # print hl_activations([X_test, 0])
+        print(truncated_model.predict(X_test))
 
 
     # Compute correlation between hidden unit activations
