@@ -18,16 +18,16 @@ digits = np.arange(-19, 20)
 
 # TEST SETS
 # test_sets = ['test_sets/L3_500.test']
-test_sets = {'L3': 1}
+test_sets = {'L3': 500}
 
 # PARAMETERS FOR RUNNING
 compute_accuracy = False     # compute accuracy on testset
 
-compute_correls = True      # compute correlation between hidden unit activations
+compute_correls = False      # compute correlation between hidden unit activations
 
 # - overall accuracy op testset berekenen voor alle metrics
 # - correlatie tussen de hidden units?
 # - run one by one and plot hidden layer activations (animatie/plot) (bij voorkeur met de huidige input op x-as
 # - run one by one and print test items and outcomes?
-one_by_one = True
+visualise_test_items = True
 
