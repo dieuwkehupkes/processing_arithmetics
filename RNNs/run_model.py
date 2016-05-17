@@ -6,6 +6,7 @@ from generate_training_data import generate_test_data
 import argparse
 import pickle
 import re
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("settings", help="Provide file with settings for model running")
@@ -68,12 +69,10 @@ if settings.compute_correls:
     truncated_model = Model(input=model.layers[0].input, output=embeddings_sequence)
     truncated_model.compile(optimizer=settings.optimizer, loss=settings.loss, metrics=settings.metrics)
 
-    # hl_activations = K.function([truncated_model.layers[0].input, K.learning_phase()],
-    #                            truncated_model.layers[2].output)
-
     for name, X_test, Y_test in test_data:
-        # print hl_activations([X_test, 0])
-        print(truncated_model.predict(X_test))
+        predictions = truncated_model.predict(X_test)
+        non_zero = predictions[np.any(predictions!=0, axis=2)]
+        print np.corrcoef(non_zero)
 
 
     # Compute correlation between hidden unit activations
