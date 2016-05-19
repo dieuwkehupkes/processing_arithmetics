@@ -348,4 +348,41 @@ class A4(Training):
 
         self.trainings_history = callbacks[0]
 
+    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps languages to number of sentences and
+         return numpy arrays with training data.
+        :param languages:       dictionary mapping languages (str name) to numbers
+        :param architecture:    architecture for which to generate training data
+        :param pad_to:          length to pad training data to
+        :return:                tuple, input, output, number of digits, number of operators
+                                map from input symbols to integers
+        """
+        # generate treebank with examples
+        treebank1 = generate_treebank(languages)
+        random.shuffle(treebank1.examples)
+        treebank2 = generate_treebank(languages)
+        random.shuffle(treebank2.examples)
 
+        # create empty input and targets
+        X1, X2, Y = [], [], []
+
+        # loop over examples
+        for example1, example2 in zip(treebank1.examples, treebank2.examples):
+            expr1, answ1 = example1
+            expr2, answ2 = example2
+            input_seq1 = [dmap[i] for i in str(expr1).split()]
+            input_seq2 = [dmap[i] for i in str(expr2).split()]
+            answer = np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])
+            X1.append((input_seq1))
+            X2.append((input_seq2))
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
+        X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
+
+        X_padded = zip(X1_padded, X2_padded)
+
+        return X_padded, np.array(Y)
