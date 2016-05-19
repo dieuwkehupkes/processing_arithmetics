@@ -60,11 +60,22 @@ class Training(object):
         # build model
         self._build(W_embeddings)
 
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
-        raise NotImplementedError()
-
     def _build(self, W_embeddings):
         raise NotImplementedError()
+
+    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+        """
+        Add a model with already trained weights
+        :param json_model:      json filename containing model architecture
+        :param model_weights:   h5 file containing model weights
+        :param optimizer:       optimizer to use during training
+        """
+        self.model = model_from_json(open(json_model).read())
+        self.model.load_weights(model_weights)
+        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=self.metrics)
+        self.dmap = dmap
+
+        return
 
     def model_summary(self):
         print(self.model.summary())
@@ -216,22 +227,6 @@ class A1(Training):
                            metrics=self.metrics)
 
         # print self.model.get_config()
-
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
-        """
-        Add a model with already trained weights
-        :param json_model:      json filename containing model architecture
-        :param model_weights:   h5 file containing model weights
-        :param optimizer:       optimizer to use during training
-        """
-        self.model = model_from_json(open(json_model).read())
-        self.model.load_weights(model_weights)
-        self.loss_function = 'mean_squared_error'
-        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=['mspe'])
-        self.dmap = dmap
-
-        return
-
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
               weights_animation=False, plot_embeddings=False, logger=False):
