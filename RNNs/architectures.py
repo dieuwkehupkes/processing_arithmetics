@@ -242,9 +242,9 @@ class A1(Training):
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
 
         # fit model
-        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data, batch_size=batch_size,
-                       nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
-        self.loss_function = None
+        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
+                       batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks,
+                       verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
@@ -264,8 +264,8 @@ class A4(Training):
         the model.
         """
         # create input layer
-        input1 = Input(shape=(1,), dtype='int32', name='input')
-        input2 = Input(shape=(1,), dtype='int32', name='input')
+        input1 = Input(shape=(1,), dtype='int32', name='input1')
+        input2 = Input(shape=(1,), dtype='int32', name='input1')
 
         # create embeddings
         embeddings_layer = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
@@ -297,3 +297,25 @@ class A4(Training):
         # compile
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
+
+    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
+              weights_animation=False, plot_embeddings=False, logger=False):
+        """
+        Fit the model.
+        :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
+                                        after training.
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+                                        embeddings.
+        """
+        X1_train, X2_train, Y_train = training_data
+
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
+
+        # fit model
+        self.model.fit({'input1': X1_train, 'input2': X2_train}, {'output': Y_train},
+                       validation_data=validation_data, batch_size=batch_size, nb_epochs=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
+
+        self.trainings_history = callbacks[0]
+
+
