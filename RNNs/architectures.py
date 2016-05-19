@@ -1,5 +1,5 @@
 from keras.models import Model, model_from_json
-from keras.layers import Embedding, Dense, Input
+from keras.layers import Embedding, Dense, Input, Merge
 # from keras.callbacks import EarlyStopping
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
@@ -248,3 +248,52 @@ class A1(Training):
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
+
+class A4(Training):
+    """
+    Class where comparison of two different arithmetic
+    expressions is used as a training signal
+    """
+    def __init__self(self):
+        self.loss_function = 'categorical_crossentropy'
+        self.metrics = ['categorical_accuracy']
+
+    def _build(self, W_embeddings):
+        """
+        Build the trainings architecture around
+        the model.
+        """
+        # create input layer
+        input1 = Input(shape=(1,), dtype='int32', name='input')
+        input2 = Input(shape=(1,), dtype='int32', name='input')
+
+        # create embeddings
+        embeddings_layer = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                               name='embeddings')
+
+        # create recurrent layer
+        recurrent_layer = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         dropout_U=self.dropout_recurrent)(embeddings)
+
+        # create embeddings for both inputs
+        embeddings1 = embeddings_layer(input1)
+        embeddings2 = embeddings_layer(input2)
+
+        # create recurrent rperesentations for both inputs
+        recurrent1 = recurrent_layer(embeddings1)
+        recurrent2 = recurrent_layer(embeddings2)
+
+        # concatenate output
+        concat = Merge([recurrent1, recurrent2], mode='concat')
+
+        # create output layer
+        output_layer = Dense(3, activation='softmax', name='output')(concat)
+
+        # create model
+        self.model = Model(input=[input1, input2], output=output_layer)
+
+        # compile
+        self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
+                           metrics=self.metrics)
