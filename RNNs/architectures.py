@@ -1,14 +1,14 @@
 from keras.models import Model, model_from_json
+import keras.preprocessing.sequence
 from keras.layers import Embedding, Dense, Input
-# from keras.callbacks import EarlyStopping
+from generate_training_data import generate_treebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
-from MonitorUpdates import MonitorUpdates
 from Logger import Logger
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.animation as animation
+import random
 
 
 class Training(object):
@@ -247,4 +247,34 @@ class A1(Training):
         self.loss_function = None
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps languages to number of sentences and
+         return numpy arrays with training data.
+        :param languages:       dictionary mapping languages (str name) to numbers
+        :param architecture:    architecture for which to generate training data
+        :param pad_to:          length to pad training data to
+        :return:                tuple, input, output, number of digits, number of operators
+                                map from input symbols to integers
+        """
+        # generate treebank with examples
+        treebank = generate_treebank(languages)
+        random.shuffle(treebank.examples)
+
+        # create empty input and targets
+        X, Y = [], []
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            input_seq = [dmap[i] for i in str(expression).split()]
+            answer = str(answer)
+            X.append(input_seq)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+        return X_padded, np.array(Y)
 
