@@ -269,13 +269,13 @@ class A4(Training):
 
         # create embeddings
         embeddings_layer = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
-                               input_length=self.input_length, weights=W_embeddings,
-                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
-                               name='embeddings')
+                                     input_length=self.input_length, weights=W_embeddings,
+                                     mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                                     name='embeddings')
 
         # create recurrent layer
         recurrent_layer = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
-                                         dropout_U=self.dropout_recurrent)(embeddings)
+                                               dropout_U=self.dropout_recurrent)
 
         # create embeddings for both inputs
         embeddings1 = embeddings_layer(input1)
