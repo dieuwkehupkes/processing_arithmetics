@@ -56,7 +56,6 @@ class Training(object):
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
-        self.loss_function = None
 
         # build model
         self._build(W_embeddings)
@@ -181,6 +180,9 @@ class A1(Training):
     """
     Give description.
     """
+    def __init__(self):
+        self.loss_function = 'mean_squared_error'
+        self.metrics = ['mspe']
 
     def _build(self, W_embeddings):
         """
@@ -210,9 +212,8 @@ class A1(Training):
         self.model = Model(input=input_layer, output=output_layer)
 
         # compile
-        self.loss_function = 'mean_squared_error'
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
-                           metrics=['mspe'])
+                           metrics=self.metrics)
 
         # print self.model.get_config()
 
