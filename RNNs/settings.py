@@ -1,11 +1,11 @@
 # imports
 from keras.layers import SimpleRNN, GRU, LSTM
 from auxiliary_functions import max_length
-from architectures import A1
+from architectures import A1, A4
 import numpy as np
 
 # network details
-architecture        = A1            # Trainings architecture
+architecture        = A4            # Trainings architecture
 recurrent_layer     = SimpleRNN   # options: SimpleRNN, GRU, LSTM
 size_hidden         = 15            # size of the hidden layer
 size_compare        = 2            # size of comparison layer
@@ -19,11 +19,11 @@ input_size          = 2             # input dimensionality
 
 # PRETRAIN
 # Use this to train an already trained model
-pretrained_model = 'test_model'
+# pretrained_model = 'test_model'
 pretrained_model = None
 
 # TRAINING
-nb_epoch            = 2000            # number of iterations
+nb_epoch            = 200            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
