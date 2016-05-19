@@ -1,5 +1,5 @@
 from keras.models import Model, model_from_json
-from keras.layers import Embedding, Dense, Input, Merge
+from keras.layers import Embedding, Dense, Input, merge
 import keras.preprocessing.sequence
 from generate_training_data import generate_treebank
 from TrainingHistory import TrainingHistory
@@ -284,7 +284,7 @@ class A4(Training):
     Class where comparison of two different arithmetic
     expressions is used as a training signal
     """
-    def __init__self(self):
+    def __init__(self):
         self.loss_function = 'categorical_crossentropy'
         self.metrics = ['categorical_accuracy']
 
@@ -295,7 +295,7 @@ class A4(Training):
         """
         # create input layer
         input1 = Input(shape=(1,), dtype='int32', name='input1')
-        input2 = Input(shape=(1,), dtype='int32', name='input1')
+        input2 = Input(shape=(1,), dtype='int32', name='input2')
 
         # create embeddings
         embeddings_layer = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
@@ -316,7 +316,7 @@ class A4(Training):
         recurrent2 = recurrent_layer(embeddings2)
 
         # concatenate output
-        concat = Merge([recurrent1, recurrent2], mode='concat')
+        concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
 
         # create output layer
         output_layer = Dense(3, activation='softmax', name='output')(concat)
@@ -337,7 +337,8 @@ class A4(Training):
         :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
                                         embeddings.
         """
-        X1_train, X2_train, Y_train = training_data
+        X_train, Y_train = training_data
+        X1_train, X2_train = X_train
 
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
 
@@ -379,7 +380,9 @@ class A4(Training):
             Y.append(answer)
 
         # pad sequences to have the same length
-        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        assert pad_to == None or len(X1[0]) <= pad_to, \
+            'length test is %i, max length is %i. Test sequences should not be truncated' \
+            % (len(X1[0]), pad_to)
         X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
