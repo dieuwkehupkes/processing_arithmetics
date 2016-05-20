@@ -24,7 +24,7 @@ def generate_test_data(languages, architecture, dmap, digits, pad_to=None):
         X, Y = [], []
         treebank = mathTreebank()
         lengths, operators, branching = parse_language(name)
-        treebank.add_examples(operators, digits=digits, branching=branching, lengths=lengths, n=N)
+        treebank.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
 
         for expr, answ in treebank.examples:
             input_seq = [dmap[i] for i in str(expr).split()]
@@ -50,6 +50,8 @@ def generate_dmap(digits, *languages):
     """
     operators = set([])
     for language_dict in languages:
+        if not language_dict:
+            continue
         for name in language_dict.keys():
             plusmin = re.compile('\+')
             op = plusmin.search(name)

@@ -15,7 +15,7 @@ class Training(object):
     """
     Give elaborate description
     """
-    def __init(self):
+    def __init__(self):
         """
         Create training architecture
         """
@@ -60,6 +60,10 @@ class Training(object):
 
         # build model
         self._build(W_embeddings)
+
+        # print config
+        # print self.model.summary()
+        # exit()
 
     def _build(self, W_embeddings):
         raise NotImplementedError()
@@ -209,7 +213,7 @@ class A1(Training):
                                input_length=self.input_length, weights=W_embeddings,
                                mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
                                name='embeddings')(input_layer)
-        
+
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          dropout_U=self.dropout_recurrent)(embeddings)
@@ -228,8 +232,8 @@ class A1(Training):
                            metrics=self.metrics)
 
 
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
-              weights_animation=False, plot_embeddings=False, logger=False):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
+              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
@@ -243,8 +247,8 @@ class A1(Training):
 
         # fit model
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
-                       batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks,
-                       verbose=verbosity, shuffle=True)
+                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
@@ -281,14 +285,124 @@ class A1(Training):
 
 class A4(Training):
     """
+    Give description.
+    """
+    def __init__(self):
+        self.loss_function = 'mean_squared_error'
+        self.metrics = ['mspe']
+
+    def _build(self, W_embeddings):
+        """
+        Build the trainings architecture around
+        the model.
+        """
+        # create input layer
+        input1 = Input(shape=(self.input_length,), dtype='int32', name='input1')
+        input2 = Input(shape=(self.input_length,), dtype='int32', name='input2')
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                               name='embeddings')
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         dropout_U=self.dropout_recurrent)
+
+        embeddings1 = embeddings(input1)
+        embeddings2 = embeddings(input2)
+
+        recurrent1 = recurrent(embeddings1)
+        recurrent2 = recurrent(embeddings2)
+
+        concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
+
+        # create output layer
+        output_layer = Dense(1, activation='softmax', name='output')(concat)
+
+        # create model
+        self.model = Model(input=[input1, input2], output=output_layer)
+        # self.model = Model(input=[input1], output=output_layer)
+
+        # compile
+        self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
+                           metrics=self.metrics)
+
+
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
+              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
+        """
+        Fit the model.
+        :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
+                                        after training.
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+                                        embeddings.
+        """
+        X_train, Y_train = training_data
+
+        X1_train, X2_train = X_train
+
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
+
+        # fit model
+        self.model.fit([X1_train, X1_train], {'output': Y_train}, validation_data=None,
+        # self.model.fit({'input1': X1_train}, {'output': Y_train}, validation_data=None,
+                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
+
+        self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps languages to number of sentences and
+         return numpy arrays with training data.
+        :param languages:       dictionary mapping languages (str name) to numbers
+        :param architecture:    architecture for which to generate training data
+        :param pad_to:          length to pad training data to
+        :return:                tuple, input, output, number of digits, number of operators
+                                map from input symbols to integers
+        """
+        # generate treebank with examples
+        treebank1 = generate_treebank(languages, digits=digits)
+        random.shuffle(treebank1.examples)
+        treebank2 = generate_treebank(languages, digits=digits)
+        random.shuffle(treebank2.examples)
+
+        # create empty input and targets
+        X1, X2, Y = [], [], []
+
+        # loop over examples
+        for example1, example2 in zip(treebank1.examples, treebank2.examples):
+            expr1, answ1 = example1
+            expr2, answ2 = example1
+            input_seq1 = [dmap[i] for i in str(expr1).split()]
+            input_seq2 = [dmap[i] for i in str(expr2).split()]
+            answer = np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])
+            X1.append(input_seq1)
+            X2.append(input_seq2)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
+        X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
+        X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
+
+        X_padded = (X1_padded, X2_padded)
+
+        return X_padded, np.array(Y)
+
+
+class A5(Training):
+    """
     Class where comparison of two different arithmetic
     expressions is used as a training signal
     """
     def __init__(self):
-        self.loss_function = 'categorical_crossentropy'
+        self.loss_function = 'sparse_categorical_crossentropy'
         self.metrics = ['categorical_accuracy']
 
-    def _build(self, W_embeddings):
+    def _build_(self, W_embeddings):
         """
         Build the trainings architecture around
         the model.
@@ -309,7 +423,7 @@ class A4(Training):
 
         # create embeddings for both inputs
         embeddings1 = embeddings_layer(input1)
-        embeddings2 = embeddings_layer(input2)
+        embeddings2 = embeddings_layer(input1)
 
         # create recurrent rperesentations for both inputs
         recurrent1 = recurrent_layer(embeddings1)
@@ -319,7 +433,7 @@ class A4(Training):
         concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
 
         # create output layer
-        output_layer = Dense(3, activation='softmax', name='output')(concat)
+        output_layer = Dense(1, activation='softmax', name='output')(concat)
 
         # create model
         self.model = Model(input=[input1, input2], output=output_layer)
@@ -328,10 +442,7 @@ class A4(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-        print self.model.get_config()
-        exit()
-
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
+    def train_(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
               weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
@@ -352,13 +463,16 @@ class A4(Training):
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
 
         # fit model
+        print "size X1:", X1_train.shape
+        print "size X2:", X2_train.shape
+        print "size Y:", Y_train.shape
         self.model.fit({'input1': X1_train, 'input2': X2_train}, {'output': Y_train},
                        validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]
 
-    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+    def generate_training_data_(self, languages, dmap, digits, pad_to=None):
         """
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
@@ -385,8 +499,8 @@ class A4(Training):
             input_seq1 = [dmap[i] for i in str(expr1).split()]
             input_seq2 = [dmap[i] for i in str(expr2).split()]
             answer = np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])
-            X1.append((input_seq1))
-            X2.append((input_seq2))
+            X1.append(input_seq1)
+            X2.append(input_seq2)
             Y.append(answer)
 
         # pad sequences to have the same length
@@ -396,6 +510,7 @@ class A4(Training):
         X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
+        X1_padded
         X_padded = (X1_padded, X2_padded)
 
-        return X_padded, np.array(Y)
+        return X1_padded, np.array(Y)
