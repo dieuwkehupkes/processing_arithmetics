@@ -1,7 +1,6 @@
 import argparse
 from generate_training_data import generate_test_data, generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
-from architectures import A1
 import pickle
 import re
 
@@ -47,7 +46,6 @@ if settings.languages_val:
 
 else:
     # split data in training and validation data
-    # TODO I suppose this doesn't work for architecture 3 and 4, adapt this later
     split_at = int(len(X) * (1. - settings.validation_split))
     X_train, X_val = X[:split_at], X[split_at:]
     Y_train, Y_val = Y[:split_at], Y[split_at:]
@@ -65,10 +63,10 @@ if settings.pretrained_model:
     training.add_pretrained_model(model_string, model_weights, optimizer=settings.optimizer, dmap=dmap)
 else:
     training.generate_model(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
-              input_length=input_length, size_hidden=settings.size_hidden,
-              size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=dmap,
-              trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
-              optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
+                            input_length=input_length, size_hidden=settings.size_hidden,
+                            size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=dmap,
+                            trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
+                            optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
 
 training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val),
                batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,

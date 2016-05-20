@@ -24,7 +24,7 @@ def generate_test_data(languages, architecture, dmap, digits, pad_to=None):
         X, Y = [], []
         treebank = mathTreebank()
         lengths, operators, branching = parse_language(name)
-        treebank.addExamples(operators, branching=branching, lengths=lengths,n=N)
+        treebank.add_examples(operators, digits=digits, branching=branching, lengths=lengths, n=N)
 
         for expr, answ in treebank.examples:
             input_seq = [dmap[i] for i in str(expr).split()]
@@ -72,7 +72,7 @@ def generate_dmap(digits, *languages):
     return dmap, N_operators, N_digits
 
 
-def generate_treebank(languages):
+def generate_treebank(languages, digits):
     """
     Generate training examples.
     :param languages:   dictionary mapping languages to number of samples
@@ -80,7 +80,7 @@ def generate_treebank(languages):
     treebank = mathTreebank()
     for name, N in languages.items():
         lengths, operators, branching = parse_language(name)
-        treebank.addExamples(operators, branching=branching, lengths=lengths, n=N) 
+        treebank.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
 
     return treebank
 

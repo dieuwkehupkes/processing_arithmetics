@@ -20,9 +20,10 @@ class Training(object):
         Create training architecture
         """
 
-    def generate_model(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
-                 W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
-                 dropout_recurrent=0.0, optimizer='adagrad'):
+    def generate_model(self, recurrent_layer, input_dim, input_size, input_length,
+                       size_hidden, size_compare, W_embeddings, dmap, trainable_embeddings=True,
+                       trainable_comparison=True, mask_zero=True, dropout_recurrent=0.0,
+                       optimizer='adagrad'):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -226,7 +227,6 @@ class A1(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-        # print self.model.get_config()
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
               weights_animation=False, plot_embeddings=False, logger=False):
@@ -259,7 +259,7 @@ class A1(Training):
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank = generate_treebank(languages)
+        treebank = generate_treebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
         # create empty input and targets
@@ -328,14 +328,23 @@ class A4(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
+        print self.model.get_config()
+        exit()
+
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
               weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
-        :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
-                                        after training.
-        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
-                                        embeddings.
+        :param training_data:
+        :param batch_size:
+        :param epochs:
+        :param validation_data:
+        :param verbosity:
+        :param weights_animation:   Set to true to create an animation of the development
+                                    of the embeddings after training
+        :param plot_embeddings:     Set to N to plot the embeddings every N epochs, only
+                                    available for 2D embeddings
+        :param logger:
         """
         X_train, Y_train = training_data
         X1_train, X2_train = X_train
@@ -344,7 +353,7 @@ class A4(Training):
 
         # fit model
         self.model.fit({'input1': X1_train, 'input2': X2_train}, {'output': Y_train},
-                       validation_data=validation_data, batch_size=batch_size, nb_epochs=epochs,
+                       validation_data=validation_data, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]
@@ -354,15 +363,16 @@ class A4(Training):
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
         :param languages:       dictionary mapping languages (str name) to numbers
-        :param architecture:    architecture for which to generate training data
+        :param dmap:            map from vocabulary tokens to integers
+        :param digits:          digits to use in simulation
         :param pad_to:          length to pad training data to
         :return:                tuple, input, output, number of digits, number of operators
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank1 = generate_treebank(languages)
+        treebank1 = generate_treebank(languages, digits=digits)
         random.shuffle(treebank1.examples)
-        treebank2 = generate_treebank(languages)
+        treebank2 = generate_treebank(languages, digits=digits)
         random.shuffle(treebank2.examples)
 
         # create empty input and targets
@@ -386,6 +396,6 @@ class A4(Training):
         X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
-        X_padded = zip(X1_padded, X2_padded)
+        X_padded = (X1_padded, X2_padded)
 
         return X_padded, np.array(Y)

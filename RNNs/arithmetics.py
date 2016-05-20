@@ -39,11 +39,13 @@ class mathTreebank():
             examples.append((tree,answer))
         return examples
 
-    def addExamples(self, operators=['+','-'], digits=np.arange(-19,20), branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+    def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
+                     n=1000, lengths=range(1, 6)):
         """
         Add examples to treebank.
         """
-        self.examples += self.generateExamples(operators=operators, digits=digits, branching=branching, min=min, max=max, n=n, lengths=lengths)
+        self.examples += self.generateExamples(operators=operators, digits=digits, branching=branching,
+                                               min=min_answ, max=max_answ, n=n, lengths=lengths)
 
     def write_to_file(self, filename):
         """
@@ -54,12 +56,12 @@ class mathTreebank():
         """
         f = open(filename, 'wb')
         for expression, answer in self.examples:
-            f.write(str(expression)+'\t'+str(example[1])+'\n')
+            f.write(str(expression)+'\t'+str(answer[1])+'\n')
         f.close()
 
 
 class mathExpression(Tree):
-    def __init__(self,length, operators, digits, branching=None):
+    def __init__(self, length, operators, digits, branching=None):
         if length < 1: print 'whatup?'
         if length == 1:
             try:
@@ -112,5 +114,5 @@ if __name__ == '__main__':
     digits = [str(i) for i in np.arange(-5,5)]
     ops = ['+','-']
     m = mathTreebank()
-    m.addExamples(n=5, lengths=[5], branching='left')
+    m.add_examples(n=5, lengths=[5], branching='left')
     m.write_to_file('treebank')
