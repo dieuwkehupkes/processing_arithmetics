@@ -286,7 +286,8 @@ class A1(Training):
 
         return X_padded, np.array(Y)
 
-    def generate_test_data(self, languages, dmap, digits, pad_to=None):
+    @staticmethod
+    def generate_test_data(languages, dmap, digits, pad_to=None):
         """
         Take a dictionary that maps language names to number of sentences and return numpy array
         with test data.
@@ -295,6 +296,7 @@ class A1(Training):
         :param pad_to:          desired length of test sequences
         :return:                list of tuples containing test set sames, inputs and targets
         """
+        # TODO reuse training data function
         test_data = []
         for name, N in languages.items():
             X, Y = [], []
