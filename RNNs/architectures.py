@@ -173,7 +173,7 @@ class Training(object):
         :return:
         """
 
-        history = TrainingHistory(recurrent_id=recurrent_id, param_id=1)
+        history = TrainingHistory(metric=self.metrics[0], recurrent_id=recurrent_id, param_id=1)
         callbacks = [history]
 
         if weights_animation:
@@ -386,7 +386,6 @@ class A4(Training):
 
         # fit model
         self.model.fit([X1_train, X2_train], {'output': Y_train}, validation_data=None,
-        # self.model.fit({'input1': X1_train}, {'output': Y_train}, validation_data=None,
                        validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
