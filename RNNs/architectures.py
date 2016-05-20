@@ -1,7 +1,8 @@
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input, merge
 import keras.preprocessing.sequence
-from generate_training_data import generate_treebank
+from generate_training_data import generate_treebank, parse_language
+from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
@@ -285,6 +286,35 @@ class A1(Training):
 
         return X_padded, np.array(Y)
 
+    def generate_test_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps language names to number of sentences and return numpy array
+        with test data.
+        :param languages:       dictionary mapping language names to numbers
+        :param architecture:    architecture for which to generate test data
+        :param pad_to:          desired length of test sequences
+        :return:                list of tuples containing test set sames, inputs and targets
+        """
+        test_data = []
+        for name, N in languages.items():
+            X, Y = [], []
+            treebank = mathTreebank()
+            lengths, operators, branching = parse_language(name)
+            treebank.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
+
+            for expr, answ in treebank.examples:
+                input_seq = [dmap[i] for i in str(expr).split()]
+                answer = str(answ)
+                X.append(input_seq)
+                Y.append(answer)
+
+            # pad sequences to have the same length
+            assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+            X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+            test_data.append((name, X_padded, np.array(Y)))
+
+        return test_data
+
 
 class A4(Training):
     """
@@ -379,7 +409,7 @@ class A4(Training):
         # loop over examples
         for example1, example2 in zip(treebank1.examples, treebank2.examples):
             expr1, answ1 = example1
-            expr2, answ2 = example1
+            expr2, answ2 = example2
             input_seq1 = [dmap[i] for i in str(expr1).split()]
             input_seq2 = [dmap[i] for i in str(expr2).split()]
             answer = np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])
@@ -392,7 +422,22 @@ class A4(Training):
         X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
-        X_padded = (X1_padded, X2_padded)
+        X_padded = [X1_padded, X2_padded]
 
         return X_padded, np.array(Y)
+
+    def generate_test_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps language names to number of sentences and return numpy array
+        with test data.
+        :param languages:       dictionary mapping language names to numbers
+        :param architecture:    architecture for which to generate test data
+        :param pad_to:          desired length of test sequences
+        :return:                list of tuples containing test set sames, inputs and targets
+        """
+        X, Y = self.generate_training_data(languages, dmap, digits, pad_to=pad_to)
+        name = ', '.join(languages.keys())
+        test_data = [(name, X, Y)]
+
+        return test_data
 

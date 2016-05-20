@@ -87,8 +87,8 @@ print_sum(settings)
 
 if settings.languages_test:
     # generate test data
-    test_data = generate_test_data(settings.languages_test, architecture='A1',
-                                   dmap=dmap, digits=settings.digits, pad_to=settings.maxlen)
+    test_data = training.generate_test_data(settings.languages_test, dmap=dmap,
+                                   digits=settings.digits, pad_to=settings.maxlen)
     for name, X, Y in test_data:
         print("Accuracy for for test set %s: %s " % (name, str(training.model.evaluate(X, Y))))
 
