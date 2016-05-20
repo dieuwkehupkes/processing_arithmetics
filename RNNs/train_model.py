@@ -1,5 +1,5 @@
 import argparse
-from generate_training_data import generate_test_data, generate_dmap
+from generate_training_data import generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import A1, A4
 import pickle
