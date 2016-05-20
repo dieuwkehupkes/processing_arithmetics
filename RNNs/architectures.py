@@ -321,8 +321,11 @@ class A4(Training):
     Give description.
     """
     def __init__(self):
-        self.loss_function = 'mean_squared_error'
+        self.loss_function = 'categorical_crossentropy'
+        # self.loss_function = 'mean_squared_error'
         self.metrics = ['mspe']
+
+        self.metrics = ['categorical_accuracy']
 
     def _build(self, W_embeddings):
         """
@@ -352,7 +355,7 @@ class A4(Training):
         concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
 
         # create output layer
-        output_layer = Dense(1, activation='softmax', name='output')(concat)
+        output_layer = Dense(3, activation='softmax', name='output')(concat)
 
         # create model
         self.model = Model(input=[input1, input2], output=output_layer)
@@ -361,6 +364,8 @@ class A4(Training):
         # compile
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
+
+        print self.model.summary()
 
 
     def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
@@ -412,7 +417,8 @@ class A4(Training):
             expr2, answ2 = example2
             input_seq1 = [dmap[i] for i in str(expr1).split()]
             input_seq2 = [dmap[i] for i in str(expr2).split()]
-            answer = np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])
+            answer = np.zeros(3)
+            answer[np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])] = 1
             X1.append(input_seq1)
             X2.append(input_seq2)
             Y.append(answer)

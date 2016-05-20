@@ -38,6 +38,10 @@ training = settings.architecture()
 X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
                               digits=settings.digits, pad_to=settings.maxlen)
 
+# TODO
+print Y
+print "hier lijkt echt iets raars te gebeuren met A1 training, waarom zijn de targets strings?"
+
 # GENERATE VALIDATION DATA
 if settings.languages_val:
     # generate validation data if dictionary is provided
