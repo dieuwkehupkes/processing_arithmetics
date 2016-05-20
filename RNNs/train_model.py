@@ -1,6 +1,7 @@
 import argparse
 from generate_training_data import generate_test_data, generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
+from architectures import A1, A4
 import pickle
 import re
 
@@ -40,15 +41,14 @@ X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
 # GENERATE VALIDATION DATA
 if settings.languages_val:
     # generate validation data if dictionary is provided
-    X_train, Y_train = X, Y
     X_val, Y_val = training.generate_training_data(settings.languages_val, dmap=dmap,
                                                    digits=settings.digits, pad_to=settings.maxlen)
+    validation_data = X_val, Y_val
+    validation_split = 0.0
 
 else:
-    # split data in training and validation data
-    split_at = int(len(X) * (1. - settings.validation_split))
-    X_train, X_val = X[:split_at], X[split_at:]
-    Y_train, Y_val = Y[:split_at], Y[split_at:]
+    validation_data = None
+    validation_split = settings.validation_split
 
 # COMPUTE NETWORK DIMENSIONS
 input_dim = len(dmap)+1
@@ -68,7 +68,7 @@ else:
                             trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
                             optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
 
-training.train(training_data=(X_train, Y_train), validation_data=(X_val, Y_val),
+training.train(training_data=(X, Y), validation_data=validation_data, validation_split=validation_split,
                batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,
                weights_animation=settings.weights_animation, plot_embeddings=settings.plot_embeddings,
                logger=settings.print_every)
