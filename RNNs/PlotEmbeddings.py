@@ -5,17 +5,18 @@ import matplotlib.animation as animation
 
 class PlotEmbeddings(Callback):
 
-    def __init__(self, N, dmap):
+    def __init__(self, N, dmap, embeddings_id):
         """
         Plot embeddings
         :param N:   plot embeddings every N epochs
         """
         self.N = N
+        self.embeddings_id = embeddings_id
         self.dmap = dict(zip(dmap.values(), dmap.keys()))
 
     def on_train_begin(self, logs={}):
         # check if embeddings have correct dimensionality
-        assert self.model.layers[1].get_weights()[0].shape[1] == 2, "only 2D embddings can be visualised"
+        assert self.model.layers[self.embeddings_id].get_weights()[0].shape[1] == 2, "only 2D embddings can be visualised"
 
     def on_epoch_end(self, epoch, logs={}):
         # Get a snapshot of the weight matrix every 5 batches
@@ -31,7 +32,7 @@ class PlotEmbeddings(Callback):
         """
         Plot weights
         """
-        weights = self.model.layers[1].get_weights()[0]
+        weights = self.model.layers[self.embeddings_id].get_weights()[0]
         # find limits
         xmin, ymin = 1.1 * weights.min(axis=0)
         xmax, ymax = 1.1 * weights.max(axis=0)

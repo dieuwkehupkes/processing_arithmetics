@@ -161,7 +161,8 @@ class Training(object):
             i += 1
         plt.show()
 
-    def generate_callbacks(self, weights_animation, plot_embeddings, print_every, recurrent_id):
+    def generate_callbacks(self, weights_animation, plot_embeddings, print_every, recurrent_id,
+                           embeddings_id):
         """
         Generate sequence of callbacks to use during training
         :param recurrent_id:
@@ -183,7 +184,7 @@ class Training(object):
             if plot_embeddings == True:
                 pass
             else:
-                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap)
+                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap, embeddings_id=embeddings_id)
                 callbacks.append(embeddings_plot)
 
         if print_every:
@@ -244,7 +245,8 @@ class A1(Training):
         """
         X_train, Y_train = training_data
 
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2)
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
+                                            embeddings_id=1)
 
         # fit model
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
@@ -344,7 +346,8 @@ class A4(Training):
 
         X1_train, X2_train = X_train
 
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=3)
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=3,
+                                            embeddings_id=2)
 
         # fit model
         self.model.fit([X1_train, X2_train], {'output': Y_train}, validation_data=None,
