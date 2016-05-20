@@ -1,7 +1,7 @@
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer
-from generate_training_data import generate_test_data
+from architectures import *
 import argparse
 import pickle
 import re
@@ -23,7 +23,6 @@ settings = __import__(import_string)
 # load model
 model = model_from_json(open(settings.model_architecture).read())
 model.load_weights(settings.model_weights)
-# model.layers[2].return_sequences = True
 model.compile(optimizer=settings.optimizer, loss=settings.loss, metrics=settings.metrics)
 
 dmap = pickle.load(open(settings.model_dmap, 'rb'))
@@ -34,8 +33,8 @@ maxlen = model.layers[2].input_shape[1]
 # TODO seems to be no way to check this? Maybe I should make my own model class
 # check if test sets are provided or should be generated
 if isinstance(settings.test_sets, dict):
-    test_data = generate_test_data(settings.test_sets, architecture='A1', dmap=dmap,
-                                   digits=settings.digits, pad_to=maxlen)
+    test_data = settings.architecture.generate_test_data(settings.test_sets, architecture='A1',
+                                                         dmap=dmap, digits=settings.digits, pad_to=maxlen)
 
 elif isinstance(settings.test_sets, list):
     test_data = []
