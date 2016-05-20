@@ -8,6 +8,9 @@ class TrainingHistory(Callback):
     Track different aspects of the network and network performance
     during training.
     """
+    def __init__(self, recurrent_id, param_id=1):
+        self.recurrent_id = recurrent_id
+        self.param_id = param_id
 
     def on_train_begin(self, logs={}):
         self.losses = []                # track training loss
@@ -28,7 +31,7 @@ class TrainingHistory(Callback):
         self.i += 1
 
         # compute esp
-        recurrent_weights = self.model.layers[2].get_weights()[1]
+        recurrent_weights = self.model.layers[self.recurrent_id].get_weights()[self.param_id]
         spec = np.max(np.absolute(np.linalg.eig(recurrent_weights)[0]))
         self.esp.append(spec)
 

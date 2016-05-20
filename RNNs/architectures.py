@@ -161,16 +161,17 @@ class Training(object):
             i += 1
         plt.show()
 
-    def generate_callbacks(self, weights_animation, plot_embeddings, print_every):
+    def generate_callbacks(self, weights_animation, plot_embeddings, print_every, recurrent_id):
         """
         Generate sequence of callbacks to use during training
+        :param recurrent_id:
         :param weights_animation:        set to true to generate visualisation of embeddings
         :param plot_embeddings:             generate scatter plot of embeddings every plot_embeddings epochs
         :param print_every:                 print summary of results every print_every epochs
         :return:
         """
 
-        history = TrainingHistory()
+        history = TrainingHistory(recurrent_id=recurrent_id, param_id=1)
         callbacks = [history]
 
         if weights_animation:
@@ -243,7 +244,7 @@ class A1(Training):
         """
         X_train, Y_train = training_data
 
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2)
 
         # fit model
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
@@ -343,10 +344,10 @@ class A4(Training):
 
         X1_train, X2_train = X_train
 
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=3)
 
         # fit model
-        self.model.fit([X1_train, X1_train], {'output': Y_train}, validation_data=None,
+        self.model.fit([X1_train, X2_train], {'output': Y_train}, validation_data=None,
         # self.model.fit({'input1': X1_train}, {'output': Y_train}, validation_data=None,
                        validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
