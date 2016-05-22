@@ -8,6 +8,33 @@ import numpy as np
 import matplotlib.pylab as plt
 
 
+def visualise_hidden_layer(hl_activations, labels):
+    """
+    Plot hidden layer activations over time
+    :param hl_activations: 2 dimensional np array
+    """
+    # cut off zero activations
+    hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
+    vmin = np.min(hl_activations)
+    vmax = np.max(hl_activations)
+
+    plt.figure(1)
+    l = hl_nonzero.shape[0]
+    for i in xrange(l):
+        # plot label
+        plt.subplot(l, 2, 2*i+1)
+        plt.text(0,0, labels[i])
+        plt.axis([-1, 1, -1, 1])
+        plt.axis('off')
+
+        # plot activation values
+        plt.subplot(l, 2, 2*i+2)
+        plt.imshow(np.array([hl_nonzero[i]]), interpolation='nearest', vmin=vmin, vmax=vmax)
+        plt.axis('off')
+
+    plt.show()
+
+
 def distance_embeddings(embeddings_matrix):
     """
     Compute the average distance between embeddings

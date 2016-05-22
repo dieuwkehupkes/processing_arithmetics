@@ -1,28 +1,30 @@
 from keras.models import Model, model_from_json
-from keras.layers import Embedding, Dense, Input
-# from keras.callbacks import EarlyStopping
+from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM
+import keras.preprocessing.sequence
+from generate_training_data import generate_treebank, parse_language
+from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
-from MonitorUpdates import MonitorUpdates
 from Logger import Logger
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.animation as animation
+import random
 
 
 class Training(object):
     """
     Give elaborate description
     """
-    def __init(self):
+    def __init__(self):
         """
         Create training architecture
         """
 
-    def generate_model(self, recurrent_layer, input_dim, input_size, input_length, size_hidden, size_compare,
-                 W_embeddings, dmap, trainable_embeddings=True, trainable_comparison=True, mask_zero=True,
-                 dropout_recurrent=0.0, optimizer='adagrad'):
+    def generate_model(self, recurrent_layer, input_dim, input_size, input_length,
+                       size_hidden, size_compare, W_embeddings, dmap, trainable_embeddings=True,
+                       trainable_comparison=True, mask_zero=True, dropout_recurrent=0.0,
+                       optimizer='adagrad'):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -56,16 +58,30 @@ class Training(object):
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
-        self.loss_function = None
 
         # build model
         self._build(W_embeddings)
 
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
-        raise NotImplementedError()
+        # print config
+        # print self.model.summary()
+        # exit()
 
     def _build(self, W_embeddings):
         raise NotImplementedError()
+
+    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+        """
+        Add a model with already trained weights
+        :param json_model:      json filename containing model architecture
+        :param model_weights:   h5 file containing model weights
+        :param optimizer:       optimizer to use during training
+        """
+        self.model = model_from_json(open(json_model).read())
+        self.model.load_weights(model_weights)
+        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=self.metrics)
+        self.dmap = dmap
+
+        return
 
     def model_summary(self):
         print(self.model.summary())
@@ -80,21 +96,6 @@ class Training(object):
         f.write(json_string)
         self.model.save(filename+'_weights.h5')
         f.close()
-
-    def plot_prediction_error(self, save_to_file=False):
-        """
-        Plot the prediction error during the last training
-        round of the network
-        :param save_to_file:    file name to save file to
-        """
-        plt.plot(self.trainings_history.prediction_error, label="Training set")
-        plt.plot(self.trainings_history.val_prediction_error, label="Validation set")
-        plt.title("Prediction error during last training round")
-        plt.xlabel("Epoch")
-        plt.ylabel("Prediction Error")
-        plt.axhline(xmin=0)
-        plt.legend()
-        plt.show()
 
     def plot_loss(self, save_to_file=False):
         """
@@ -146,16 +147,18 @@ class Training(object):
             i += 1
         plt.show()
 
-    def generate_callbacks(self, weights_animation, plot_embeddings, print_every):
+    def generate_callbacks(self, weights_animation, plot_embeddings, print_every, recurrent_id,
+                           embeddings_id):
         """
         Generate sequence of callbacks to use during training
+        :param recurrent_id:
         :param weights_animation:        set to true to generate visualisation of embeddings
         :param plot_embeddings:             generate scatter plot of embeddings every plot_embeddings epochs
         :param print_every:                 print summary of results every print_every epochs
         :return:
         """
 
-        history = TrainingHistory()
+        history = TrainingHistory(metric=self.metrics[0], recurrent_id=recurrent_id, param_id=1)
         callbacks = [history]
 
         if weights_animation:
@@ -167,7 +170,7 @@ class Training(object):
             if plot_embeddings == True:
                 pass
             else:
-                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap)
+                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap, embeddings_id=embeddings_id)
                 callbacks.append(embeddings_plot)
 
         if print_every:
@@ -181,6 +184,9 @@ class A1(Training):
     """
     Give description.
     """
+    def __init__(self):
+        self.loss_function = 'mean_squared_error'
+        self.metrics = ['mspe']
 
     def _build(self, W_embeddings):
         """
@@ -195,7 +201,7 @@ class A1(Training):
                                input_length=self.input_length, weights=W_embeddings,
                                mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
                                name='embeddings')(input_layer)
-        
+
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          dropout_U=self.dropout_recurrent)(embeddings)
@@ -210,30 +216,153 @@ class A1(Training):
         self.model = Model(input=input_layer, output=output_layer)
 
         # compile
-        self.loss_function = 'mean_squared_error'
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
-                           metrics=['mspe'])
+                           metrics=self.metrics)
 
-        # print self.model.get_config()
 
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
+              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
         """
-        Add a model with already trained weights
-        :param json_model:      json filename containing model architecture
-        :param model_weights:   h5 file containing model weights
-        :param optimizer:       optimizer to use during training
+        Fit the model.
+        :param weights_animation:    Set to true to create an animation of the development of the embeddings
+                                        after training.
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+                                        embeddings.
         """
-        self.model = model_from_json(open(json_model).read())
-        self.model.load_weights(model_weights)
-        self.loss_function = 'mean_squared_error'
-        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=['mspe'])
-        self.dmap = dmap
+        X_train, Y_train = training_data
 
-        return
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
+                                            embeddings_id=1)
+
+        # fit model
+        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
+                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
+
+        self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps languages to number of sentences and
+         return numpy arrays with training data.
+        :param languages:       dictionary mapping languages (str name) to numbers
+        :param pad_to:          length to pad training data to
+        :return:                tuple, input, output, number of digits, number of operators
+                                map from input symbols to integers
+        """
+        # generate treebank with examples
+        treebank = generate_treebank(languages, digits=digits)
+        random.shuffle(treebank.examples)
+
+        # create empty input and targets
+        X, Y = [], []
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            input_seq = [dmap[i] for i in str(expression).split()]
+            answer = str(answer)
+            X.append(input_seq)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+        return X_padded, np.array(Y)
+
+    @staticmethod
+    def generate_test_data(languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps language names to number of sentences and return numpy array
+        with test data.
+        :param languages:       dictionary mapping language names to numbers
+        :param pad_to:          desired length of test sequences
+        :return:                list of tuples containing test set sames, inputs and targets
+        """
+        # TODO reuse training data function
+        test_data = []
+        for name, N in languages.items():
+            X, Y = [], []
+            treebank = mathTreebank()
+            lengths, operators, branching = parse_language(name)
+            treebank.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
+
+            for expr, answ in treebank.examples:
+                input_seq = [dmap[i] for i in str(expr).split()]
+                answer = str(answ)
+                X.append(input_seq)
+                Y.append(answer)
+
+            # pad sequences to have the same length
+            assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+            X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+            test_data.append((name, X_padded, np.array(Y)))
+
+        return test_data
+
+    @staticmethod
+    def recurrent_layer_id(self):
+        """
+        Return recurrent layer ID
+        :return: (int) id of recurrent layer
+        """
+        return 2
 
 
-    def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
-              weights_animation=False, plot_embeddings=False, logger=False):
+class A4(Training):
+    """
+    Give description.
+    """
+    def __init__(self):
+        self.loss_function = 'categorical_crossentropy'
+        # self.loss_function = 'mean_squared_error'
+        self.metrics = ['mspe']
+
+        self.metrics = ['categorical_accuracy']
+
+    def _build(self, W_embeddings):
+        """
+        Build the trainings architecture around
+        the model.
+        """
+        # create input layer
+        input1 = Input(shape=(self.input_length,), dtype='int32', name='input1')
+        input2 = Input(shape=(self.input_length,), dtype='int32', name='input2')
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                               name='embeddings')
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         dropout_U=self.dropout_recurrent)
+
+        embeddings1 = embeddings(input1)
+        embeddings2 = embeddings(input2)
+
+        recurrent1 = recurrent(embeddings1)
+        recurrent2 = recurrent(embeddings2)
+
+        concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
+
+        # create output layer
+        output_layer = Dense(3, activation='softmax', name='output')(concat)
+
+        # create model
+        self.model = Model(input=[input1, input2], output=output_layer)
+        # self.model = Model(input=[input1], output=output_layer)
+
+        # compile
+        self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
+                           metrics=self.metrics)
+
+        print self.model.summary()
+
+
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
+              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
@@ -243,12 +372,79 @@ class A1(Training):
         """
         X_train, Y_train = training_data
 
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger)
+        X1_train, X2_train = X_train
+
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=3,
+                                            embeddings_id=2)
 
         # fit model
-        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data, batch_size=batch_size,
-                       nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
-        self.loss_function = None
+        self.model.fit([X1_train, X2_train], {'output': Y_train}, validation_data=None,
+                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    @staticmethod
+    def generate_training_data(languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps languages to number of sentences and
+         return numpy arrays with training data.
+        :param languages:       dictionary mapping languages (str name) to numbers
+        :param pad_to:          length to pad training data to
+        :return:                tuple, input, output, number of digits, number of operators
+                                map from input symbols to integers
+        """
+        # generate treebank with examples
+        treebank1 = generate_treebank(languages, digits=digits)
+        random.shuffle(treebank1.examples)
+        treebank2 = generate_treebank(languages, digits=digits)
+        random.shuffle(treebank2.examples)
+
+        # create empty input and targets
+        X1, X2, Y = [], [], []
+
+        # loop over examples
+        for example1, example2 in zip(treebank1.examples, treebank2.examples):
+            expr1, answ1 = example1
+            expr2, answ2 = example2
+            input_seq1 = [dmap[i] for i in str(expr1).split()]
+            input_seq2 = [dmap[i] for i in str(expr2).split()]
+            answer = np.zeros(3)
+            answer[np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])] = 1
+            X1.append(input_seq1)
+            X2.append(input_seq2)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
+        X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
+        X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
+
+        X_padded = [X1_padded, X2_padded]
+
+        return X_padded, np.array(Y)
+
+    @staticmethod
+    def generate_test_data(languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps language names to number of sentences and return numpy array
+        with test data.
+        :param languages:       dictionary mapping language names to numbers
+        :param architecture:    architecture for which to generate test data
+        :param pad_to:          desired length of test sequences
+        :return:                list of tuples containing test set sames, inputs and targets
+        """
+        X, Y = A4.generate_training_data(languages, dmap, digits, pad_to=pad_to)
+        name = ', '.join(languages.keys())
+        test_data = [(name, X, Y)]
+
+        return test_data
+
+    @staticmethod
+    def recurrent_layer_id(self):
+        """
+        Return recurrent layer ID
+        :return: (int) id of recurrent layer
+        """
+        return 3
 
