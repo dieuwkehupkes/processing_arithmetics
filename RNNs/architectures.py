@@ -1,14 +1,14 @@
 from keras.models import Model, model_from_json
+import keras.preprocessing.sequence
 from keras.layers import Embedding, Dense, Input
-# from keras.callbacks import EarlyStopping
+from generate_training_data import generate_treebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
-from MonitorUpdates import MonitorUpdates
 from Logger import Logger
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.animation as animation
+import random
 
 
 class Training(object):
@@ -56,16 +56,26 @@ class Training(object):
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
-        self.loss_function = None
 
         # build model
         self._build(W_embeddings)
 
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
-        raise NotImplementedError()
-
     def _build(self, W_embeddings):
         raise NotImplementedError()
+
+    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+        """
+        Add a model with already trained weights
+        :param json_model:      json filename containing model architecture
+        :param model_weights:   h5 file containing model weights
+        :param optimizer:       optimizer to use during training
+        """
+        self.model = model_from_json(open(json_model).read())
+        self.model.load_weights(model_weights)
+        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=self.metrics)
+        self.dmap = dmap
+
+        return
 
     def model_summary(self):
         print(self.model.summary())
@@ -181,6 +191,9 @@ class A1(Training):
     """
     Give description.
     """
+    def __init__(self):
+        self.loss_function = 'mean_squared_error'
+        self.metrics = ['mspe']
 
     def _build(self, W_embeddings):
         """
@@ -210,27 +223,10 @@ class A1(Training):
         self.model = Model(input=input_layer, output=output_layer)
 
         # compile
-        self.loss_function = 'mean_squared_error'
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
-                           metrics=['mspe'])
+                           metrics=self.metrics)
 
         # print self.model.get_config()
-
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
-        """
-        Add a model with already trained weights
-        :param json_model:      json filename containing model architecture
-        :param model_weights:   h5 file containing model weights
-        :param optimizer:       optimizer to use during training
-        """
-        self.model = model_from_json(open(json_model).read())
-        self.model.load_weights(model_weights)
-        self.loss_function = 'mean_squared_error'
-        self.model.compile(optimizer=optimizer, loss=self.loss_function, metrics=['mspe'])
-        self.dmap = dmap
-
-        return
-
 
     def train(self, training_data, batch_size, epochs, validation_data=None, verbosity=1,
               weights_animation=False, plot_embeddings=False, logger=False):
@@ -251,4 +247,34 @@ class A1(Training):
         self.loss_function = None
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+        """
+        Take a dictionary that maps languages to number of sentences and
+         return numpy arrays with training data.
+        :param languages:       dictionary mapping languages (str name) to numbers
+        :param architecture:    architecture for which to generate training data
+        :param pad_to:          length to pad training data to
+        :return:                tuple, input, output, number of digits, number of operators
+                                map from input symbols to integers
+        """
+        # generate treebank with examples
+        treebank = generate_treebank(languages)
+        random.shuffle(treebank.examples)
+
+        # create empty input and targets
+        X, Y = [], []
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            input_seq = [dmap[i] for i in str(expression).split()]
+            answer = str(answer)
+            X.append(input_seq)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+        return X_padded, np.array(Y)
 

@@ -10,38 +10,6 @@ import numpy as np
 import random
 import pickle
 
-
-def generate_training_data(languages, architecture, dmap, digits, pad_to=None):
-    """
-    Take a dictionary that maps languages to number of sentences and
-     return numpy arrays with training data.
-    :param languages:       dictionary mapping languages (str name) to numbers
-    :param architecture:    architecture for which to generate training data
-    :param pad_to:          length to pad training data to
-    :return:                tuple, input, output, number of digits, number of operators
-                            map from input symbols to integers
-    """
-    # generate treebank with examples
-    treebank = generate_treebank(languages, architecture)
-    random.shuffle(treebank.examples)
-
-    # create empty input and targets
-    X, Y = [], []
-
-    # loop over examples
-    for expression, answer in treebank.examples:
-        input_seq = [dmap[i] for i in str(expression).split()]
-        answer = str(answer)
-        X.append(input_seq)
-        Y.append(answer)
-
-    # pad sequences to have the same length
-    assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
-    X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
-
-    return X_padded, np.array(Y)
-
-
 def generate_test_data(languages, architecture, dmap, digits, pad_to=None):
     """
     Take a dictionary that maps language names to number of sentences and return numpy array
@@ -104,7 +72,7 @@ def generate_dmap(digits, *languages):
     return dmap, N_operators, N_digits
 
 
-def generate_treebank(languages, architecture):
+def generate_treebank(languages):
     """
     Generate training examples.
     :param languages:   dictionary mapping languages to number of samples
@@ -148,5 +116,5 @@ if __name__ == '__main__':
     dmap, N_operators, N_digits = generate_dmap(digits, languages)
     test_data = generate_training_data(languages, architecture='A1', dmap=dmap, digits=digits, pad_to=max_length(7))
     pickle.dump(test_data, open('test_sets/L3_500.test', 'wb'))
-    pickle.dump(dmap, open('model_test.dmap', 'wb'))
+    # pickle.dump(dmap, open('model_test.dmap', 'wb'))
 

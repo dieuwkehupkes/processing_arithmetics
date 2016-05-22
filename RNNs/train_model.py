@@ -1,7 +1,8 @@
 import argparse
-from generate_training_data import generate_training_data, generate_test_data, generate_dmap
+from generate_training_data import generate_test_data, generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import A1
+import pickle
 import re
 
 parser = argparse.ArgumentParser()
@@ -27,18 +28,22 @@ dmap, N_operators, N_digits = generate_dmap(settings.digits, settings.languages_
                                             settings.languages_val, settings.languages_test)
 if settings.pretrained_model:
     print("\nWarning: dmaps should be equal!\n")
+    # TODO you should also build in some dimensionality check in here somehow,
+    # to check if the test items have correct dimensionaliy
+
+# CREATE TRAININGS ARCHITECTURE
+training = settings.architecture()
 
 # GENERATE TRAINING DATA
-X, Y = generate_training_data(settings.languages_train, architecture='A1', dmap=dmap,
+X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
                               digits=settings.digits, pad_to=settings.maxlen)
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
     # generate validation data if dictionary is provided
     X_train, Y_train = X, Y
-    X_val, Y_val = generate_training_data(settings.languages_val, architecture='A1',
-                                          dmap=dmap, digits=settings.digits,
-                                          pad_to=settings.maxlen)
+    X_val, Y_val = training.generate_training_data(settings.languages_val, dmap=dmap,
+                                                   digits=settings.digits, pad_to=settings.maxlen)
 
 else:
     # split data in training and validation data
@@ -53,9 +58,6 @@ input_length = settings.maxlen
 
 # GENERATE EMBEDDINGS MATRIX
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, settings.input_size, settings.encoding)
-
-# CREATE TRAININGS ARCHITECTURE
-training = A1()
 
 if settings.pretrained_model:
     model_string = settings.pretrained_model+ '.json'
@@ -102,4 +104,4 @@ if settings.save_model:
         model_json = training.model.to_json()
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')
-        open(model_string + '.dmap', 'w').write(dmap)
+        pickle.dump(dmap, open(model_string + '.dmap', 'w'))
