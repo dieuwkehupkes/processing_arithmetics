@@ -301,7 +301,7 @@ class A1(Training):
         return test_data
 
     @staticmethod
-    def recurrent_layer_id(self):
+    def get_recurrent_layer_id():
         """
         Return recurrent layer ID
         :return: (int) id of recurrent layer
@@ -441,7 +441,7 @@ class A4(Training):
         return test_data
 
     @staticmethod
-    def recurrent_layer_id(self):
+    def get_recurrent_layer_id():
         """
         Return recurrent layer ID
         :return: (int) id of recurrent layer
