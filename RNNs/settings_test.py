@@ -6,6 +6,11 @@ import numpy as np
 
 
 # NETWORK FILES
+# architecture = A1
+# model_architecture = 'model_test.json'         # name of file containing model architecture
+# model_weights = 'model_test_weights.h5'     # name of file containing model weights
+# model_dmap = 'model_test.dmap'              # dmap of the embeddings layer of the model
+
 architecture = A4
 model_architecture = 'test_model_A4.json'         # name of file containing model architecture
 model_weights = 'test_model_A4_weights.h5'     # name of file containing model weights
@@ -13,8 +18,14 @@ model_dmap = 'test_model_A4.dmap'              # dmap of the embeddings layer of
 
 # SETTINGS OF NETWORK
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
-loss = 'categorical_crossentropy'            # loss function
-metrics = ['categorical_accuracy']         # metrics to be monitored
+loss = 'mse'            # loss function
+metrics = ['mspe']         # metrics to be monitored
+
+
+# optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
+# loss = 'categorical_crossentropy'            # loss function
+# metrics = ['categorical_accuracy']         # metrics to be monitored
+
 digits = np.arange(-10, 11)
 
 # TEST SETS

@@ -5,7 +5,7 @@ from architectures import A1, A4
 import numpy as np
 
 # network details
-architecture        = A4            # Trainings architecture
+architecture        = A1            # Trainings architecture
 recurrent_layer     = SimpleRNN   # options: SimpleRNN, GRU, LSTM
 size_hidden         = 15            # size of the hidden layer
 size_compare        = 2            # size of comparison layer
@@ -23,7 +23,7 @@ input_size          = 2             # input dimensionality
 pretrained_model = None
 
 # TRAINING
-nb_epoch            = 5            # number of iterations
+nb_epoch            = 1000            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
