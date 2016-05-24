@@ -111,6 +111,21 @@ class Training(object):
         plt.legend()
         plt.show()
 
+    def plot_prediction_error(self, save_to_file=False):
+        """
+        Plot the prediction error during the last training
+        round of the network
+        :param save_to_file:    file name to save file to
+        """
+        plt.plot(self.trainings_history.prediction_error, label="Training set")
+        plt.plot(self.trainings_history.val_prediction_error, label="Validation set")
+        plt.title("Prediction error during last training round")
+        plt.xlabel("Epoch")
+        plt.ylabel("Prediction Error")
+        plt.axhline(xmin=0)
+        plt.legend()
+        plt.show()
+
     def plot_esp(self):
         """
         Plot the spectral radius of the recurrent connections
