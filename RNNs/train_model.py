@@ -95,7 +95,9 @@ if settings.languages_test:
     test_data = training.generate_test_data(settings.languages_test, dmap=dmap,
                                    digits=settings.digits, pad_to=settings.maxlen)
     for name, X, Y in test_data:
-        print("Accuracy for for test set %s: %s " % (name, str(training.model.evaluate(X, Y))))
+        acc = training.model.evaluate(X, Y)
+        print "Accuracy for for test set %s:" % name,
+        print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
 
 # save model
 if settings.save_model:
