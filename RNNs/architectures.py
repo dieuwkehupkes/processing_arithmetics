@@ -111,19 +111,21 @@ class Training(object):
         plt.legend()
         plt.show()
 
-    def plot_prediction_error(self, save_to_file=False):
+    def plot_metrics_training(self, save_to_file=False):
         """
         Plot the prediction error during the last training
         round of the network
         :param save_to_file:    file name to save file to
         """
-        plt.plot(self.trainings_history.prediction_error, label="Training set")
-        plt.plot(self.trainings_history.val_prediction_error, label="Validation set")
+        for metric in self.metrics:
+            plt.plot(self.trainings_history.metrics_train[metric], label="%s training set" % metric)
+            plt.plot(self.trainings_history.metrics_val[metric], label="%s validation set" % metric)
+
+        plt.legend()
         plt.title("Prediction error during last training round")
         plt.xlabel("Epoch")
-        plt.ylabel("Prediction Error")
         plt.axhline(xmin=0)
-        plt.legend()
+        plt.ylabel("Prediction Error")
         plt.show()
 
     def plot_esp(self):
@@ -173,7 +175,7 @@ class Training(object):
         :return:
         """
 
-        history = TrainingHistory(metric=self.metrics[0], recurrent_id=recurrent_id, param_id=1)
+        history = TrainingHistory(metrics=self.metrics, recurrent_id=recurrent_id, param_id=1)
         callbacks = [history]
 
         if weights_animation:

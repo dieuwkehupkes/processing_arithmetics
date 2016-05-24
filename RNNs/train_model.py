@@ -39,8 +39,9 @@ X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
                               digits=settings.digits, pad_to=settings.maxlen)
 
 # TODO
-print Y
-print "hier lijkt echt iets raars te gebeuren met A1 training, waarom zijn de targets strings?"
+if settings.architecture == A1:
+    print Y
+    print "hier lijkt echt iets raars te gebeuren met A1 training, waarom zijn de targets strings?"
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
@@ -81,7 +82,7 @@ training.train(training_data=(X, Y), validation_data=validation_data, validation
 if settings.plot_loss:
     training.plot_loss()
 if settings.plot_prediction:
-    training.plot_prediction_error()
+    training.plot_metrics_training()
 if settings.plot_embeddings == True:
     training.plot_embeddings()
 if settings.plot_esp:
