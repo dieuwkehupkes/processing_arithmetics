@@ -121,11 +121,11 @@ class Training(object):
             plt.plot(self.trainings_history.metrics_train[metric], label="%s training set" % metric)
             plt.plot(self.trainings_history.metrics_val[metric], label="%s validation set" % metric)
 
-        plt.legend()
-        plt.title("Prediction error during last training round")
+        plt.title("Monitors metrics during training")
         plt.xlabel("Epoch")
         plt.axhline(xmin=0)
-        plt.ylabel("Prediction Error")
+        plt.ylabel("")
+        plt.legend(loc=3)
         plt.show()
 
     def plot_esp(self):
