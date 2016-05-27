@@ -110,3 +110,6 @@ if settings.save_model:
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')
         pickle.dump(dmap, open(model_string + '.dmap', 'w'))
+        hist = training.trainings_history
+        trainings_history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+        pickle.dump(trainings_history, open(model_string + '.history', 'w'))
