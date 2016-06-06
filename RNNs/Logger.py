@@ -22,7 +22,8 @@ class Logger(Callback):
         if epoch % self.N == 0:
             # give summary of current results
             print('Epoch %i' % epoch)
-            print('training loss: %f - val loss: %f - training mspe: %f - val mspe: %f'
-                  % (logs.get('loss'), logs.get('val_loss'),
-                     logs.get('mean_squared_prediction_error'),
-                     logs.get('val_mean_squared_prediction_error')))
+            # print('training loss: %f - val loss: %f - training mspe: %f - val mspe: %f'
+            print('training loss: %f - val loss: %f'
+                  % (logs.get('loss'), logs.get('val_loss')))
+                 #    logs.get('mean_squared_prediction_error'),
+                 #    logs.get('val_mean_squared_prediction_error')))
