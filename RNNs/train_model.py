@@ -95,6 +95,12 @@ if settings.languages_test:
     # generate test data
     test_data = training.generate_test_data(settings.languages_test, dmap=dmap,
                                    digits=settings.digits, pad_to=settings.maxlen)
+    hist = training.trainings_history
+
+    print "Accuracy for for training set %s:\t" % \
+          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
+    print "Accuracy for for validation set %s:\t" % \
+          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
     for name, X, Y in test_data:
         acc = training.model.evaluate(X, Y)
         print "Accuracy for for test set %s:" % name,
