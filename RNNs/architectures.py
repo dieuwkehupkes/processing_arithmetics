@@ -155,7 +155,6 @@ class Training(object):
         i = 0
         for weight_set in weights:
             xy = tuple(weight_set)
-            print xy
             x, y = xy
             plt.plot(x, y, 'o')
             plt.annotate(dmap_inverted[i], xy=xy)
@@ -375,7 +374,7 @@ class A4(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-        print self.model.summary()
+        # print self.model.summary()
 
 
     def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
