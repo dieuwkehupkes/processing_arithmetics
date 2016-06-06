@@ -81,21 +81,24 @@ if settings.visualise_test_items:
             predictions = model.predict(X_test)
             model_predictions = predictions.round()
         for s, m in zip(X_test, Y_test):
-            while user_input != "q":
-                labels = [dmap_inverted[word] for word in s[s.nonzero()]]
-                test_item = ' '.join(labels)
-                correct_prediction = str(m)
-                if settings.architecture == A1:
-                    model_prediction = str(model_predictions[i])
-                else:
-                    model_prediction = "No scalar prediction for A4 architecture"
-                print("Test item: %s\t\t Correct prediction: %s\t\t Model prediction: %s"
-                      % (test_item, correct_prediction, model_prediction))
-                hl_activations = truncated_model.predict(np.array([s]))
-                visualise_hidden_layer(hl_activations, labels)
+            labels = [dmap_inverted[word] for word in s[s.nonzero()]]
+            test_item = ' '.join(labels)
+            correct_prediction = str(m)
+            if settings.architecture == A1:
+                model_prediction = str(model_predictions[i])
+            else:
+                model_prediction = "No scalar prediction for A4 architecture"
+            print("Test item: %s\t\t Correct prediction: %s\t\t Model prediction: %s"
+                  % (test_item, correct_prediction, model_prediction))
+            hl_activations = truncated_model.predict(np.array([s]))
+            visualise_hidden_layer(hl_activations, labels)
 
-                user_input = raw_input()
-                i += 1
+            user_input = raw_input()
+            i += 1
+
+            if user_input == "q":
+                exit()
+
             # visualise_next()
 
 
