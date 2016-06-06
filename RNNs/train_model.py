@@ -3,6 +3,7 @@ from generate_training_data import generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import A1, A4
 import pickle
+import os
 import re
 
 parser = argparse.ArgumentParser()
@@ -105,7 +106,17 @@ if settings.save_model:
     if save == 'n' or save == 'N':
         pass
     elif save == 'y' or save == 'Y':
+        exists = True
         model_string = raw_input("Provide filename (without extension) ")
+        while exists:
+            model_string = raw_input("Provide filename (without extension) ")
+            exists = os.path.exists(model_string + '_weights.h5')
+            if exists:
+                overwrite = raw_input("File name exists, overwrite? (y/n) ")
+                if overwrite == 'y':
+                    exists = False
+                continue
+
         model_json = training.model.to_json()
         open(model_string + '.json', 'w').write(model_json )
         training.model.save_weights(model_string + '_weights.h5')
