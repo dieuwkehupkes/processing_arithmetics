@@ -34,7 +34,8 @@ maxlen = model.layers[2].input_shape[1]
 # check if test sets are provided or should be generated
 if isinstance(settings.test_sets, dict):
     test_data = settings.architecture.generate_test_data(settings.test_sets, dmap=dmap,
-                                                         digits=settings.digits, pad_to=maxlen)
+                                                         digits=settings.digits, pad_to=maxlen,
+                                                         test_separately=settings.test_separately)
 
 elif isinstance(settings.test_sets, list):
     test_data = []
