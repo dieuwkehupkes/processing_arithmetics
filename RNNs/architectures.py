@@ -288,7 +288,7 @@ class A1(Training):
         return X_padded, np.array(Y)
 
     @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to=None):
+    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True):
         """
         Take a dictionary that maps language names to number of sentences and return numpy array
         with test data.
@@ -333,7 +333,6 @@ class A4(Training):
     def __init__(self):
         self.loss_function = 'categorical_crossentropy'
         # self.loss_function = 'mean_squared_error'
-        self.metrics = ['mspe']
 
         self.metrics = ['categorical_accuracy']
 
@@ -442,7 +441,7 @@ class A4(Training):
         return X_padded, np.array(Y)
 
     @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to=None):
+    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=False):
         """
         Take a dictionary that maps language names to number of sentences and return numpy array
         with test data.
@@ -451,9 +450,17 @@ class A4(Training):
         :param pad_to:          desired length of test sequences
         :return:                list of tuples containing test set sames, inputs and targets
         """
-        X, Y = A4.generate_training_data(languages, dmap, digits, pad_to=pad_to)
-        name = ', '.join(languages.keys())
-        test_data = [(name, X, Y)]
+
+        if test_separately:
+            test_data = []
+            for name, N in languages.items():
+                X, Y = A4.generate_training_data({name: N}, dmap, digits, pad_to=pad_to)
+                test_data.append((name, X, Y))
+
+        else:
+            X, Y = A4.generate_training_data(languages, dmap, digits, pad_to=pad_to)
+            name = ', '.join(languages.keys())
+            test_data = [(name, X, Y)]
 
         return test_data
 
