@@ -87,9 +87,9 @@ To answer these questions I should figure out what appropriate training regimes 
 I first tested the network on the arithmetic task in a way similar to Sara. Details of the networks and training:
 
 \begin{tabular}{ll}
-    Languages train &
-    Languages test &
-    Size embeddings & 
+    Languages train &\\
+    Languages test &\\
+    Size embeddings & \\
 \end{tabular}
 
 
@@ -101,22 +101,23 @@ Train on 25000 examples with L1, L2, L4 and L6 expressions, validate on 2500 exa
             & mean & min & max & std & mean & min & max & std & mean & min & max & std \\ 
 \hline
 SimpleRNN   & 0.93 & 0.87 & 0.95 & 0.02 & 0.92 & 0.87 & 0.95 & 0.02 & 0.59 & 0.09 & 0.94 & 0.34\\ 
-GRU & 
+GRU         & 0.97 & 0.96 & 0.97 & 0.003 & 0.96 & 0.95 & 0.97 & 0.006 & 0.94 & 0.93 & 0.95 & 0.007\\      
 \end{tabular}
 \end{table}
 
 Empirical baselines: (ignore brackets)
 
-\begin{tabular}{lccc}
+\begin{tabular}{|l|ccc|}
+    \hline
     & training & validation & test\\
 simpleRNN & 0.83 & 0.51 & 0.76\\
 & 0.83 & 0.83 & 0.76\\
 & 0.84 & 0.83 & 0.76\\
-\\
-\\
-GRU &\\
-\\
-\\
+\hline
+GRU & 0.84 & 0.82 & 0.77\\
+& 0.85 & 0.82 & 0.74\\
+& 0.84 & 0.81 & 0.77\\
+\hline
 \end{tabular}
 
 
