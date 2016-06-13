@@ -82,11 +82,3 @@ def parse_language(language_str):
 
     return [n], operators, branching
 
-if __name__ == '__main__':
-    languages = {'L_3':500}
-    digits = np.arange(-19, 20)
-    dmap, N_operators, N_digits = generate_dmap(digits, languages)
-    test_data = generate_training_data(languages, architecture='A1', dmap=dmap, digits=digits, pad_to=max_length(7))
-    pickle.dump(test_data, open('test_sets/L3_500.test', 'wb'))
-    # pickle.dump(dmap, open('model_test.dmap', 'wb'))
-

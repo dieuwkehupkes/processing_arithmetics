@@ -52,24 +52,23 @@ The datasets that the networks will be trained and tested on are (subsets of) un
 
 \section{Architectures}
 
-I use four different architectures (explanation?):
+I experiment with 2 different architectures:
 
 \begin{figure}[!ht]
 \setlength{\tabcolsep}{18pt}
-\begin{tabular}{|cccc|}
+\begin{tabular}{|cc|cc|}
     \hline
-    \textbf{A1} & \textbf{A2} & \textbf{A3} & \textbf{A4}\\
-    & & &\\
-    \includegraphics[scale=0.9]{A1} &
-    \includegraphics[scale=0.9]{A2} &
-    \includegraphics[scale=0.9]{A3} &
+    \textbf{A1} & \textbf{A4} \\ % & \textbf{A3} & \textbf{A4}\\
+    & \\
+    \includegraphics[scale=0.9]{A1} & 
+    % \includegraphics[scale=0.9]{A2} &
+    % \includegraphics[scale=0.9]{A3} &
     \includegraphics[scale=0.9]{A4}\\
 \hline
 \end{tabular}
 \end{figure}
 
-
-\section{Experiments}
+\section{Aims and questions}
 
 There are a couple questions I would like to answer:\begin{enumerate}
 \item Can a recurrent network (setup A1) learn to generalise to sentence lengths that weren't in the training set?
@@ -79,56 +78,101 @@ There are a couple questions I would like to answer:\begin{enumerate}
 
 To answer these questions I should figure out what appropriate training regimes are and what the impact is of initialisation and the size of the hidden and comparison layer. Also I will need to find some methods to analyse the internal dynamics of the network (correlatie tussen activatie units oid? welke gewichten zijn hoog? eigenwaardes weights matrix?)
 
-\section{Results}
+\section{Experiments}
 
-Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
+\subsection{A4}
 
-\noindent In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.
+\subsubsection{Setup}
 
-\subsection{L2}
+I first tested the network on the arithmetic task in a way similar to Sara. Details of the networks and training:
 
-Different operators, but no structural ambiguity: finite state.\\
-
-\noindent No gates or memory units are necessary to learn the L2 language. 
-How well and how quickly depends on the size of the hidden layer (as is to be expected).
-For 10 hidden units the results vary, training sometimes converges much quicker than other times, but in all runs I did a prediction error of at least less than 0.5 was reached.
-With 15 hidden units the network generally converges faster, and reaches a higher accuracy (although still seems quite dependent on initialisation).\\
-
-Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddings the embeddings are always on an (almost) ordered line, with the plus and minus far away from each other on different sides of the line (for an example see Figure \ref{fig:L2_embeddings}).
-
-\begin{figure}[!ht]
-    \includegraphics[scale=0.7]{L2_embeddings.png}
-    \caption{Learned embeddings for a network with 15 simple recurrent units and a comparison layer of size 2. The network was trained on 1800 L2 sentences for 5000 epochs, batch size 24. After training, the mspe of the validation set (200 different L2 sentences) was 0.01.}\label{fig:L2_embeddings}
-\end{figure}
-
-\subsection{L+}
-
-No structural ambiguity, but longer sentences, finite state.\\
-
-I switched the optimizer to adam, the prediction error is more all over the place (and seems to be not entirely converged at the end of the training). 
-The network generally decreases its error at the start of the training much faster, but also finds more non generalisable solutions?
-It seems that the network is better able to generalise if longer test sequences are included in training
-
-\begin{tabular}{lcccc}
-    trained on & mspe training & mspe test L4+ & mspe L5+ & mspe L7+\\
-    L2+, L3+, L6+ & 0.13 & 0.03 & 0.04 & 0.17\\
-    L2+, L3+, L6+ & 0.08 & 0.03 & 0.04 & 0.16\\
-    L2+, L3+, L6+ & 0.04 & 0.01 & 0.02 & 0.13\\
-    \hline
-    L2+, L3+, L4+ & \\
-    L2+, L3+, L4+ & \\
-    L2+, L3+, L4+ & \\
+\begin{tabular}{ll}
+    Languages train &\\
+    Languages test &\\
+    Size embeddings & \\
 \end{tabular}
 
-I also tried to train the L+ language with dropout (0.05), that worked very poorly!
 
-\subsection{L3}
+Train on 25000 examples with L1, L2, L4 and L6 expressions, validate on 2500 examples of the same languages, test on 1200 examples with L3, L5 and L7 expressions. Size hidden = 15; size compare = 2; embeddings size = 2; epochs = 800 for simpleRNN, 200 for GRU; batch size = 24; optimizer = adam; digits = -10,\dots, 10. All numbers are averages over 25 runs.\\
 
-Test if we can train on L3 and predict L2? What does the solution look like.\\
-\noindent Test if we can train on L2, L3 and L4 and predict sentences from L5\\
-\noindent Test if we can train on L2, L3 and L6 and predict sentences from L5 and L7\\
+\begin{table}[!h]
+\begin{tabular}{l|cccc|cccc|cccc}
+            & \multicolumn{4}{c}{training} & \multicolumn{4}{c}{validation} & \multicolumn{4}{c}{test}\\
+            & mean & min & max & std & mean & min & max & std & mean & min & max & std \\ 
+\hline
+SimpleRNN   & 0.93 & 0.87 & 0.95 & 0.02 & 0.92 & 0.87 & 0.95 & 0.02 & 0.59 & 0.09 & 0.94 & 0.34\\ 
+GRU         & 0.97 & 0.96 & 0.97 & 0.003 & 0.96 & 0.95 & 0.97 & 0.006 & 0.94 & 0.93 & 0.95 & 0.007\\      
+\end{tabular}
+\end{table}
 
-\subsection{What will I monitor?}
+Empirical baselines: (ignore brackets)
+
+\begin{tabular}{|l|ccc|}
+    \hline
+    & training & validation & test\\
+simpleRNN & 0.83 & 0.51 & 0.76\\
+& 0.83 & 0.83 & 0.76\\
+& 0.84 & 0.83 & 0.76\\
+\hline
+GRU & 0.84 & 0.82 & 0.77\\
+& 0.85 & 0.82 & 0.74\\
+& 0.84 & 0.81 & 0.77\\
+\hline
+\end{tabular}
+
+
+% \subsection{A1}
+% 
+% Note: these results are not significant, but just based on my experience with a couple runs with different settings.\\
+% 
+% \noindent In all my experiments I use embeddings of size 2, a comparison layer of size 2, batch size 24 and random initialisation.
+% 
+% \subsection{L2}
+% 
+% Different operators, but no structural ambiguity: finite state.\\
+% 
+% \noindent No gates or memory units are necessary to learn the L2 language. 
+% How well and how quickly depends on the size of the hidden layer (as is to be expected).
+% For 10 hidden units the results vary, training sometimes converges much quicker than other times, but in all runs I did a prediction error of at least less than 0.5 was reached.
+% With 15 hidden units the network generally converges faster, and reaches a higher accuracy (although still seems quite dependent on initialisation).\\
+% 
+% Regardless of the accuracy, in the (2 dimensional) plots of the learned embeddings the embeddings are always on an (almost) ordered line, with the plus and minus far away from each other on different sides of the line (for an example see Figure \ref{fig:L2_embeddings}).
+% 
+% \begin{figure}[!ht]
+%     \includegraphics[scale=0.7]{L2_embeddings.png}
+%     \caption{Learned embeddings for a network with 15 simple recurrent units and a comparison layer of size 2. The network was trained on 1800 L2 sentences for 5000 epochs, batch size 24. After training, the mspe of the validation set (200 different L2 sentences) was 0.01.}\label{fig:L2_embeddings}
+% \end{figure}
+% 
+% \subsection{L+}
+% 
+% No structural ambiguity, but longer sentences, finite state.\\
+% 
+% I switched the optimizer to adam, the prediction error is more all over the place (and seems to be not entirely converged at the end of the training). 
+% The network generally decreases its error at the start of the training much faster, but also finds more non generalisable solutions?
+% It seems that the network is better able to generalise if longer test sequences are included in training
+% 
+% \begin{tabular}{lcccc}
+%     trained on & mspe training & mspe test L4+ & mspe L5+ & mspe L7+\\
+%     L2+, L3+, L6+ & 0.13 & 0.03 & 0.04 & 0.17\\
+%     L2+, L3+, L6+ & 0.08 & 0.03 & 0.04 & 0.16\\
+%     L2+, L3+, L6+ & 0.04 & 0.01 & 0.02 & 0.13\\
+%     \hline
+%     L2+, L3+, L4+ & \\
+%     L2+, L3+, L4+ & \\
+%     L2+, L3+, L4+ & \\
+% \end{tabular}
+% 
+% I also tried to train the L+ language with dropout (0.05), that worked very poorly!
+% 
+% \subsection{L3}
+% 
+% Test if we can train on L3 and predict L2? What does the solution look like.\\
+% \noindent Test if we can train on L2, L3 and L4 and predict sentences from L5\\
+% \noindent Test if we can train on L2, L3 and L6 and predict sentences from L5 and L7\\
+% 
+
+
+\section{What will I monitor?}
 
 I will have to think of some things I can monitor to see what it is actually doing, ideas?\begin{itemize}
     \item During training:\begin{itemize}
