@@ -113,7 +113,6 @@ if settings.save_model:
         pass
     elif save == 'y' or save == 'Y':
         exists = True
-        model_string = raw_input("Provide filename (without extension) ")
         while exists:
             model_string = raw_input("Provide filename (without extension) ")
             exists = os.path.exists(model_string + '_weights.h5')
