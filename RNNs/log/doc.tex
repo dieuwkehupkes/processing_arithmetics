@@ -95,6 +95,8 @@ I first tested the network on the arithmetic task in a way similar to Sara. Deta
 
 Train on 25000 examples with L1, L2, L4 and L6 expressions, validate on 2500 examples of the same languages, test on 1200 examples with L3, L5 and L7 expressions. Size hidden = 15; size compare = 2; embeddings size = 2; epochs = 800 for simpleRNN, 200 for GRU; batch size = 24; optimizer = adam; digits = -10,\dots, 10. All numbers are averages over 25 runs.\\
 
+\subsubsection{Results}
+
 \begin{table}[!h]
 \begin{tabular}{l|cccc|cccc|cccc}
             & \multicolumn{4}{c}{training} & \multicolumn{4}{c}{validation} & \multicolumn{4}{c}{test}\\
@@ -119,6 +121,27 @@ GRU & 0.84 & 0.82 & 0.77\\
 & 0.84 & 0.81 & 0.77\\
 \hline
 \end{tabular}
+
+\subsubsection{Looking inside the Network}
+
+We take one of the trained GRU network and look at how it executes the task, analysing the structure of the embeddings; the projections of the numerals, operators and brackets into the hidden layer and the function of the forget gates.\\
+\paragraph{Results} Lets first look at the breakdown of results for this specific network
+
+
+\includegraphics[scale=0.8]{tests_GRU}
+
+
+
+\paragraph{Embeddings} The learned embeddings can be found in Figure \ref{fig:GRU_embeddings}
+
+\begin{figure}
+    \includegraphics[scale=0.7]{../models/GRU_embeddings.png}
+    \caption{Embeddings in trained network with GRU as recurrent layer.}\label{fig:GRU_embeddings}
+\end{figure}
+
+\paragraph{Projection of lexicon}
+
+\includegraphics[scale=0.7]{GRU_projections.png}
 
 
 % \subsection{A1}
