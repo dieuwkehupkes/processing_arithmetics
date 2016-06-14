@@ -30,7 +30,10 @@ dmap = pickle.load(open(settings.model_dmap, 'rb'))
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 id = settings.architecture.get_recurrent_layer_id()
 maxlen = model.layers[id].input_shape[1]
-print maxlen
+
+
+###########################################################################################
+# GENERATE TEST DATA
 
 # TODO dmap should be identical for model and testset, currently there
 # TODO seems to be no way to check this? Maybe I should make my own model class
@@ -48,6 +51,8 @@ elif isinstance(settings.test_sets, list):
 else:
     print("Invalid format test data")
 
+
+###########################################################################################
 # GENERATE MODEL TRUNCATED AT RECURRENT LAYER
 
 # check embeddings layer type:
@@ -63,7 +68,11 @@ embeddings_sequence = recurrent_layer(output_dim=rec_config['output_dim'],
 truncated_model = Model(input=model.layers[0].input, output=embeddings_sequence)
 truncated_model.compile(optimizer=settings.optimizer, loss=settings.loss, metrics=settings.metrics)
 
-print truncated_model.summary()
+# print truncated_model.summary()
+
+
+###########################################################################################
+# COMPUTE CORRELATIONS BETWEEN HIDDEN UNITS
 
 if settings.compute_correls:
     # loop over test items
@@ -72,8 +81,37 @@ if settings.compute_correls:
         non_zero = predictions[np.any(predictions!=0, axis=2)]
         print np.corrcoef(non_zero)
 
+
+# VISUALISE PROJECTION OF LEXICAL ITEMS TO HIDDEN LAYER
+if settings.project_lexical:
+    output_dim = truncated_model.layers[-1].output_dim
+    lex_size = len(dmap)
+    hl_activations = np.zeros(output_dim*lex_size).reshape(lex_size, output_dim)
+    i = 0
+    labels = []
+
+    # we don't need this anymore later for training new models
+    def conv(token):
+        try:
+            return int(token)
+        except ValueError:
+            return token
+
+    for lex_item in sorted(dmap.keys(), key=conv):
+        input_seq = np.array([[dmap[lex_item]]])
+        seq_padded = keras.preprocessing.sequence.pad_sequences(input_seq, dtype='int32', maxlen=maxlen)
+        hl_activation = truncated_model.predict(seq_padded)
+        hl_non_zero = hl_activation[np.any(hl_activation!=0, axis=2)]
+        hl_activations[i] = hl_non_zero
+        labels.append(lex_item)
+        i+=1
+
+    visualise_hidden_layer(hl_activations, labels)
+
+
+
+# VISUALISE TEST ITEMS ONE BY ONE
 if settings.visualise_test_items:
-    # visualise test items one by one
     user_input = None
     i = 0
     for name, X_test, Y_test in test_data:
@@ -93,12 +131,8 @@ if settings.visualise_test_items:
             hl_activations = truncated_model.predict(np.array([s]))
             visualise_hidden_layer(hl_activations, labels)
 
-            user_input = raw_input()
+            user_input = raw_input("Press enter to continue, q to quit ")
             i += 1
 
             if user_input == "q":
                 exit()
-
-            # visualise_next()
-
-
