@@ -3,10 +3,12 @@ Functions to generate training data for the
 arithmetic task.
 """
 from arithmetics import mathTreebank
+
 from auxiliary_functions import max_length
 import keras.preprocessing.sequence
 import re
 import numpy as np
+from collections import OrderedDict
 import random
 import pickle
 
@@ -40,7 +42,7 @@ def generate_dmap(digits, *languages):
     N_digits = len(digits)
     N = N_digits + N_operators + 2
     # start counting at 1 to not ignore first word during training
-    dmap = dict(zip(digits+operators+['(', ')'], np.arange(1, N+1)))
+    dmap = OrderedDict(zip(digits+operators+['(', ')'], np.arange(1, N+1)))
     return dmap, N_operators, N_digits
 
 
