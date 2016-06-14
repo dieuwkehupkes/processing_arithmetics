@@ -7,9 +7,9 @@ import numpy as np
 
 # NETWORK FILES
 architecture = A4
-model_architecture = 'test_model_A4.json'         # name of file containing model architecture
-model_weights = 'test_model_A4_weights.h5'     # name of file containing model weights
-model_dmap = 'test_model_A4.dmap'              # dmap of the embeddings layer of the model
+model_architecture = 'models/GRU2.json'         # name of file containing model architecture
+model_weights = 'models/GRU2_weights.h5'     # name of file containing model weights
+model_dmap = 'models/GRU2.dmap'              # dmap of the embeddings layer of the model
 
 # architecture = A1
 # model_architecture = 'model_test.json'         # name of file containing model architecture
@@ -29,12 +29,14 @@ digits = np.arange(-10, 11)
 
 # TEST SETS
 # test_sets = ['test_sets/L3_500.test']
-test_sets = {'L3': 500}
+test_sets = {'L1': 500, 'L2': 500, 'L3': 500, 'L4': 500, 'L5': 500, 'L6': 500, 'L7': 500}
 
 # PARAMETERS FOR RUNNING
-compute_accuracy = False     # compute accuracy on testset
+compute_accuracy = True     # compute accuracy on testset
 
 compute_correls = False      # compute correlation between hidden unit activations
+
+project_lexical = False      # compute projections of lexical items
 
 # - overall accuracy op testset berekenen voor alle metrics
 # - correlatie tussen de hidden units?
