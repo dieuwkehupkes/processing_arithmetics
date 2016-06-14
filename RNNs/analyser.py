@@ -6,7 +6,7 @@ the network.
 import itertools as it
 import numpy as np
 import matplotlib.pylab as plt
-
+import matplotlib
 
 def visualise_hidden_layer(hl_activations, labels):
     """
@@ -32,9 +32,11 @@ def visualise_hidden_layer(hl_activations, labels):
 
         # plot activation values
         plt.subplot(l, 2, 2*i+2)
-        plt.imshow(np.array([hl_nonzero[i]]), interpolation='nearest', vmin=vmin, vmax=vmax)
+        plt.imshow(np.array([hl_nonzero[i]]), interpolation='nearest', cmap=colourmap(), vmin=vmin, vmax=vmax)
         plt.axis('off')
-
+    plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
+    cax = plt.axes([0.85, 0.1, 0.025, 0.8])
+    plt.colorbar(cax=cax)
     plt.show()
 
 
@@ -82,3 +84,49 @@ def length_embeddings(embeddings_matrix):
     av_length = length/l
     
     return av_length
+
+def colourmap()
+    cdict = {'red':     ((0.0, 0.0, 0.0),
+                         (0.5, )),
+
+            'green':    ((0.0, 0.0, 0.0)),
+
+            'blue':     ((0.0, 0.0, 0.0))
+             }
+
+def colourmap():
+    cdict = {'red': ((0.0, 0.0, 0.0),
+                      (0.25, 0.0, 0.0),
+                      (0.5, 0.8, 1.0),
+                      (0.75, 1.0, 1.0),
+                      (1.0, 0.4, 1.0)),
+
+              'green': ((0.0, 0.0, 0.0),
+                        (0.25, 0.0, 0.0),
+                        (0.5, 0.9, 0.9),
+                        (0.75, 0.0, 0.0),
+                        (1.0, 0.0, 0.0)),
+
+              'blue': ((0.0, 0.0, 0.4),
+                       (0.25, 1.0, 1.0),
+                       (0.5, 1.0, 0.8),
+                       (0.75, 0.0, 0.0),
+                       (1.0, 0.0, 0.0))
+              }
+    colourmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
+    return colourmap
+
+def colourmap1():
+    cdict = {'red': ((0.0, 1.0, 1.0), (1.0, 0.5, 0.5)),
+             'green': ((0.0, 1.0, 1.0), (1.0, 0.5, 0.5)),
+             'blue': ((0.0, 1.0, 1.0), (1.0, 1.0, 1.0))}
+    colourmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
+    return colourmap
+
+
+def colourmap2():
+    cdict = {'red': ((0.0, 1.0, 1.0), (1.0, 1.0, 1.0)),
+             'green': ((0.0, 1.0, 1.0), (1.0, 0.0, 0.0)),
+             'blue': ((0.0, 1.0, 1.0), (1.0, 0.0, 0.0))}
+    colourmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
+    return colourmap
