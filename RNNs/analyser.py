@@ -14,7 +14,10 @@ def visualise_hidden_layer(hl_activations, labels):
     :param hl_activations: 2 dimensional np array
     """
     # cut off zero activations
-    hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
+    if len(hl_activations.shape) == 3:
+        hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
+    else:
+        hl_nonzero = hl_activations
     vmin = np.min(hl_activations)
     vmax = np.max(hl_activations)
 
