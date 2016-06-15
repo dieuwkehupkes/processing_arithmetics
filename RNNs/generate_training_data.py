@@ -45,6 +45,19 @@ def generate_dmap(digits, *languages):
     dmap = OrderedDict(zip(digits+operators+['(', ')'], np.arange(1, N+1)))
     return dmap, N_operators, N_digits
 
+def generate_input_sequences(expressions, dmap, pad_to=None):
+    """
+    Generate a sequence of inputsequences for the network that
+    matches the sequence of symbolic expressions inputted to the
+    function
+    :param expressions: list with string representations of arithmetic expressions
+    :param dmap: dictionary describing how to map input symbols to integers
+    :param pad_to: length of the input sequences
+    :return:    np.array with inputsequences
+    """
+    input_seqs = [[dmap[symbol] for symbol in expression.split(' ')] for expression in expressions]
+    return input_seqs
+
 
 def generate_treebank(languages, digits):
     """
