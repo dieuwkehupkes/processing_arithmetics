@@ -30,6 +30,7 @@ dmap = pickle.load(open(settings.model_dmap, 'rb'))
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 id = settings.architecture.get_recurrent_layer_id()
 maxlen = model.layers[id].input_shape[1]
+print maxlen
 
 
 ###########################################################################################
@@ -82,6 +83,7 @@ if settings.compute_correls:
         print np.corrcoef(non_zero)
 
 
+###########################################################################################
 # VISUALISE PROJECTION OF LEXICAL ITEMS TO HIDDEN LAYER
 if settings.project_lexical:
     output_dim = truncated_model.layers[-1].output_dim
@@ -109,11 +111,12 @@ if settings.project_lexical:
     visualise_hidden_layer(hl_activations, labels)
 
 
-
+###########################################################################################
 # VISUALISE TEST ITEMS ONE BY ONE
-if settings.visualise_test_items:
+if settings.one_by_one:
     user_input = None
     i = 0
+    hl_activations = []
     for name, X_test, Y_test in test_data:
         if settings.architecture == A1:
             predictions = model.predict(X_test)
@@ -128,11 +131,16 @@ if settings.visualise_test_items:
                 model_prediction = "No scalar prediction for A4 architecture"
             print("Test item: %s\t\t Correct prediction: %s\t\t Model prediction: %s"
                   % (test_item, correct_prediction, model_prediction))
-            hl_activations = truncated_model.predict(np.array([s]))
-            visualise_hidden_layer(hl_activations, labels)
-
-            user_input = raw_input("Press enter to continue, q to quit ")
+            hl_activation = truncated_model.predict(np.array([s]))
+            new_input = (hl_activation, labels)
+            hl_activations.append((new_input))
             i += 1
 
-            if user_input == "q":
-                exit()
+            if i % settings.one_by_one == 0:
+                visualise_hidden_layer(*tuple(hl_activations))
+                hl_activations = []
+
+                user_input = raw_input("Press enter to continue, q to quit ")
+
+                if user_input == "q":
+                    exit()
