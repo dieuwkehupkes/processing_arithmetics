@@ -45,7 +45,7 @@ def generate_dmap(digits, *languages):
     dmap = OrderedDict(zip(digits+operators+['(', ')'], np.arange(1, N+1)))
     return dmap, N_operators, N_digits
 
-def generate_input_sequences(expressions, dmap, pad_to=None):
+def string_to_vec(expressions, dmap, pad_to=None):
     """
     Generate a sequence of inputsequences for the network that
     matches the sequence of symbolic expressions inputted to the
@@ -55,7 +55,10 @@ def generate_input_sequences(expressions, dmap, pad_to=None):
     :param pad_to: length of the input sequences
     :return:    np.array with inputsequences
     """
-    input_seqs = [[dmap[symbol] for symbol in expression.split(' ')] for expression in expressions]
+    X = np.array([[dmap[symbol] for symbol in expression.split(' ')] for expression in expressions])
+    # pad sequences to have the same length
+    assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+    input_seqs = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
     return input_seqs
 
 
