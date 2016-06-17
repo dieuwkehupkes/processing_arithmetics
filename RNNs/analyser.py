@@ -8,35 +8,80 @@ import numpy as np
 import matplotlib.pylab as plt
 import matplotlib
 
-def visualise_hidden_layer(hl_activations, labels):
+# def visualise_hidden_layer(*inputs):
+#     """
+#     Plot hidden layer activations over time
+#     :param inputs:  tuple with lists containing hl activations and labels
+#     """
+#     col = 1
+#     rows = 2*len(inputs)
+#     plt.figure(1)
+#     for input in inputs:
+#         hl_activations, labels = input
+#         # cut off zero activations
+#         if len(hl_activations.shape) == 3:
+#             hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
+#         else:
+#             hl_nonzero = hl_activations
+#         vmin = np.min(hl_activations)
+#         vmax = np.max(hl_activations)
+#
+#         l = hl_nonzero.shape[0]
+#         for i in xrange(l):
+#             # plot label
+#             #plt.subplot(l, rows, rows*i+col)
+#             #plt.text(0,0, labels[i])
+#             #plt.axis([-0.1, 0.1, -0.1, 0.1])
+#
+#             # plot activation values
+#             plt.subplot(l, rows, rows*i+col)
+#             plt.imshow(np.array([hl_nonzero[i]]), interpolation='nearest', cmap=colourmap(), vmin=vmin, vmax=vmax)
+#             plt.text(-2, -1, labels[i])
+#             plt.axis('off')
+#
+#         col += 1
+#     plt.subplots_adjust(bottom=0.1, right=0.7, top=0.9, wspace=0.1, hspace=0.0)
+#     #plt.tight_layout(h_pad=0.2)
+#     cax = plt.axes([0.85, 0.1, 0.025, 0.8])
+#     plt.colorbar(cax=cax)
+#     plt.show()
+
+def visualise_hidden_layer(*inputs):
     """
     Plot hidden layer activations over time
     :param hl_activations: 2 dimensional np array
+
     """
-    # cut off zero activations
-    if len(hl_activations.shape) == 3:
-        hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
-    else:
-        hl_nonzero = hl_activations
-    vmin = np.min(hl_activations)
-    vmax = np.max(hl_activations)
 
-    plt.figure(1)
-    l = hl_nonzero.shape[0]
-    for i in xrange(l):
-        # plot label
-        plt.subplot(l, 2, 2*i+1)
-        plt.text(0,0, labels[i])
-        plt.axis([-1, 1, -1, 1])
-        plt.axis('off')
+    cols = len(inputs)
+    col = 1
 
-        # plot activation values
-        plt.subplot(l, 2, 2*i+2)
-        plt.imshow(np.array([hl_nonzero[i]]), interpolation='nearest', cmap=colourmap(), vmin=vmin, vmax=vmax)
-        plt.axis('off')
-    plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
-    cax = plt.axes([0.85, 0.1, 0.025, 0.8])
-    plt.colorbar(cax=cax)
+    fig = plt.figure(figsize=(8*cols, 3))
+    for hl_activations, labels in inputs:
+
+        # cut off zero activations
+        if len(hl_activations.shape) == 3:
+            hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
+        else:
+            hl_nonzero = hl_activations
+        vmin = np.min(hl_activations)
+        vmax = np.max(hl_activations)
+
+        rows = hl_nonzero.shape[0]
+        plt.subplot(1, cols, col)
+        plt.imshow(hl_nonzero, interpolation='nearest', cmap=colourmap(), vmin=vmin, vmax=vmax)
+        for i in xrange(rows):
+            # plot activation values and labels
+            plt.text(-2, i, labels[i])
+            plt.axis('off')
+        col += 1
+
+    plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
+    cax = plt.axes([0.93, 0.1, 0.015, 0.8])
+    # plt.subplots_adjust(bottom=0.2, hspace=0.0)
+    # cax = plt.axes([0.1, 0.1, 0.8, 0.035])
+    # plt.colorbar(cax=cax, orientation='horizontal')
+    plt.colorbar(cax=cax, orientation='vertical')
     plt.show()
 
 
