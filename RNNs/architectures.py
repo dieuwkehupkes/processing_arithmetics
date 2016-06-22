@@ -152,9 +152,8 @@ class Training(object):
         xmax, ymax = 1.1 * weights.min(axis=0)
         # use dmap to determine labels
         dmap_inverted = dict(zip(self.dmap.values(), self.dmap.keys()))
-        i = 0
-        for weight_set in weights:
-            xy = tuple(weight_set)
+        for i in xrange(1, len(weights)):
+            xy = tuple(weights[i])
             x, y = xy
             plt.plot(x, y, 'o')
             plt.annotate(dmap_inverted[i], xy=xy)
