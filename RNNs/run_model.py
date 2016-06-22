@@ -60,7 +60,8 @@ else:
 
 # check embeddings layer type:
 layer_type = {'SimpleRNN': SimpleRNN, 'GRU': GRU_output_gates, 'LSTM': LSTM}
-recurrent_layer = layer_type[model.get_config()['layers'][id]['class_name']]
+layer_name = model.get_config()['layers'][id]['class_name']
+recurrent_layer = layer_type[layer_name]
 rec_config = model.layers[id].get_config()
 
 embeddings_sequence = recurrent_layer(output_dim=rec_config['output_dim'],
@@ -108,7 +109,9 @@ if settings.project_lexical:
             continue
         input_seq = np.array([[dmap[lex_item]]])
         seq_padded = keras.preprocessing.sequence.pad_sequences(input_seq, dtype='int32', maxlen=maxlen)
-        hl_activation = truncated_model.predict(seq_padded)[:,:,:output_dim]
+        hl_activation = truncated_model.predict(seq_padded)
+        if layer_name == 'GRU':
+            hl_activation = hl_activation[:,:,:output_dim]
         hl_non_zero = hl_activation[np.any(hl_activation!=0, axis=2)]
         hl_activations[i] = hl_non_zero
         labels.append(lex_item)
@@ -142,9 +145,12 @@ if settings.one_by_one:
             print("Test item: %s\t\t Correct prediction: %s\t\t Model prediction: %s"
                   % (test_item, correct_prediction, model_prediction))
             outputs = truncated_model.predict(np.array([s]))
-            hl_activation = outputs[:,:,:output_dim]
-            z = outputs[:,:,output_dim:2*output_dim]
-            r = outputs[:,:,2*output_dim:]
+            if layer_name == 'GRU':
+                hl_activation = outputs[:,:,:output_dim]
+                z = outputs[:,:,output_dim:2*output_dim]
+                r = outputs[:,:,2*output_dim:]
+            else:
+                hl_activation = outputs
             new_input = (hl_activation, labels)
             hl_activations.append((new_input))
             i += 1
