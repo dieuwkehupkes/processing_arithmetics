@@ -56,7 +56,9 @@ def visualise_hidden_layer(*inputs):
     cols = len(inputs)
     col = 1
 
-    fig = plt.figure(figsize=(8*cols, 3))
+    maxlen = find_longest(inputs)
+
+    fig = plt.figure(figsize=(9*cols, maxlen/2))
     for hl_activations, labels in inputs:
 
         # cut off zero activations
@@ -64,8 +66,8 @@ def visualise_hidden_layer(*inputs):
             hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=2)]
         else:
             hl_nonzero = hl_activations
-        vmin = np.min(hl_activations)
-        vmax = np.max(hl_activations)
+        vmin = -1
+        vmax = 1
 
         rows = hl_nonzero.shape[0]
         plt.subplot(1, cols, col)
@@ -77,12 +79,23 @@ def visualise_hidden_layer(*inputs):
         col += 1
 
     plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
-    cax = plt.axes([0.93, 0.1, 0.015, 0.8])
-    # plt.subplots_adjust(bottom=0.2, hspace=0.0)
-    # cax = plt.axes([0.1, 0.1, 0.8, 0.035])
-    # plt.colorbar(cax=cax, orientation='horizontal')
+    cax = plt.axes([0.95, 0.1, 0.025, 0.8])
     plt.colorbar(cax=cax, orientation='vertical')
     plt.show()
+
+
+def find_longest(inputs):
+    """
+    Find longest sequence in input parameters
+    :param inputs: sequence of tuples (input_sequence, labels)
+    :return: integer describing the longest sequence within the inputs
+    """
+    maxlen = 1
+    for input in inputs:
+        maxlen = max(maxlen, len(input[1]))
+
+    return maxlen
+
 
 
 def distance_embeddings(embeddings_matrix):
