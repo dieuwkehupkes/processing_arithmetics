@@ -1,6 +1,6 @@
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
-from analyser import visualise_hidden_layer
+from analyser import visualise_hidden_layer, plot_gate_values
 from GRU_output_gates import GRU_output_gates
 from architectures import A1
 from architectures import *
@@ -149,14 +149,23 @@ if settings.one_by_one:
                 hl_activation = outputs[:,:,:output_dim]
                 z = outputs[:,:,output_dim:2*output_dim]
                 r = outputs[:,:,2*output_dim:]
+                new_input = (hl_activation, z, r, labels)
             else:
                 hl_activation = outputs
-            new_input = (hl_activation, labels)
+                new_input = (hl_activation, labels)
+
             hl_activations.append((new_input))
             i += 1
 
             if i % settings.one_by_one == 0:
-                visualise_hidden_layer(*tuple(hl_activations))
+                if settings.plot_gate_values:
+                    # plot not only hidden layer but also gate values
+                    plot_gate_values(*tuple(hl_activations))
+                    assert layer_name == 'GRU', "Simple RNN does not have gate values to plot"
+                else:
+                    visualise_hidden_layer(*tuple(hl_activations), plot_gate_values=settings.plot_gate_values)
+
+                # reset array with hl activations
                 hl_activations = []
 
                 user_input = raw_input("Press enter to continue, q to quit ")

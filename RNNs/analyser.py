@@ -7,6 +7,7 @@ import itertools as it
 import numpy as np
 import matplotlib.pylab as plt
 import matplotlib
+import matplotlib.cm as cm
 
 # def visualise_hidden_layer(*inputs):
 #     """
@@ -81,6 +82,53 @@ def visualise_hidden_layer(*inputs):
     plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
     cax = plt.axes([0.95, 0.1, 0.025, 0.8])
     plt.colorbar(cax=cax, orientation='vertical')
+    plt.show()
+
+
+def plot_gate_values(*inputs):
+    """
+    Plot hidden layer activations and gate values of GRU
+    for processed sequences.
+    :param inputs:
+    :return:
+    """
+    # GRU has 1 hidden layer and 2 gates
+    cols = 3
+    rows, row = len(inputs), 1
+
+    # fig = plt.figure(figsize=(10, 5*rows/3))
+    fig = plt.figure()  # TODO find optimal figsize
+
+    # TODO plot titles?
+
+    for hl, z, r, labels in inputs:
+
+        # cut off zero activations
+        hl_nonzero = hl[np.any(hl!=0, axis=2)]
+        z_nonzero = z[np.any(z!=0, axis=2)]
+        r_nonzero = z[np.any(r!=0, axis=2)]
+
+        rows = hl_nonzero.shape[0]
+
+        # plot hl activation
+        plt.subplot(rows, 3, row*3-2)
+        plt.imshow(hl_nonzero, interpolation='nearest', cmap=colourmap(), vmin=-1, vmax=1)
+        for i in xrange(rows):
+            plt.text(-2, i, labels[i])
+            plt.axis('off')
+
+        # plot gate values
+        plt.subplot(rows, 3, row*3-1)
+        plt.imshow(z_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
+        plt.axis('off')
+        plt.subplot(rows, 3, row*3)
+        plt.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
+        plt.axis('off')
+
+        row += 1
+
+    # TODO plot colorbars
+
     plt.show()
 
 

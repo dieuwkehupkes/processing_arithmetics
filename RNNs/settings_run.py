@@ -28,8 +28,9 @@ metrics = ['categorical_accuracy']         # metrics to be monitored
 digits = np.arange(-10, 11)
 
 # TEST SETS
-# test_sets = ['test_sets/L3_500.test']
-test_sets = {'L1': 500, 'L2': 500, 'L3': 500, 'L4': 500, 'L5': 500, 'L6': 500, 'L7': 500}
+# test_sets = ['test3']
+test_sets = ['test_input_sequences']
+#test_sets = {'L1': 500, 'L2': 500, 'L3': 500, 'L4': 500, 'L5': 500, 'L6': 500, 'L7': 500}
 
 # PARAMETERS FOR RUNNING
 compute_accuracy = True     # compute accuracy on testset
@@ -42,5 +43,6 @@ project_lexical = False      # compute projections of lexical items
 # - correlatie tussen de hidden units?
 # - run one by one and plot hidden layer activations (animatie/plot) (bij voorkeur met de huidige input op x-as
 # - run one by one and print test items and outcomes?
-visualise_test_items = True
+one_by_one = 2
+plot_gate_values = True
 
