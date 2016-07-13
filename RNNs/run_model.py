@@ -1,6 +1,6 @@
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
-from analyser import visualise_hidden_layer, plot_gate_values
+from analyser import visualise_hidden_layer, plot_gate_values, visualise_paths
 from GRU_output_gates import GRU_output_gates
 from architectures import A1
 from architectures import *
@@ -121,8 +121,8 @@ if settings.project_lexical:
 
 
 ###########################################################################################
-# VISUALISE TEST ITEMS ONE BY ONE
-if settings.one_by_one:
+# VISUALISE TEST ITEMS
+if settings.one_by_one or settings.visualise_paths:
     output_dim = truncated_model.layers[-1].output_dim
     user_input = None
     i = 0
@@ -157,6 +157,7 @@ if settings.one_by_one:
             hl_activations.append((new_input))
             i += 1
 
+            # TODO this is a bit of a mess now, two functions cannot really be used at the same time
             if i % settings.one_by_one == 0:
                 if settings.plot_gate_values:
                     # plot not only hidden layer but also gate values
@@ -172,3 +173,11 @@ if settings.one_by_one:
 
                 if user_input == "q":
                     exit()
+
+            if i % settings.visualise_paths == 0:
+                visualise_paths(*tuple(hl_activations))
+
+                # reset array with hl activations
+                hl_activations = []
+
+

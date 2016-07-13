@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pylab as plt
 import matplotlib
 import matplotlib.cm as cm
+from sklearn.decomposition import PCA
 
 # def visualise_hidden_layer(*inputs):
 #     """
@@ -130,6 +131,35 @@ def plot_gate_values(*inputs):
     # TODO plot colorbars
 
     plt.show()
+
+def visualise_paths(*inputs):
+    """
+    Apply pca to hidden layer activations and visualise
+    the paths through statespace in the reduced statespace
+    :param inputs:
+    :return:
+    """
+
+    # create hl_activations matrix and compute principal components
+    activations_nz =tuple([input[0][np.any(input[0]!=0, axis=2)] for input in inputs])
+    hl_activations = np.concatenate(tuple(activations_nz))
+    pca = PCA(n_components=2)
+    pca.fit(hl_activations)
+
+    for hl, z, r, labels in inputs:
+        # cut off zero activations
+        hl_nonzero = hl[np.any(hl!=0, axis=2)]
+        description = ' '.join(labels)
+        hl_reduced = pca.transform(hl_nonzero)
+        plt.plot(hl_reduced[:,0], hl_reduced[:,1], label=description)
+        # TODO I should maybe put some annotation of the trajectories, when are they where
+
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+
+    plt.legend()
+    plt.show()
+
 
 
 def find_longest(inputs):
