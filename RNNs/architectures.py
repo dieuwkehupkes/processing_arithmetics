@@ -51,8 +51,8 @@ class Training(object):
         self.size_hidden = size_hidden
         self.size_compare = size_compare
         self.dmap = dmap
-        self.cotrain_comparison = trainable_comparison
-        self.cotrain_embeddings = trainable_embeddings
+        self.train_comparison = trainable_comparison
+        self.train_embeddings = trainable_embeddings
         self.mask_zero = mask_zero
         self.dropout_recurrent = dropout_recurrent
         self.optimizer = optimizer
@@ -61,10 +61,6 @@ class Training(object):
 
         # build model
         self._build(W_embeddings)
-
-        # print config
-        # print self.model.summary()
-        # exit()
 
     def _build(self, W_embeddings):
         raise NotImplementedError()
@@ -214,7 +210,8 @@ class A1(Training):
         # create embeddings
         embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
                                input_length=self.input_length, weights=W_embeddings,
-                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                               trainable=self.train_embeddings,
+                               mask_zero=self.mask_zero,
                                name='embeddings')(input_layer)
 
         # create recurrent layer
@@ -344,7 +341,7 @@ class A4(Training):
         # create embeddings
         embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
                                input_length=self.input_length, weights=W_embeddings,
-                               mask_zero=self.mask_zero, trainable=self.cotrain_embeddings,
+                               mask_zero=self.mask_zero, trainable=self.train_embeddings,
                                name='embeddings')
 
         # create recurrent layer
