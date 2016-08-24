@@ -273,7 +273,7 @@ class A1(Training):
         # loop over examples
         for expression, answer in treebank.examples:
             input_seq = [dmap[i] for i in str(expression).split()]
-            answer = str(answer)
+            answer = answer
             X.append(input_seq)
             Y.append(answer)
 

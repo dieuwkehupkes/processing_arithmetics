@@ -7,7 +7,7 @@ import os
 import re
 
 parser = argparse.ArgumentParser()
-parser.add_argument("settings", help="Provide file with settings for model running")
+parser.add_argument("--settings", help="Provide file with settings for model running", default="settings_train")
 # add arguments to override settings file?
 
 args = parser.parse_args()
@@ -38,11 +38,6 @@ training = settings.architecture()
 # GENERATE TRAINING DATA
 X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
                               digits=settings.digits, pad_to=settings.maxlen)
-
-# TODO
-if settings.architecture == A1:
-    print Y
-    print "hier lijkt echt iets raars te gebeuren met A1 training, waarom zijn de targets strings?"
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
