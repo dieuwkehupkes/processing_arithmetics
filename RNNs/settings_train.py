@@ -8,7 +8,6 @@ import numpy as np
 architecture        = A4            # Trainings architecture
 recurrent_layer     = SimpleRNN   # options: SimpleRNN, GRU, LSTM
 size_hidden         = 15            # size of the hidden layer
-size_compare        = 2            # size of comparison layer
 
 # INPUT
 cotrain_embeddings  = True          # set to true for cotraining of embeddings
@@ -23,7 +22,7 @@ input_size          = 2             # input dimensionality
 pretrained_model = None
 
 # TRAINING
-nb_epoch            = 800            # number of iterations
+nb_epoch            = 8            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax

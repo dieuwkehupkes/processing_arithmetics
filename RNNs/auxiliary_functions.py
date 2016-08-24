@@ -12,7 +12,6 @@ def print_sum(settings):
     print('Model summary:')
     print('Recurrent layer: %s' % str(settings.recurrent_layer))
     print('Size hidden layer: %i' % settings.size_hidden)
-    print('Size comparison layer: %i' % settings.size_compare)
     print('Initialisation embeddings: %s' % settings.encoding)
     print('Size embeddings: %i' % settings.input_size)
     print('Batch size: %i' % settings.batch_size)

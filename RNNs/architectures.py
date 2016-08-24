@@ -22,8 +22,8 @@ class Training(object):
         """
 
     def generate_model(self, recurrent_layer, input_dim, input_size, input_length,
-                       size_hidden, size_compare, W_embeddings, dmap, trainable_embeddings=True,
-                       trainable_comparison=True, mask_zero=True, dropout_recurrent=0.0,
+                       size_hidden, W_embeddings, dmap, trainable_embeddings=True,
+                       trainable_classifier=True, mask_zero=True, dropout_recurrent=0.0,
                        optimizer='adagrad'):
         """
         Generate the model to be trained
@@ -32,11 +32,10 @@ class Training(object):
         :param input_size:          dimensionality of the embeddings (input size recurrent layer)
         :param input_length:        max sequence length
         :param size_hidden:         size recurrent layer
-        :param size_compare:        size comparison layer
         :param W_embeddings:        Either an embeddings matrix or None if to be generate by keras layer
         :param dmap:                A map from vocabulary words to integers
         :param trainable_embeddings: set to false to fix embedding weights during training
-        :param trainable_comparison: set to false to fix comparison layer weights during training
+        :param trainable_classifier: set to false to fix classifier layer weights during training
         :param mask_zero:            set to true to mask 0 values
         :param dropout_recurrent:    dropout param for recurrent weights
         :param optimizer:            optimizer to use during training
@@ -49,9 +48,8 @@ class Training(object):
         self.input_size = input_size
         self.input_length = input_length
         self.size_hidden = size_hidden
-        self.size_compare = size_compare
         self.dmap = dmap
-        self.train_comparison = trainable_comparison
+        self.train_classifier = trainable_classifier
         self.train_embeddings = trainable_embeddings
         self.mask_zero = mask_zero
         self.dropout_recurrent = dropout_recurrent
@@ -65,12 +63,15 @@ class Training(object):
     def _build(self, W_embeddings):
         raise NotImplementedError()
 
-    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap):
+    def add_pretrained_model(self, json_model, model_weights, optimizer, dmap, copy_weights=['recurrent','embeddings','output']):
         """
-        Add a model with already trained weights
+        Add a model with already trained weights. Model can be originally
+        from a different training architecture, check which weights should be
+        copied.
         :param json_model:      json filename containing model architecture
         :param model_weights:   h5 file containing model weights
         :param optimizer:       optimizer to use during training
+        :param copy_weights:    determines which weights should be copied
         """
         self.model = model_from_json(open(json_model).read())
         self.model.load_weights(model_weights)
@@ -425,7 +426,7 @@ class A4(Training):
             Y.append(answer)
 
         # pad sequences to have the same length
-        assert pad_to == None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
+        assert pad_to is None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
         X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 

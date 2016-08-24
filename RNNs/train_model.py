@@ -7,7 +7,7 @@ import os
 import re
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--settings", help="Provide file with settings for model running", default="settings_train")
+parser.add_argument("settings", help="Provide file with settings for model running", default="settings_train")
 # add arguments to override settings file?
 
 args = parser.parse_args()
@@ -65,8 +65,8 @@ if settings.pretrained_model:
 else:
     training.generate_model(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
                             input_length=input_length, size_hidden=settings.size_hidden,
-                            size_compare=settings.size_compare, W_embeddings=W_embeddings, dmap=dmap,
-                            trainable_comparison=settings.cotrain_comparison, mask_zero=settings.mask_zero,
+                            W_embeddings=W_embeddings, dmap=dmap,
+                            trainable_classifier=settings.cotrain_comparison, mask_zero=settings.mask_zero,
                             optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
 
 training.train(training_data=(X, Y), validation_data=validation_data, validation_split=validation_split,
