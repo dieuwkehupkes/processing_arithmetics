@@ -221,11 +221,9 @@ class A1(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          dropout_U=self.dropout_recurrent)(embeddings)
 
-        # create comparison layer
-        comparison = Dense(self.size_compare, name='comparison', trainable=self.cotrain_comparison)(recurrent)
-
         # create output layer
-        output_layer = Dense(1, activation='linear', name='output')(comparison)
+        # TODO linear activation?
+        output_layer = Dense(1, activation='linear', name='output')(recurrent)
 
         # create model
         self.model = Model(input=input_layer, output=output_layer)
