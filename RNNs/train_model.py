@@ -37,7 +37,7 @@ training = settings.architecture()
 
 # GENERATE TRAINING DATA
 X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
-                              digits=settings.digits, pad_to=settings.maxlen)
+                                       digits=settings.digits, pad_to=settings.maxlen)
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
@@ -59,15 +59,29 @@ input_length = settings.maxlen
 W_embeddings = generate_embeddings_matrix(N_digits, N_operators, settings.input_size, settings.encoding)
 
 if settings.pretrained_model:
-    model_string = settings.pretrained_model+ '.json'
+    model_string = settings.pretrained_model + '.json'
     model_weights = settings.pretrained_model + '_weights.h5'
-    training.add_pretrained_model(model_string, model_weights, optimizer=settings.optimizer, dmap=dmap)
+
+    training.add_pretrained_model(model_string, model_weights, 
+                                  dmap=dmap, copy_weights=settings.copy_weights,
+                                  train_classifier=settings.train_classifier,
+                                  train_embeddings=settings.train_embeddings,
+                                  train_recurrent=settings.train_recurrent,
+                                  mask_zero=settings.mask_zero,
+                                  optimizer=settings.optimizer,
+                                  dropout_recurrent=settings.dropout_recurrent)
+
 else:
     training.generate_model(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
                             input_length=input_length, size_hidden=settings.size_hidden,
-                            W_embeddings=W_embeddings, dmap=dmap,
-                            trainable_classifier=settings.cotrain_comparison, mask_zero=settings.mask_zero,
+                            dmap=dmap,
+                            W_embeddings=W_embeddings,
+                            train_classifier=settings.train_classifier, 
+                            train_embeddings=settings.train_embeddings,
+                            train_recurrent=settings.train_recurrent,
+                            mask_zero=settings.mask_zero,
                             optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
+
 
 training.train(training_data=(X, Y), validation_data=validation_data, validation_split=validation_split,
                batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,
@@ -79,7 +93,7 @@ if settings.plot_loss:
     training.plot_loss()
 if settings.plot_prediction:
     training.plot_metrics_training()
-if settings.plot_embeddings == True:
+if settings.plot_embeddings is True:
     training.plot_embeddings()
 if settings.plot_esp:
     training.plot_esp()
@@ -89,8 +103,14 @@ print_sum(settings)
 if settings.languages_test:
     # generate test data
     test_data = training.generate_test_data(settings.languages_test, dmap=dmap,
-                                   digits=settings.digits, pad_to=settings.maxlen)
+                                            digits=settings.digits,
+                                            pad_to=settings.maxlen)
     hist = training.trainings_history
+    print hist
+    print hist.metrics_train
+    print hist.metrics_train.items()
+    print hist.metrics_val
+    print hist.metrics_val.items()
 
     print "Accuracy for for training set %s:\t" % \
           '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
@@ -118,7 +138,7 @@ if settings.save_model:
                 continue
 
         model_json = training.model.to_json()
-        open(model_string + '.json', 'w').write(model_json )
+        open(model_string + '.json', 'w').write(model_json)
         training.model.save_weights(model_string + '_weights.h5')
         pickle.dump(dmap, open(model_string + '.dmap', 'w'))
         hist = training.trainings_history
