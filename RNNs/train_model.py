@@ -106,11 +106,6 @@ if settings.languages_test:
                                             digits=settings.digits,
                                             pad_to=settings.maxlen)
     hist = training.trainings_history
-    print hist
-    print hist.metrics_train
-    print hist.metrics_train.items()
-    print hist.metrics_val
-    print hist.metrics_val.items()
 
     print "Accuracy for for training set %s:\t" % \
           '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
