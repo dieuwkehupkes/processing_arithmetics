@@ -277,7 +277,7 @@ class A1(Training):
     """
     def __init__(self):
         self.loss_function = 'mean_squared_error'
-        self.metrics = ['mspe']
+        self.metrics = ['mean_squared_prediction_error']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -331,6 +331,8 @@ class A1(Training):
         self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
                        validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
+
+        print callbacks
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
