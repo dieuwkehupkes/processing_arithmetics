@@ -5,24 +5,26 @@ from architectures import A1, A4
 import numpy as np
 
 # network details
-architecture        = A4            # Trainings architecture
-recurrent_layer     = SimpleRNN   # options: SimpleRNN, GRU, LSTM
+architecture        = A1            # Trainings architecture
+recurrent_layer     = GRU   # options: SimpleRNN, GRU, LSTM
 size_hidden         = 15            # size of the hidden layer
 
 # INPUT
-cotrain_embeddings  = True          # set to true for cotraining of embeddings
-cotrain_comparison  = True          # set to true for cotraining of comparison layer
+train_embeddings  = True          # set to true for cotraining of embeddings
+train_classifier  = True           # set to true for cotraining of classifier layer
+train_recurrent   = True          # set to true for cotraining recurrent layer
 encoding            = 'random'        # options: random, gray
 mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 # PRETRAIN
 # Use this to train an already trained model
-# pretrained_model = 'test_model'
 pretrained_model = None
+# pretrained_model = 'GRU1_26'
+copy_weights     = ['embeddings', 'recurrent']
 
 # TRAINING
-nb_epoch            = 8            # number of iterations
+nb_epoch            = 800            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
@@ -41,8 +43,8 @@ maxlen                      = max_length(7)
 # VISUALISATION AND LOGS
 weights_animation = False           # create an animation of layer weights,
                                     # provide tuple of layer and param_id
-plot_loss = True                   # plot loss
-plot_prediction = True              # plot prediction error
+plot_loss = False                    # plot loss
+plot_prediction = False              # plot prediction error
 plot_embeddings = 100               # create scatterplot of embeddings
 plot_esp = False                     # plot spectral radius of recurrent connections
 verbose = 1                         # verbosity mode
