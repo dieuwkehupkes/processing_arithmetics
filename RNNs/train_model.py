@@ -138,4 +138,4 @@ if settings.save_model:
         pickle.dump(dmap, open(model_string + '.dmap', 'w'))
         hist = training.trainings_history
         trainings_history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
-        pickle.dump(trainings_history, open(model_string + '.history', 'w'))
+        pickle.dump(trainings_history, open(model_string + '.history', 'wb'))

@@ -336,7 +336,8 @@ class A1(Training):
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
-    def generate_training_data(self, languages, dmap, digits, pad_to=None):
+    @staticmethod
+    def generate_training_data(languages, dmap, digits, pad_to=None):
         """
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
@@ -360,7 +361,7 @@ class A1(Training):
             Y.append(answer)
 
         # pad sequences to have the same length
-        assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
         return X_padded, np.array(Y)
@@ -375,23 +376,16 @@ class A1(Training):
         :return:                list of tuples containing test set sames, inputs and targets
         """
         # TODO reuse training data function
-        test_data = []
-        for name, N in languages.items():
-            X, Y = [], []
-            treebank = mathTreebank()
-            lengths, operators, branching = parse_language(name)
-            treebank.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
+        if test_separately:
+            test_data = []
+            for name, N in languages.items():
+                X, Y = A1.generate_training_data({name: N}, dmap, digits, pad_to=pad_to)
+                test_data.append((name, X, Y))
 
-            for expr, answ in treebank.examples:
-                input_seq = [dmap[i] for i in str(expr).split()]
-                answer = str(answ)
-                X.append(input_seq)
-                Y.append(answer)
-
-            # pad sequences to have the same length
-            assert pad_to == None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
-            X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
-            test_data.append((name, X_padded, np.array(Y)))
+        else:
+            X, Y = A1.generate_training_data(languages, dmap, digits, pad_to=pad_to)
+            name = ', '.join(languages.keys())
+            test_data = [(name, X, Y)]
 
         return test_data
 
