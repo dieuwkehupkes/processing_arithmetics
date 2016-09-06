@@ -2,22 +2,50 @@
 
 import numpy as np
 from arithmetics import mathTreebank
+import operator
 
-def solveRecursive(exp):
-    raise NotImplementedError()
+def solveRecursive(expr):
+    """
+    Solve expression recursively.
+    """
+    stack = [[operator.add, 0]]
+    op = operator.add
 
-def solveSequential(expr):
+    symbols = iterate(expr)
+
+    for symbol in symbols:
+        if symbol == '(':
+            # push new element on stack
+            stack.append([op, 0])
+        elif symbol == ')':
+            # combine last stack item with
+            # one but last stack item
+            stack_op, outcome = stack.pop(-1)
+            stack[-1][1] = stack_op(stack[-1][1], outcome)
+        elif symbol == '+':
+            op = operator.add
+        elif symbol == '-':
+            op = operator.sub
+        else:
+            # number is digit
+            stack[-1][1] = op(stack[-1][1], int(symbol))
+
+    assert len(stack) == 1, "expression not grammatical"
+
+    return stack[0][1]
+        
+
+def solveLocally(expr):
     """
     Input a syntactically correct bracketet
     expression, solve by counting brackets
     and depth.
     ( ( a + b ) )
     """
-
-    symbols = iterate(expr)
-
     result = 0
     subtracting = False
+
+    symbols = iterate(expr)
 
     for symbol in symbols:
         if symbol[-1].isdigit():
@@ -50,7 +78,7 @@ if __name__ == '__main__':
     examples = m.generateExamples(operators=['+','-'], digits=np.arange(-10, 10), n=5, lengths=[2,3,4])
     for expression, answer in examples:
         print '\n',  str(expression), '=', str(answer)
-        outcome = solveSequential(str(expression))
+        outcome = solveRecursive(str(expression))
         print "outcome = ", outcome
         raw_input()
     
