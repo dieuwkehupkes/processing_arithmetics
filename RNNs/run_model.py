@@ -163,8 +163,10 @@ if settings.one_by_one or settings.visualise_paths:
                     # plot not only hidden layer but also gate values
                     plot_gate_values(*tuple(hl_activations))
                     assert layer_name == 'GRU', "Simple RNN does not have gate values to plot"
+                elif settings.plot_activations:
+                    visualise_hidden_layer(*tuple(hl_activations))
                 else:
-                    visualise_hidden_layer(*tuple(hl_activations), plot_gate_values=settings.plot_gate_values)
+                    pass
 
                 # reset array with hl activations
                 hl_activations = []
@@ -174,10 +176,11 @@ if settings.one_by_one or settings.visualise_paths:
                 if user_input == "q":
                     exit()
 
-            if i % settings.visualise_paths == 0:
-                visualise_paths(*tuple(hl_activations))
+            if settings.visualise_paths:
+                if i % settings.visualise_paths == 0:
+                    visualise_paths(*tuple(hl_activations))
 
-                # reset array with hl activations
-                hl_activations = []
+                    # reset array with hl activations
+                    hl_activations = []
 
 
