@@ -4,7 +4,36 @@ import numpy as np
 from arithmetics import mathTreebank
 import operator
 
-def solveRecursive(expr, return_sequence=False):
+def solveRecursiveExplicit(expr):
+    outcome = 0
+    op = operator.add
+    numberstack = []
+    operatorstack=[]
+    symbols = iterate(expr)
+    for symbol in symbols:
+        if symbol == '(': # enter recursion
+            # store what you were doing
+            numberstack.append(outcome)
+            operatorstack.append(op)
+            # and start anew
+            outcome = 0
+            op = operator.add
+        elif symbol == ')': # exit recursion
+            # accumulate intermediate result with previous depth
+            op = operatorstack.pop()
+            outcome = op(numberstack.pop(),outcome)
+        elif symbol == '+':
+            op = operator.add
+        elif symbol == '-':
+            op = operator.sub
+        else:
+            # symbol is digit
+            outcome = op(outcome,int(symbol))
+    assert len(operatorstack)==0, len(numberstack)==0
+    return outcome
+
+
+def solveRecursive(expr, return_sequences=False):
     """
     Solve expression recursively.
     """
@@ -17,6 +46,7 @@ def solveRecursive(expr, return_sequence=False):
         if symbol == '(':
             # push new element on stack
             stack.append([op, 0])
+            op = operator.add
         elif symbol == ')':
             # combine last stack item with
             # one but last stack item
@@ -33,36 +63,47 @@ def solveRecursive(expr, return_sequence=False):
     assert len(stack) == 1, "expression not grammatical"
 
     return stack[0][1]
-        
 
-def solveLocally(expr, return_sequence=False):
+
+def solveLocally(expr, return_sequences=False):
     """
     Input a syntactically correct bracketet
     expression, solve by counting brackets
     and depth.
-    ( ( a + b ) )
     """
     result = 0
-    subtracting = 0
+    brackets = []
+    subtracting = False
 
     symbols = iterate(expr)
 
     for symbol in symbols:
+        
         if symbol[-1].isdigit():
             digit = int(symbol)
             if subtracting:
                 result -= digit
             else:
                 result += digit
+
+        elif symbol == '(':
+            brackets.append(subtracting)
+
+        elif symbol == ')':
+            brackets.pop(-1)
+            try:
+                subtracting = brackets[-1]
+            except IndexError:
+                # end of sequence
+                pass
+
+        elif symbol == '+':
+            pass
+
         elif symbol == '-':
             subtracting = not subtracting
 
-        if symbol == ')':
-            if subtracting > 0:
-                subtracting -= 1
-
     return result
-
 
 def iterate(expression):
     """
@@ -75,10 +116,25 @@ def iterate(expression):
 
 if __name__ == '__main__':
     m = mathTreebank()
-    examples = m.generateExamples(operators=['+','-'], digits=np.arange(-10, 10), n=5, lengths=[2,3,4])
+    examples = m.generateExamples(operators=['+','-'], digits=np.arange(10), n=5000, lengths=[6,7,8,9])
+    # x = '( 1 - ( ( ( 0 + 0 ) - 5 ) + ( 3 + 4 ) ) )'
+    # print x
+    # print solveLocally(x)
+    # print eval(x)
+    # exit()
     for expression, answer in examples:
-        print '\n',  str(expression), '=', str(answer)
         outcome = solveRecursive(str(expression))
-        print "outcome = ", outcome
-        raw_input()
+        if outcome != answer:
+            print '\n',  str(expression), '=', str(answer)
+            print "computed outcome is:", outcome
+            raw_input()
+        # print "outcomeRec = ", outcome
+        # outcome = solveLocally(str(expression))
+        # print "outcomeSeq = ", outcome
+        # outcome = solveRecursiveExplicit(str(expression))
+        # print "outcomeRecExplicit = ", outcome
+
+        # raw_input()
+
+
     
