@@ -40,29 +40,40 @@ def solveLocally(expr):
     Input a syntactically correct bracketet
     expression, solve by counting brackets
     and depth.
-    ( ( a + b ) )
     """
     result = 0
+    brackets = []
     subtracting = False
 
     symbols = iterate(expr)
 
     for symbol in symbols:
+        
         if symbol[-1].isdigit():
             digit = int(symbol)
             if subtracting:
                 result -= digit
             else:
                 result += digit
+
+        elif symbol == '(':
+            brackets.append(subtracting)
+
+        elif symbol == ')':
+            brackets.pop(-1)
+            try:
+                subtracting = brackets[-1]
+            except IndexError:
+                # end of sequence
+                pass
+
+        elif symbol == '+':
+            pass
+
         elif symbol == '-':
             subtracting = not subtracting
 
-        if symbol == ')':
-            if subtracting:
-                subtracting = False
-
     return result
-
 
 def iterate(expression):
     """
@@ -75,10 +86,17 @@ def iterate(expression):
 
 if __name__ == '__main__':
     m = mathTreebank()
-    examples = m.generateExamples(operators=['+','-'], digits=np.arange(-10, 10), n=5, lengths=[2,3,4])
+    examples = m.generateExamples(operators=['+','-'], digits=np.arange(10), n=5000, lengths=[6,7,8,9])
+    # x = '( 1 - ( ( ( 0 + 0 ) - 5 ) + ( 3 + 4 ) ) )'
+    # print x
+    # print solveLocally(x)
+    # print eval(x)
+    # exit()
     for expression, answer in examples:
-        print '\n',  str(expression), '=', str(answer)
-        outcome = solveRecursive(str(expression))
-        print "outcome = ", outcome
-        raw_input()
+        outcome = solveLocally(str(expression))
+        if outcome != answer:
+            print '\n',  str(expression), '=', str(answer)
+            print "computed outcome is:", outcome
+            raw_input()
+
     
