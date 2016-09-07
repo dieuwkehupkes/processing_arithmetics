@@ -4,7 +4,7 @@ import numpy as np
 from arithmetics import mathTreebank
 import operator
 
-def solveRecursive(expr):
+def solveRecursive(expr, return_sequences=False):
     """
     Solve expression recursively.
     """
@@ -36,7 +36,7 @@ def solveRecursive(expr):
     return stack[0][1]
         
 
-def solveLocally(expr):
+def solveLocally(expr, return_sequences=False):
     """
     Input a syntactically correct bracketet
     expression, solve by counting brackets
