@@ -42,7 +42,7 @@ if __name__ == '__main__':
     ranges = np.arange(0, 30)
 
     for r in ranges:
-        print r
+        print(r)
         accuracies_train.append(compute_baseline(languages_train, digits, r))
         accuracies_test.append(compute_baseline(languages_test, digits, r))
 

@@ -13,7 +13,7 @@ class GRU_output_gates(GRU):
 
     """
     def __init__(self, output_dim, **kwargs):
-        print "Running network with adapted GRU layer"
+        print("Running network with adapted GRU layer")
         super(GRU_output_gates, self).__init__(output_dim, **kwargs)
 
     def build(self, input_shape):

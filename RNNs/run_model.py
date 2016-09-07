@@ -32,7 +32,7 @@ dmap['x'] = 0
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 id = settings.architecture.get_recurrent_layer_id()
 maxlen = model.layers[id].input_shape[1]
-print maxlen
+print(maxlen)
 
 
 ###########################################################################################
@@ -72,7 +72,7 @@ embeddings_sequence = recurrent_layer(output_dim=rec_config['output_dim'],
 truncated_model = Model(input=model.layers[0].input, output=embeddings_sequence)
 truncated_model.compile(optimizer=settings.optimizer, loss=settings.loss, metrics=settings.metrics)
 
-# print truncated_model.summary()
+# print(truncated_model.summary())
 
 
 ###########################################################################################
@@ -83,7 +83,7 @@ if settings.compute_correls:
     for name, X_test, Y_test in test_data:
         predictions = truncated_model.predict(X_test)
         non_zero = predictions[np.any(predictions!=0, axis=1)]
-        print np.corrcoef(non_zero)
+        print(np.corrcoef(non_zero))
 
 
 ###########################################################################################

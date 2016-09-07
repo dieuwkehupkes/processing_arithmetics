@@ -62,7 +62,7 @@ class mathTreebank():
 
 class mathExpression(Tree):
     def __init__(self, length, operators, digits, branching=None):
-        if length < 1: print 'whatup?'
+        if length < 1: print('whatup?')
         if length == 1:
             try:
                 Tree.__init__(self,'digit',[random.choice(digits)])

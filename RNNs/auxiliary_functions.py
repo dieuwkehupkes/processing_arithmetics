@@ -27,7 +27,7 @@ def pad(array, length):
     l = len(array)
     try:
         l2 = len(array[0])
-        print "length", l2
+        print("length", l2)
         padded_array = np.concatenate((np.zeros((length-l,l2)), array))
     except TypeError:
         try:
@@ -108,5 +108,5 @@ def gray_code(n, length=None):
     return gray_code
 
 if __name__ == '__main__':
-    print gray_code(10, 7)
+    print(gray_code(10, 7))
 

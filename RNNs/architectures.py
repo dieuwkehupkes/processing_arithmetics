@@ -332,7 +332,7 @@ class A1(Training):
                        validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
-        print callbacks
+        print(callbacks)
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
@@ -449,7 +449,7 @@ class A4(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-        # print self.model.summary()
+        # print(self.model.summary())
 
 
     def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,

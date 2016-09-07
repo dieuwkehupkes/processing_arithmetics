@@ -110,7 +110,7 @@ def iterate(expression):
     Iterate over symbolic expression.
     """
     symbols = expression.split()
-    # print symbols
+    # print(symbols)
     return symbols
 
 
@@ -118,21 +118,21 @@ if __name__ == '__main__':
     m = mathTreebank()
     examples = m.generateExamples(operators=['+','-'], digits=np.arange(10), n=5000, lengths=[6,7,8,9])
     # x = '( 1 - ( ( ( 0 + 0 ) - 5 ) + ( 3 + 4 ) ) )'
-    # print x
-    # print solveLocally(x)
-    # print eval(x)
+    # print(x)
+    # print(solveLocally(x))
+    # print(eval(x))
     # exit()
     for expression, answer in examples:
         outcome = solveRecursive(str(expression))
         if outcome != answer:
-            print '\n',  str(expression), '=', str(answer)
-            print "computed outcome is:", outcome
+            print('\n',  str(expression), '=', str(answer))
+            print("computed outcome is:", outcome)
             raw_input()
-        # print "outcomeRec = ", outcome
+        # print("outcomeRec = ", outcome)
         # outcome = solveLocally(str(expression))
-        # print "outcomeSeq = ", outcome
+        # print("outcomeSeq = ", outcome)
         # outcome = solveRecursiveExplicit(str(expression))
-        # print "outcomeRecExplicit = ", outcome
+        # print("outcomeRecExplicit = ", outcome)
 
         # raw_input()
 

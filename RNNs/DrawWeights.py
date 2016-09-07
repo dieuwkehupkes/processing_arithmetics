@@ -17,7 +17,7 @@ class DrawWeights(Callback):
         try:
             self.model.layers[self.layer_id].get_weights()[self.param_id]
         except IndexError:
-            print "Weights of layer %s cannot be visualised" % self.model.layers[self.layer_id].name
+            print("Weights of layer %s cannot be visualised" % self.model.layers[self.layer_id].name)
         self.imgs = []
 
     def on_epoch_end(self, epoch, logs={}):

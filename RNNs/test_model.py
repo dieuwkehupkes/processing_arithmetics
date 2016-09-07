@@ -1,3 +1,4 @@
+from __future__ import print_function
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer
@@ -37,9 +38,9 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
     # compute overall accuracy
     metrics = model.metrics_names
     for name, X_test, Y_test in test_data:
-        print "Accuracy for %s\t" % name,
+        print("Accuracy for %s\t" % name, end=" ")
         acc = model.evaluate(X_test, Y_test, verbose=0)
-        print '\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))])
+        print('\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))]))
 
 if __name__ == '__main__':
 
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     settings = __import__(import_string)
 
     for pref in settings.prefs:
-        print "\ntesting model ", pref
+        print("\ntesting model ", pref)
         model_architecture = pref+'.json'         # name of file containing model architecture
         model_weights = pref+'_weights.h5'     # name of file containing model weights
         model_dmap = pref+'.dmap'              # dmap of the embeddings layer of the model
