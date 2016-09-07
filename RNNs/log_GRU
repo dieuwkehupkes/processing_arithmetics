@@ -1,0 +1,127 @@
+Train network 1
+Accuracy for for training set categorical_accuracy: 0.970707:	
+Accuracy for for validation set categorical_accuracy: 0.963273:	
+Accuracy for for test set L7, L5, L3: loss: 0.292677	categorical_accuracy: 0.937500
+
+Train network 2
+Accuracy for for training set categorical_accuracy: 0.965980:	
+Accuracy for for validation set categorical_accuracy: 0.956000:	
+Accuracy for for test set L7, L5, L3: loss: 0.239729	categorical_accuracy: 0.951667
+
+Train network 3
+6875 sentences from L2
+6875 sentences from L1
+Accuracy for for training set categorical_accuracy: 0.968889:	
+Accuracy for for validation set categorical_accuracy: 0.966909:	
+Accuracy for for test set L7, L5, L3: loss: 0.313368	categorical_accuracy: 0.933333
+
+Train network 4
+6875 sentences from L2
+6875 sentences from L1
+Accuracy for for training set categorical_accuracy: 0.966626:	
+Accuracy for for validation set categorical_accuracy: 0.954182:	
+  32/1200 [..............................] - ETA: 0s  64/1200 [>.............................] - ETA: 0s  96/1200 [=>............................] - ETA: 0s 128/1200 [==>...........................] - ETA: 0s 160/1200 [===>..........................] - ETA: 0s 192/1200 [===>..........................] - ETA: 0s 224/1200 [====>.........................] - ETA: 0s 256/1200 [=====>........................] - ETA: 0s 288/1200 [======>.......................] - ETA: 0s 320/1200 [=======>......................] - ETA: 0s 352/1200 [=======>......................] - ETA: 0s 384/1200 [========>.....................] - ETA: 0s 416/1200 [=========>....................] - ETA: 0s 448/1200 [==========>...................] - ETA: 0s 480/1200 [===========>..................] - ETA: 0s 512/1200 [===========>..................] - ETA: 0s 544/1200 [============>.................] - ETA: 0s 576/1200 [=============>................] - ETA: 0s 608/1200 [==============>...............] - ETA: 0s 640/1200 [===============>..............] - ETA: 0s 672/1200 [===============>..............] - ETA: 0s 704/1200 [================>.............] - ETA: 0s 736/1200 [=================>............] - ETA: 0s 768/1200 [==================>...........] - ETA: 0s 800/1200 [===================>..........] - ETA: 0s 832/1200 [===================>..........] - ETA: 0s 864/1200 [====================>.........] - ETA: 0s 896/1200 [=====================>........] - ETA: 0s 928/1200 [======================>.......] - ETA: 0s 960/1200 [=======================>......] - ETA: 0s 992/1200 [=======================>......] - ETA: 0s1024/1200 [========================>.....] - ETA: 0s1056/1200 [=========================>....] - ETA: 0s1088/1200 [==========================>...] - ETA: 0s1120/1200 [===========================>..] - ETA: 0s1152/1200 [===========================>..] - ETA: 0s1184/1200 [============================>.] - ETA: 0s1200/1200 [==============================] - 0s     
+Accuracy for for test set L7, L5, L3: loss: 0.323195	categorical_accuracy: 0.940000
+Train network 5
+Accuracy for for training set categorical_accuracy: 0.969455:	
+Accuracy for for validation set categorical_accuracy: 0.964000:	
+Accuracy for for test set L7, L5, L3: loss: 0.334672	categorical_accuracy: 0.940000
+
+Train network 6
+Accuracy for for training set categorical_accuracy: 0.966545:	
+Accuracy for for validation set categorical_accuracy: 0.956000:	
+Accuracy for for test set L7, L5, L3: loss: 0.336728	categorical_accuracy: 0.938333
+
+Train network 7
+Accuracy for for training set categorical_accuracy: 0.960485:	
+Accuracy for for validation set categorical_accuracy: 0.949455:	
+Accuracy for for test set L7, L5, L3: loss: 0.344694	categorical_accuracy: 0.933333
+
+Train network 8
+
+Accuracy for for training set categorical_accuracy: 0.972040:	
+Accuracy for for validation set categorical_accuracy: 0.969455:	
+
+Accuracy for for training set categorical_accuracy: 0.968000:	
+Accuracy for for validation set categorical_accuracy: 0.957818:	
+Accuracy for for test set L7, L5, L3: loss: 0.315895	categorical_accuracy: 0.938333
+
+Train network 10
+Accuracy for for training set categorical_accuracy: 0.969697:	
+Accuracy for for validation set categorical_accuracy: 0.954182:	
+Accuracy for for test set L7, L5, L3: loss: 0.275010	categorical_accuracy: 0.945000
+
+Train network 11
+Accuracy for for training set categorical_accuracy: 0.972081:	
+Accuracy for for validation set categorical_accuracy: 0.956727:	
+Accuracy for for test set L7, L5, L3: loss: 0.307780	categorical_accuracy: 0.935000
+
+Train network 12
+Accuracy for for training set categorical_accuracy: 0.964000:	
+Accuracy for for validation set categorical_accuracy: 0.955636:	
+Accuracy for for test set L7, L5, L3: loss: 0.224986	categorical_accuracy: 0.944167
+
+Train network 13
+Accuracy for for training set categorical_accuracy: 0.968929:	
+Accuracy for for validation set categorical_accuracy: 0.964000:	
+Accuracy for for test set L7, L5, L3: loss: 0.284726	categorical_accuracy: 0.947500
+
+Train network 14
+Accuracy for for training set categorical_accuracy: 0.969818:	
+Accuracy for for validation set categorical_accuracy: 0.953091:	
+Accuracy for for test set L7, L5, L3: loss: 0.228554	categorical_accuracy: 0.948333
+
+Train network 15
+Accuracy for for training set categorical_accuracy: 0.962141:	
+Accuracy for for validation set categorical_accuracy: 0.952364:	
+Accuracy for for test set L7, L5, L3: loss: 0.340568	categorical_accuracy: 0.932500
+
+Train network 16
+Accuracy for for training set categorical_accuracy: 0.962949:	
+Accuracy for for validation set categorical_accuracy: 0.954182:	
+Accuracy for for test set L7, L5, L3: loss: 0.219422	categorical_accuracy: 0.953333
+
+Train network 17
+Accuracy for for training set categorical_accuracy: 0.963717:	
+Accuracy for for validation set categorical_accuracy: 0.962182:	
+Accuracy for for test set L7, L5, L3: loss: 0.390839	categorical_accuracy: 0.932500
+
+Train network 18
+Accuracy for for training set categorical_accuracy: 0.966384:	
+Accuracy for for validation set categorical_accuracy: 0.955273:	
+Accuracy for for test set L7, L5, L3: loss: 0.377288	categorical_accuracy: 0.928333
+
+Train network 19
+Accuracy for for training set categorical_accuracy: 0.965374:	
+Accuracy for for validation set categorical_accuracy: 0.956000:	
+Accuracy for for test set L7, L5, L3: loss: 0.242852	categorical_accuracy: 0.946667
+
+Train network 20
+Accuracy for for training set categorical_accuracy: 0.965576:	
+Accuracy for for validation set categorical_accuracy: 0.952000:	
+Accuracy for for test set L7, L5, L3: loss: 0.363763	categorical_accuracy: 0.945000
+
+Train network 21
+Accuracy for for training set categorical_accuracy: 0.968040:	
+Accuracy for for validation set categorical_accuracy: 0.961818:	
+Accuracy for for test set L7, L5, L3: loss: 0.274314	categorical_accuracy: 0.939167
+
+Train network 22
+Accuracy for for training set categorical_accuracy: 0.965374:	
+Accuracy for for validation set categorical_accuracy: 0.949455:	
+Accuracy for for test set L7, L5, L3: loss: 0.369152	categorical_accuracy: 0.928333
+
+Train network 23
+Accuracy for for training set categorical_accuracy: 0.969172:	
+Accuracy for for validation set categorical_accuracy: 0.961091:	
+Accuracy for for test set L7, L5, L3: loss: 0.246227	categorical_accuracy: 0.952500
+
+Train network 24
+Accuracy for for training set categorical_accuracy: 0.963636:	
+Accuracy for for validation set categorical_accuracy: 0.948364:	
+Accuracy for for test set L7, L5, L3: loss: 0.248917	categorical_accuracy: 0.947500
+
+Train network 25
+Accuracy for for training set categorical_accuracy: 0.962626:	
+Accuracy for for validation set categorical_accuracy: 0.956000:	
+Accuracy for for test set L7, L5, L3: loss: 0.290296	categorical_accuracy: 0.935833

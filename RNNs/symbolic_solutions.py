@@ -4,7 +4,7 @@ import numpy as np
 from arithmetics import mathTreebank
 import operator
 
-def solveRecursive(expr):
+def solveRecursive(expr, return_sequence=False):
     """
     Solve expression recursively.
     """
@@ -35,7 +35,7 @@ def solveRecursive(expr):
     return stack[0][1]
         
 
-def solveLocally(expr):
+def solveLocally(expr, return_sequence=False):
     """
     Input a syntactically correct bracketet
     expression, solve by counting brackets
@@ -43,7 +43,7 @@ def solveLocally(expr):
     ( ( a + b ) )
     """
     result = 0
-    subtracting = False
+    subtracting = 0
 
     symbols = iterate(expr)
 
@@ -58,8 +58,8 @@ def solveLocally(expr):
             subtracting = not subtracting
 
         if symbol == ')':
-            if subtracting:
-                subtracting = False
+            if subtracting > 0:
+                subtracting -= 1
 
     return result
 
