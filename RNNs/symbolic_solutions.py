@@ -4,6 +4,35 @@ import numpy as np
 from arithmetics import mathTreebank
 import operator
 
+def solveRecursiveExplicit(expr):
+    outcome = 0
+    op = operator.add
+    numberstack = []
+    operatorstack=[]
+    symbols = iterate(expr)
+    for symbol in symbols:
+        if symbol == '(': # enter recursion
+            # store what you were doing
+            numberstack.append(outcome)
+            operatorstack.append(op)
+            # and start anew
+            outcome = 0
+            op = operator.add
+        elif symbol == ')': # exit recursion
+            # accumulate intermediate result with previous depth
+            op = operatorstack.pop()
+            outcome = op(numberstack.pop(),outcome)
+        elif symbol == '+':
+            op = operator.add
+        elif symbol == '-':
+            op = operator.sub
+        else:
+            # symbol is digit
+            outcome = op(outcome,int(symbol))
+    assert len(operatorstack)==0, len(numberstack)==0
+    return outcome
+
+
 def solveRecursive(expr):
     """
     Solve expression recursively.
@@ -33,7 +62,7 @@ def solveRecursive(expr):
     assert len(stack) == 1, "expression not grammatical"
 
     return stack[0][1]
-        
+
 
 def solveLocally(expr):
     """
@@ -79,6 +108,13 @@ if __name__ == '__main__':
     for expression, answer in examples:
         print '\n',  str(expression), '=', str(answer)
         outcome = solveRecursive(str(expression))
-        print "outcome = ", outcome
+        print "outcomeRec = ", outcome
+        outcome = solveLocally(str(expression))
+        print "outcomeSeq = ", outcome
+        outcome = solveRecursiveExplicit(str(expression))
+        print "outcomeRecExplicit = ", outcome
+
         raw_input()
+
+
     
