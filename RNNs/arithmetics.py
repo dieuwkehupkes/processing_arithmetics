@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import pickle
+import operator
 from nltk import Tree
 import random
 import os
@@ -94,25 +95,129 @@ class mathExpression(Tree):
         if len(self) > 1:
             return '( '+' '.join([str(child) for child in self])+' )'
         else:
-          return self[0]
+            return self[0]
 
 
-"""
-def install(thetaFile, kind='RNN', d=0):
+    def solveRecursively(self, return_sequences=False):
+        """
+        Solve expression recursively.
+        """
 
-    operators    = ['+','-']#,'*','/']#,'modulo]
-    digits = [str(i) for i in range(-10,11)]
-    tb = mathTreebank(operators, digits, n=5000, lengths = [1,2,4,6])
-    tb2 = mathTreebank(operators, digits, n=50, lengths = [3,5,7])
-    print 'dimensionality:', d
-    initWordsBin = d ==0
-    if initWordsBin: print 'initialize words with Gray code'
-    print 'load theta..', thetaFile
-"""
+        stack = [[operator.add, 0]]
+        op = operator.add
+
+        symbols = self.iterate()
+
+        for symbol in symbols:
+            if symbol == '(':
+                # push new element on stack
+                stack.append([op, 0])
+                op = operator.add
+            elif symbol == ')':
+                # combine last stack item with
+                # one but last stack item
+                stack_op, outcome = stack.pop(-1)
+                stack[-1][1] = stack_op(stack[-1][1], outcome)
+            elif symbol == '+':
+                op = operator.add
+            elif symbol == '-':
+                op = operator.sub
+            else:
+                # number is digit
+                stack[-1][1] = op(stack[-1][1], int(symbol))
+
+        assert len(stack) == 1, "expression not grammatical"
+
+        return stack[0][1]
+
+    def solveLocally(self, return_sequences=False):
+        """
+        Input a syntactically correct bracketet
+        expression, solve by counting brackets
+        and depth.
+        """
+        result = 0
+        brackets = []
+        subtracting = False
+
+        symbols = self.iterate()
+
+        for symbol in symbols:
+            
+            if symbol[-1].isdigit():
+                digit = int(symbol)
+                if subtracting:
+                    result -= digit
+                else:
+                    result += digit
+
+            elif symbol == '(':
+                brackets.append(subtracting)
+
+            elif symbol == ')':
+                brackets.pop(-1)
+                try:
+                    subtracting = brackets[-1]
+                except IndexError:
+                    # end of sequence
+                    pass
+
+            elif symbol == '+':
+                pass
+
+            elif symbol == '-':
+                subtracting = not subtracting
+
+        return result
+
+
+    def solveAlmost(self, return_sequences=False):
+        """
+        Solve expression with a simpel completely 
+        local strategy that almost always gives the
+        right answer, but not always.
+        """
+
+        symbols = self.iterate()
+    
+        result = 0
+        subtracting = False
+    
+        for symbol in symbols:
+            if symbol[-1].isdigit():
+                digit = int(symbol)
+                if subtracting:
+                    result -= digit
+                else:
+                    result += digit
+            elif symbol == '-':
+                subtracting = not subtracting
+    
+            if symbol == ')':
+                if subtracting:
+                    subtracting = False
+    
+        return result
+
+
+
+    def iterate(self):
+        """
+        Iterate over symbols in expression.
+        """
+        for symbol in str(self).split():
+            yield symbol
+
 
 if __name__ == '__main__':
-    digits = [str(i) for i in np.arange(-5,5)]
-    ops = ['+','-']
     m = mathTreebank()
-    m.add_examples(n=5, lengths=[5], branching='left')
-    m.write_to_file('treebank')
+    ops = ['+','-']
+    digits = np.arange(-5,5)
+    examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[5])
+    incorrect = 0.0
+    for expression, answer in examples:
+        outcome = expression.solveAlmost()
+        if outcome != answer:
+            incorrect += 1
+
+    print("percentage incorrect:", incorrect/50)
