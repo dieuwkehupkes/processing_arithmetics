@@ -74,7 +74,6 @@ def solveLocally(expr, return_sequences=False):
     result = 0
     brackets = []
     subtracting = False
-    subtracting = 0
 
     symbols = iterate(expr)
 
@@ -103,10 +102,6 @@ def solveLocally(expr, return_sequences=False):
 
         elif symbol == '-':
             subtracting = not subtracting
-
-        if symbol == ')':
-            if subtracting > 0:
-                subtracting -= 1
 
     return result
 
