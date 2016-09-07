@@ -5,9 +5,9 @@ from architectures import A1, A4
 import numpy as np
 
 # network details
-architecture        = A1            # Trainings architecture
+architecture        = A4            # Trainings architecture
 recurrent_layer     = GRU   # options: SimpleRNN, GRU, LSTM
-size_hidden         = 15            # size of the hidden layer
+size_hidden         = 5            # size of the hidden layer
 
 # INPUT
 train_embeddings  = True          # set to true for cotraining of embeddings
@@ -20,11 +20,11 @@ input_size          = 2             # input dimensionality
 # PRETRAIN
 # Use this to train an already trained model
 pretrained_model = None
-# pretrained_model = 'GRU1_26'
-copy_weights     = ['embeddings', 'recurrent']
+# pretrained_model = 'models/GRU_A1_5'
+# copy_weights     = ['embeddings', 'recurrent']
 
 # TRAINING
-nb_epoch            = 800            # number of iterations
+nb_epoch            = 3000            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
@@ -38,14 +38,14 @@ languages_train             = {'L1':3000, 'L2': 3000, 'L4':3000, 'L6':3000}
 # languages_val              = {'L3': 400, 'L5':400, 'L7':400}
 languages_val               = None
 languages_test              = {'L3': 400, 'L5':400, 'L7':400}
-maxlen                      = max_length(7)
+maxlen                      = max_length(15)
 
 # VISUALISATION AND LOGS
 weights_animation = False           # create an animation of layer weights,
                                     # provide tuple of layer and param_id
 plot_loss = False                    # plot loss
 plot_prediction = False              # plot prediction error
-plot_embeddings = 100               # create scatterplot of embeddings
+plot_embeddings = False               # create scatterplot of embeddings
 plot_esp = False                     # plot spectral radius of recurrent connections
 verbose = 1                         # verbosity mode
 print_every = False                 # print results

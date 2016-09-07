@@ -1,0 +1,125 @@
+Train 25 networks, write output to log_simpleRNN
+
+Train network 1
+Accuracy for for training set categorical_accuracy: 0.895919:	
+Accuracy for for validation set categorical_accuracy: 0.893091:	
+Accuracy for for test set L7, L5, L3: loss: 3.876724	categorical_accuracy: 0.210000
+
+Train network 2
+Accuracy for for training set categorical_accuracy: 0.935879:	
+Accuracy for for validation set categorical_accuracy: 0.933455:	
+Accuracy for for test set L7, L5, L3: loss: 0.343023	categorical_accuracy: 0.907500
+
+Train network 3
+Accuracy for for training set categorical_accuracy: 0.916242:	
+Accuracy for for validation set categorical_accuracy: 0.909091:	
+Accuracy for for test set L7, L5, L3: loss: 4.440183	categorical_accuracy: 0.273333
+
+Train network 4
+Accuracy for for training set categorical_accuracy: 0.936485:	
+Accuracy for for validation set categorical_accuracy: 0.931636:	
+Accuracy for for test set L7, L5, L3: loss: 8.698755	categorical_accuracy: 0.150000
+
+Train network 5
+Accuracy for for training set categorical_accuracy: 0.918626:	
+Accuracy for for validation set categorical_accuracy: 0.901818:	
+Accuracy for for test set L7, L5, L3: loss: 1.450775	categorical_accuracy: 0.656667
+
+Train network 6
+Accuracy for for training set categorical_accuracy: 0.897939:	
+Accuracy for for validation set categorical_accuracy: 0.897455:	
+Accuracy for for test set L7, L5, L3: loss: 0.508526	categorical_accuracy: 0.840000
+
+Train network 7
+Accuracy for for training set categorical_accuracy: 0.936242:	
+Accuracy for for validation set categorical_accuracy: 0.938182:	
+Accuracy for for test set L7, L5, L3: loss: 0.255542	categorical_accuracy: 0.925000
+
+Train network 8
+Accuracy for for training set categorical_accuracy: 0.952000:	
+Accuracy for for validation set categorical_accuracy: 0.930909:	
+Accuracy for for test set L7, L5, L3: loss: 0.326696	categorical_accuracy: 0.917500
+
+Train network 9
+Accuracy for for training set categorical_accuracy: 0.942384:	
+Accuracy for for validation set categorical_accuracy: 0.930182:	
+Accuracy for for test set L7, L5, L3: loss: 2.189130	categorical_accuracy: 0.397500
+
+Train network 10
+Accuracy for for training set categorical_accuracy: 0.947556:	
+Accuracy for for validation set categorical_accuracy: 0.938545:	
+Accuracy for for test set L7, L5, L3: loss: 0.264340	categorical_accuracy: 0.924167
+
+Train network 11
+Accuracy for for training set categorical_accuracy: 0.944525:	
+Accuracy for for validation set categorical_accuracy: 0.942545:	
+Accuracy for for test set L7, L5, L3: loss: 0.299259	categorical_accuracy: 0.919167
+
+Train network 12
+Accuracy for for training set categorical_accuracy: 0.925939:	
+Accuracy for for validation set categorical_accuracy: 0.925091:	
+Accuracy for for test set L7, L5, L3: loss: 7.101784	categorical_accuracy: 0.126667
+
+Train network 13
+Accuracy for for training set categorical_accuracy: 0.909374:	
+Accuracy for for validation set categorical_accuracy: 0.897818:	
+Accuracy for for test set L7, L5, L3: loss: 5.098101	categorical_accuracy: 0.281667
+
+Train network 14
+Accuracy for for training set categorical_accuracy: 0.940970:	
+Accuracy for for validation set categorical_accuracy: 0.935636:	
+Accuracy for for test set L7, L5, L3: loss: 9.009709	categorical_accuracy: 0.148333
+
+Train network 15
+Accuracy for for training set categorical_accuracy: 0.933010:	
+Accuracy for for validation set categorical_accuracy: 0.914909:	
+Accuracy for for test set L7, L5, L3: loss: 8.128524	categorical_accuracy: 0.092500
+
+Train network 16
+Accuracy for for training set categorical_accuracy: 0.898424:	
+Accuracy for for validation set categorical_accuracy: 0.893818:	
+Accuracy for for test set L7, L5, L3: loss: 3.912782	categorical_accuracy: 0.234167
+
+Train network 17
+Accuracy for for training set categorical_accuracy: 0.934869:	
+Accuracy for for validation set categorical_accuracy: 0.938182:	
+Accuracy for for test set L7, L5, L3: loss: 8.464090	categorical_accuracy: 0.105833
+
+Train network 18
+Accuracy for for training set categorical_accuracy: 0.947960:	
+Accuracy for for validation set categorical_accuracy: 0.946182:	
+Accuracy for for test set L7, L5, L3: loss: 0.280805	categorical_accuracy: 0.940000
+
+Train network 19
+Accuracy for for training set categorical_accuracy: 0.947394:	
+Accuracy for for validation set categorical_accuracy: 0.952727:	
+Accuracy for for test set L7, L5, L3: loss: 0.210667	categorical_accuracy: 0.943333
+
+Train network 20
+Accuracy for for training set categorical_accuracy: 0.931232:	
+Accuracy for for validation set categorical_accuracy: 0.913818:	
+Accuracy for for test set L7, L5, L3: loss: 1.503677	categorical_accuracy: 0.638333
+
+Train network 21
+Accuracy for for training set categorical_accuracy: 0.954990:	
+Accuracy for for validation set categorical_accuracy: 0.946182:	
+Accuracy for for test set L7, L5, L3: loss: 0.316160	categorical_accuracy: 0.926667
+
+Train network 22
+Accuracy for for training set categorical_accuracy: 0.942586:	
+Accuracy for for validation set categorical_accuracy: 0.917818:	
+Accuracy for for test set L7, L5, L3: loss: 0.302372	categorical_accuracy: 0.912500
+
+Train network 23
+Accuracy for for training set categorical_accuracy: 0.938990:	
+Accuracy for for validation set categorical_accuracy: 0.943636:	
+Accuracy for for test set L7, L5, L3: loss: 0.369788	categorical_accuracy: 0.900833
+
+Train network 24
+Accuracy for for training set categorical_accuracy: 0.874828:	
+Accuracy for for validation set categorical_accuracy: 0.870182:	
+Accuracy for for test set L7, L5, L3: loss: 2.353809	categorical_accuracy: 0.340000
+
+Train network 25
+Accuracy for for validation set categorical_accuracy: 0.950182:	
+Accuracy for for test set L7, L5, L3: loss: 0.273029	categorical_accuracy: 0.932500

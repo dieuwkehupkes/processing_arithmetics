@@ -140,6 +140,8 @@ def visualise_paths(*inputs):
     :return:
     """
 
+    print len(inputs)
+
     # create hl_activations matrix and compute principal components
     activations_nz =tuple([input[0][np.any(input[0]!=0, axis=2)] for input in inputs])
     hl_activations = np.concatenate(tuple(activations_nz))
