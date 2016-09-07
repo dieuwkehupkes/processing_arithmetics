@@ -17,6 +17,7 @@ def solveRecursive(expr):
         if symbol == '(':
             # push new element on stack
             stack.append([op, 0])
+            op = operator.add
         elif symbol == ')':
             # combine last stack item with
             # one but last stack item
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     # print eval(x)
     # exit()
     for expression, answer in examples:
-        outcome = solveLocally(str(expression))
+        outcome = solveRecursive(str(expression))
         if outcome != answer:
             print '\n',  str(expression), '=', str(answer)
             print "computed outcome is:", outcome
