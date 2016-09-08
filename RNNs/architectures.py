@@ -1,5 +1,6 @@
 from keras.models import Model, model_from_json
-from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM
+from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
+from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 from generate_training_data import generate_treebank, parse_language
 from arithmetics import mathTreebank
@@ -16,7 +17,7 @@ class Training(object):
     """
     Give elaborate description
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         """
         Create training architecture
         """
@@ -102,8 +103,6 @@ class Training(object):
 
         # run build function
         self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent)
-        self._build(W_embeddings, W_recurrent, W_classifier)
-
         return
 
     def model_summary(self):
@@ -323,6 +322,8 @@ class A1(Training):
                                         embeddings.
         """
         X_train, Y_train = training_data
+
+        print X_train.shape
 
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
                                             embeddings_id=1)
@@ -551,7 +552,7 @@ class Probing(Training):
     test what information is extratable from the representations
     the model generates.
     """
-    def __init__(self, **classifiers):
+    def __init__(self, classifiers):
         """
         List with classifiers, create dictionaries with 
         corresponding metrics, loss function, activation functions
@@ -560,21 +561,23 @@ class Probing(Training):
         # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
         loss = {'grammatical': 'binary_crossentropy'}   # TODO create a dictionary with lossfunctions for different outcomes
         metrics = {'grammatical': 'accuracy'}  # TODO create dictionary with metrics for all classifiers
-        activations = {'grammatical':linear}
+        activations = {'grammatical':'linear'}
         output_size = {'grammatical':1}
 
 
 
         self.loss_functions = dict([(key, loss[key]) for key in classifiers])
-        self.metrics = dict([(key, loss[key]) for key in metrics])
-        self.output_size = dict([(key, loss[key]) for key in output_size])
-        self.activations = dict([(key, loss[key]) for key in activations])
+        self.metrics = dict([(key, metrics[key]) for key in classifiers])
+        self.output_size = dict([(key, output_size[key]) for key in classifiers])
+        self.activations = dict([(key, activations[key]) for key in classifiers])
         self.classifiers = classifiers
 
     def _build(self, W_embeddings, W_recurrent, W_classifier=None):
         """
         Build model with given embeddings and recurren weights.
         """
+
+        print "call build"
 
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
@@ -596,29 +599,33 @@ class Probing(Training):
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
-            classifiers.append(TimeDistributedDense(self.output_size[classifier], activation=self.activations[classifier], name=classifier)(recurrent))
+            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier]), name=classifier)(recurrent))
+            self.metrics[classifier] 
 
         # create model
         self.model = Model(input=input_layer, output=classifiers)
 
-        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)(recurrent)
+        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)
 
-    def train(self, training_data, batch_size, opochs, validation_split=0.1, validation_data=None, verbosity=1):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1):
         """
         Fit the model
         :param training data:   should be adictionary containing data fo
                                 all the classifies of the network
         """
         X_train, Y_train = training_data
+
+        print "shape training data:", X_train.shape
+
         
         callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
 
-        self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbosity=verbosity, shuffle=True)
+        self.model.fit({'input':X_train}, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_History = callbacks[0]
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, classifiers):
+    def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
 
        #generate and shuffle examples
        treebank = generate_treebank(languages, digits=digits)
@@ -633,16 +640,21 @@ class Probing(Training):
            input_seq = [dmap[i] for i in str(expression).split()]
            X.append(input_seq)
            for classifier in classifiers:
-               target = expression.classifier
+               target = expression.targets[classifier]
                Y[classifier].append(target)
                
        # pad sequences to have the same length
-       assert pad_to is None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
-       X_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
+       assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+       X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+       print "X_padded shape:", X_padded.shape
 
        # make numpy arrays from Y data
        for output in Y:
-           Y[output] = np.array(Y[output])
+           Y[output] = keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to)
+           # print "Y_padded", Y[output]
+           # print "shape :", Y[output].shape
+           # raw_input()
 
        return X_padded, Y
 
