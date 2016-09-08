@@ -211,6 +211,25 @@ class mathExpression(Tree):
     
         return result
 
+    
+    def get_targets(self):
+        """
+        Compute all intermediate state variables
+        that different approaches of computing the outcome
+        of the equation would need.
+        """
+        intermediate_locally, brackets_locally = self.solveLocally()
+        sequences_recursively = self.solveRecursively()
+
+        # grammaticality of sequence
+        self.grammatical = [0]*len(intermediate_locally)
+        self.grammatical[-1] = 1
+
+        # intermediate outcomes local computation
+        self.intermediate_locally = intermediate_locally
+
+        # TODO introduce more!!
+
 
 
     def iterate(self):
