@@ -218,15 +218,19 @@ class mathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally = self.solveLocally()
-        sequences_recursively = self.solveRecursively()
+        intermediate_locally, brackets_locally = self.solveLocally(return_sequences=True)
+        sequences_recursively = self.solveRecursively(return_sequences=True)
+
+        self.targets = {}
 
         # grammaticality of sequence
-        self.grammatical = [0]*len(intermediate_locally)
-        self.grammatical[-1] = 1
+        # grammatical = [0]*len(intermediate_locally)
+        # grammatical[-1] = 1
+        self.targets['grammatical'] = [1]
+
 
         # intermediate outcomes local computation
-        self.intermediate_locally = intermediate_locally
+        self.targets['intermediate_locally'] = intermediate_locally
 
         # TODO introduce more!!
 
