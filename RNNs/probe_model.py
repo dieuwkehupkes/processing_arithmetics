@@ -20,13 +20,13 @@ def probe_model(architecture, weights, dmap, classifiers, digits, languages_trai
 
     training1.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
 
-    print training1.model.summary()
+    # print training1.model.summary()
 
     print "\nmodel 2"
 
     training2.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
 
-    print training2.model.summary()
+    # print training2.model.summary()
  
     dmap = pickle.load(open(dmap, 'rb'))
 
@@ -34,17 +34,17 @@ def probe_model(architecture, weights, dmap, classifiers, digits, languages_trai
     x_train, y_train = A1.generate_training_data(languages_train, dmap, digits, pad_to=maxlen)
 
     print x_train.shape
+    print "output shape: ", y_train.shape
+    print y_train
 
     # training1.train((x_train, y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, verbosity=verbosity)
-    
 
     print "training data Probe: "
 
     X_train, Y_train = training2.generate_training_data(languages_train, dmap, digits, classifiers, pad_to=maxlen)
 
     print X_train.shape
-
-    training2.model.predict(X_train)
+    print "output shape: ", Y_train['grammatical'].shape
 
     training2.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, verbosity=verbosity)
 

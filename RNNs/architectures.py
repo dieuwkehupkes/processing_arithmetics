@@ -363,6 +363,7 @@ class A1(Training):
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
+
         return X_padded, np.array(Y)
 
     @staticmethod
@@ -651,7 +652,7 @@ class Probing(Training):
 
        # make numpy arrays from Y data
        for output in Y:
-           Y[output] = keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to)
+           Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
            # print "Y_padded", Y[output]
            # print "shape :", Y[output].shape
            # raw_input()
