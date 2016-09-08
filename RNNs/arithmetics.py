@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import numpy as np
 import pickle
@@ -137,8 +138,12 @@ class mathExpression(Tree):
         and depth.
         """
         result = 0
-        brackets = []
+        bracket_stack = []
         subtracting = False
+
+        # return arrays
+        intermediate_results = []
+        brackets = []
 
         symbols = self.iterate()
 
@@ -152,12 +157,12 @@ class mathExpression(Tree):
                     result += digit
 
             elif symbol == '(':
-                brackets.append(subtracting)
+                bracket_stack.append(subtracting)
 
             elif symbol == ')':
-                brackets.pop(-1)
+                bracket_stack.pop(-1)
                 try:
-                    subtracting = brackets[-1]
+                    subtracting = bracket_stack[-1]
                 except IndexError:
                     # end of sequence
                     pass
@@ -168,7 +173,14 @@ class mathExpression(Tree):
             elif symbol == '-':
                 subtracting = not subtracting
 
-        return result
+            intermediate_results.append(result)
+            brackets.append(bracket_stack)
+
+        if return_sequences:
+            return intermediate_results, brackets
+        
+        else:
+            return result
 
 
     def solveAlmost(self, return_sequences=False):
@@ -213,11 +225,12 @@ if __name__ == '__main__':
     m = mathTreebank()
     ops = ['+','-']
     digits = np.arange(-5,5)
-    examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[5])
-    incorrect = 0.0
-    for expression, answer in examples:
-        outcome = expression.solveAlmost()
-        if outcome != answer:
-            incorrect += 1
+    for length in np.arange(3,10):
+        examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
+        incorrect = 0.0
+        for expression, answer in examples:
+            outcome = expression.solveAlmost()
+            if outcome != answer:
+                incorrect += 1
 
-    print("percentage incorrect:", incorrect/50)
+        print("percentage incorrect for length %i: %f" % (length, incorrect/50))
