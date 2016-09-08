@@ -552,6 +552,11 @@ class Probing(Training):
     the model generates.
     """
     def __init__(self, **classifiers):
+        """
+        List with classifiers, create dictionaries with 
+        corresponding metrics, loss function, activation functions
+        and output sizes.
+        """
         # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
         loss = {'grammatical': 'binary_crossentropy'}   # TODO create a dictionary with lossfunctions for different outcomes
         metrics = {'grammatical': 'accuracy'}  # TODO create dictionary with metrics for all classifiers
@@ -585,12 +590,13 @@ class Probing(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=False,
+                                         return_sequences=True,
                                          dropout_U=self.dropout_recurrent)(embeddings)
         
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
-            classifiers.append(Dense(self.output_size[classifier], activation=self.activations[classifier], name=classifier)(recurrent))
+            classifiers.append(TimeDistributedDense(self.output_size[classifier], activation=self.activations[classifier], name=classifier)(recurrent))
 
         # create model
         self.model = Model(input=input_layer, output=classifiers)
@@ -605,9 +611,9 @@ class Probing(Training):
         """
         X_train, Y_train = training_data
         
-        callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)_
+        callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
 
-        self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split = validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks/callbacks, verbosity=verbosity, shuffle=True)
+        self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbosity=verbosity, shuffle=True)
 
         self.trainings_History = callbacks[0]
 
