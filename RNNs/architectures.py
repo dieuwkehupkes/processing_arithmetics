@@ -332,8 +332,6 @@ class A1(Training):
                        validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
-        print(callbacks)
-
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
     @staticmethod
@@ -546,4 +544,99 @@ class A4(Training):
         :return: (int) id of recurrent layer
         """
         return 3
+
+class Probing(Training):
+    """
+    Retrain an already trained model with new classifiers to
+    test what information is extratable from the representations
+    the model generates.
+    """
+    def __init__(self, **classifiers):
+        # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
+        loss = {'grammatical': 'binary_crossentropy'}   # TODO create a dictionary with lossfunctions for different outcomes
+        metrics = {'grammatical': 'accuracy'}  # TODO create dictionary with metrics for all classifiers
+        activations = {'grammatical':linear}
+        output_size = {'grammatical':1}
+
+
+
+        self.loss_functions = dict([(key, loss[key]) for key in classifiers])
+        self.metrics = dict([(key, loss[key]) for key in metrics])
+        self.output_size = dict([(key, loss[key]) for key in output_size])
+        self.activations = dict([(key, loss[key]) for key in activations])
+        self.classifiers = classifiers
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier=None):
+        """
+        Build model with given embeddings and recurren weights.
+        """
+
+        # create input layer
+        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               trainable=False,
+                               mask_zero=self.mask_zero,
+                               name='embeddings')(input_layer)
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         weights=W_recurrent,
+                                         trainable=False,
+                                         dropout_U=self.dropout_recurrent)(embeddings)
+        
+        # add classifier layers
+        classifiers = []
+        for classifier in self.classifiers:
+            classifiers.append(Dense(self.output_size[classifier], activation=self.activations[classifier], name=classifier)(recurrent))
+
+        # create model
+        self.model = Model(input=input_layer, output=classifiers)
+
+        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)(recurrent)
+
+    def train(self, training_data, batch_size, opochs, validation_split=0.1, validation_data=None, verbosity=1):
+        """
+        Fit the model
+        :param training data:   should be adictionary containing data fo
+                                all the classifies of the network
+        """
+        X_train, Y_train = training_data
+        
+        callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)_
+
+        self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split = validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks/callbacks, verbosity=verbosity, shuffle=True)
+
+        self.trainings_History = callbacks[0]
+
+    @staticmethod
+    def generate_training_data(languages, dmap, digits, pad_to=None, classifiers):
+
+       #generate and shuffle examples
+       treebank = generate_treebank(languages, digits=digits)
+       random.shuffle(treebank.examples)
+
+       # create dictionary with outputs
+       X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
+
+       # loop over examples
+       for expression, answer in treebank.examples:
+           expression.get_targets()
+           input_seq = [dmap[i] for i in str(expression).split()]
+           X.append(input_seq)
+           for classifier in classifiers:
+               target = expression.classifier
+               Y[classifier].append(target)
+               
+       # pad sequences to have the same length
+       assert pad_to is None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
+       X_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
+
+       # make numpy arrays from Y data
+       for output in Y:
+           Y[output] = np.array(Y[output])
+
+       return X_padded, Y
 
