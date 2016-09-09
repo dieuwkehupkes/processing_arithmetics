@@ -224,13 +224,13 @@ class mathExpression(Tree):
         self.targets = {}
 
         # grammaticality of sequence
-        # grammatical = [0]*len(intermediate_locally)
-        # grammatical[-1] = 1
-        self.targets['grammatical'] = [1]
+        grammatical = [[0]]*len(intermediate_locally)
+        grammatical[-1] = [1]
+        self.targets['grammatical'] = grammatical
 
 
         # intermediate outcomes local computation
-        self.targets['intermediate_locally'] = intermediate_locally
+        self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
         # TODO introduce more!!
 

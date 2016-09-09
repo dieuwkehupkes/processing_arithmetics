@@ -279,7 +279,7 @@ class Training(object):
             callbacks.append(draw_weights)
 
         if plot_embeddings:
-            if plot_embeddings == True:
+            if plot_embeddings is True:
                 pass
             else:
                 embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap, embeddings_id=embeddings_id)
@@ -582,7 +582,7 @@ class Probing(Training):
         """
         # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
         loss = {'grammatical': 'binary_crossentropy', 'intermediate_locally': 'mean_squared_error'}   # TODO create a dictionary with lossfunctions for different outcomes
-        metrics = {'grammatical': 'accuracy', 'intermediate_locally': 'mean_squared_prediction_error'}  # TODO create dictionary with metrics for all classifiers
+        metrics = {'grammatical': ['acc'], 'intermediate_locally': ['mean_squared_prediction_error']}  # TODO create dictionary with metrics for all classifiers
         activations = {'grammatical':'sigmoid', 'intermediate_locally': 'linear'}
         output_size = {'grammatical':1, 'intermediate_locally': 1}
 
@@ -635,11 +635,10 @@ class Probing(Training):
         X_train, Y_train = training_data
         
         callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
-        callbacks = []
 
         self.model.fit({'input':X_train}, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
 
-        # self.trainings_history = callbacks[0]
+        self.trainings_history = callbacks[0]
 
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
@@ -658,7 +657,7 @@ class Probing(Training):
             X.append(input_seq)
             for classifier in classifiers:
                 target = expression.targets[classifier]
-                Y[classifier].append([target])
+                Y[classifier].append(target)
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
@@ -666,8 +665,6 @@ class Probing(Training):
         # make numpy arrays from Y data
         for output in Y:
             Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
-            # print "Y_padded", Y[output]
-            # raw_input()
         return X_padded, Y
 
     @staticmethod
