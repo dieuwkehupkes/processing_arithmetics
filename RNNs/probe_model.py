@@ -12,44 +12,15 @@ from architectures import Probing, A1
 
 def probe_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, verbosity, maxlen):
 
-    training2 = Probing(classifiers)
+    training = Probing(classifiers)
 
-    training1 = A1()
+    training.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
 
-    print "model 1"
-
-    training1.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
-
-    # print training1.model.summary()
-
-    print "\nmodel 2"
-
-    training2.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
-
-    # print training2.model.summary()
- 
     dmap = pickle.load(open(dmap, 'rb'))
 
-    print "training data A1: "
-    x_train, y_train = A1.generate_training_data(languages_train, dmap, digits, pad_to=maxlen)
+    X_train, Y_train = training.generate_training_data(languages_train, dmap, digits, classifiers, pad_to=maxlen)
 
-    print x_train.shape
-    print "output shape: ", y_train.shape
-    print y_train
-
-    # training1.train((x_train, y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, verbosity=verbosity)
-
-    print "training data Probe: "
-
-    X_train, Y_train = training2.generate_training_data(languages_train, dmap, digits, classifiers, pad_to=maxlen)
-
-    print X_train.shape
-    print "output shape: ", Y_train['grammatical'].shape
-
-    training2.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, verbosity=verbosity)
-
-
-
+    training.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, verbosity=verbosity)
 
 
 if __name__ == '__main__':
