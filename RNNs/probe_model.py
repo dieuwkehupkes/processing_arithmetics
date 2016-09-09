@@ -10,7 +10,7 @@ from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import Probing, A1
 
 
-def probe_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, verbosity, maxlen):
+def probe_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, languages_val, verbosity, maxlen):
 
     training = Probing(classifiers)
 
@@ -20,7 +20,13 @@ def probe_model(architecture, weights, dmap, classifiers, digits, languages_trai
 
     X_train, Y_train = training.generate_training_data(languages_train, dmap, digits, classifiers, pad_to=maxlen)
 
-    training.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, verbosity=verbosity)
+    validation_data = None
+    if languages_val:
+        X_val, Y_val = training.generate_training_data(languages_val, dmap, digits, classifiers, pad_to=maxlen)
+        validation_data = (X_val, Y_val)
+
+
+    training.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, validation_data=validation_data, verbosity=verbosity)
 
     return training
 
@@ -82,7 +88,7 @@ if __name__ == '__main__':
 
     settings = __import__(import_string)
 
-    training = probe_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, verbosity=settings.verbosity)
+    training = probe_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, languages_val=settings.languages_val, verbosity=settings.verbosity)
 
     if settings.languages_test:
         test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers)

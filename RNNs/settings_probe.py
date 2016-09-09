@@ -9,7 +9,7 @@ dmap = pref+'.dmap'
 classifiers         = ['grammatical', 'intermediate_locally']
 # classifiers         = ['intermediate_locally']
 # classifiers         = ['grammatical']
-nb_epochs           = 5000
+nb_epochs           = 10
 
 optimizer           = 'adam'
 dropout_recurrent   = 0.0
@@ -20,9 +20,10 @@ validation_split    = 0.1
 
 digits              = np.arange(-10,11)
 
-# languages_train             = {'L1':3000, 'L2': 3000, 'L4':3000, 'L6':3000}
-languages_train             = {'L1':3, 'L2': 2, 'L4':1, 'L6':1}
+languages_train             = {'L1':3000, 'L2': 3000, 'L4':3000, 'L6':3000}
+# languages_train             = {'L1':3, 'L2': 2, 'L4':1, 'L6':1}
 languages_val               = None
+# languages_val               = {'L3': 400, 'L5':400, 'L7':400}
 languages_test              = {'L3': 400, 'L5':400, 'L7':400}
 test_separately             = True
 maxlen                      = max_length(15)
