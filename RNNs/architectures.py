@@ -105,6 +105,28 @@ class Training(object):
         self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent)
         return
 
+    @staticmethod
+    def generate_test_data(architecture, languages, dmap, digits, pad_to=None, test_separately=True, classifiers=None):
+        """
+        Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
+        :param languages:       dictionary mapping language names to numbers
+        :param pad_to:          desired length of test sentences
+        :return:                dictionary mapping classifier names to targets
+        """
+
+        if test_separately:
+            test_data = []
+            for name, N in languages.items():
+                X, Y = architecture.generate_training_data({name: N}, dmap, digits, classifiers, pad_to=pad_to)
+                test_data.append((name, X, Y))
+
+        else:
+            X, Y = architecture.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to)
+            name = ', '.join(languages.keys())
+            test_data = [(name, X, Y)]
+
+        return test_data
+
     def model_summary(self):
         print(self.model.summary())
 
@@ -375,7 +397,6 @@ class A1(Training):
         :param pad_to:          desired length of test sequences
         :return:                list of tuples containing test set sames, inputs and targets
         """
-        # TODO reuse training data function
         if test_separately:
             test_data = []
             for name, N in languages.items():
@@ -560,10 +581,10 @@ class Probing(Training):
         and output sizes.
         """
         # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
-        loss = {'grammatical': 'binary_crossentropy'}   # TODO create a dictionary with lossfunctions for different outcomes
-        metrics = {'grammatical': 'accuracy'}  # TODO create dictionary with metrics for all classifiers
-        activations = {'grammatical':'sigmoid'}
-        output_size = {'grammatical':1}
+        loss = {'grammatical': 'binary_crossentropy', 'intermediate_locally': 'mean_squared_error'}   # TODO create a dictionary with lossfunctions for different outcomes
+        metrics = {'grammatical': 'accuracy', 'intermediate_locally': 'mean_squared_prediction_error'}  # TODO create dictionary with metrics for all classifiers
+        activations = {'grammatical':'sigmoid', 'intermediate_locally': 'linear'}
+        output_size = {'grammatical':1, 'intermediate_locally': 1}
 
 
 
@@ -614,10 +635,11 @@ class Probing(Training):
         X_train, Y_train = training_data
         
         callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
+        callbacks = []
 
         self.model.fit({'input':X_train}, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
 
-        self.trainings_History = callbacks[0]
+        # self.trainings_history = callbacks[0]
 
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
@@ -641,12 +663,34 @@ class Probing(Training):
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
-
         # make numpy arrays from Y data
         for output in Y:
             Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
             # print "Y_padded", Y[output]
-            print "shape :", Y[output].shape
             # raw_input()
         return X_padded, Y
+
+    @staticmethod
+    def generate_test_data(languages, dmap, digits, pad_to, test_separately, classifiers):
+        """
+        Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
+        :param languages:       dictionary mapping language names to numbers
+        :param pad_to:          desired length of test sentences
+        :return:                dictionary mapping classifier names to targets
+        """
+
+        if test_separately:
+            test_data = []
+            for name, N in languages.items():
+                X, Y = Probing.generate_training_data(languages={name: N}, dmap=dmap, digits=digits, pad_to=pad_to, classifiers=classifiers)
+                test_data.append((name, X, Y))
+
+        else:
+            X, Y = Probing.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to)
+            name = ', '.join(languages.keys())
+            test_data = [(name, X, Y)]
+
+        return test_data
+
+
 
