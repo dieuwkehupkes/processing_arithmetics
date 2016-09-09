@@ -562,7 +562,7 @@ class Probing(Training):
         # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
         loss = {'grammatical': 'binary_crossentropy'}   # TODO create a dictionary with lossfunctions for different outcomes
         metrics = {'grammatical': 'accuracy'}  # TODO create dictionary with metrics for all classifiers
-        activations = {'grammatical':'linear'}
+        activations = {'grammatical':'sigmoid'}
         output_size = {'grammatical':1}
 
 
@@ -577,8 +577,6 @@ class Probing(Training):
         """
         Build model with given embeddings and recurren weights.
         """
-
-        print "call build"
 
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
@@ -601,7 +599,6 @@ class Probing(Training):
         classifiers = []
         for classifier in self.classifiers:
             classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier]), name=classifier)(recurrent))
-            self.metrics[classifier] 
 
         # create model
         self.model = Model(input=input_layer, output=classifiers)
@@ -615,9 +612,6 @@ class Probing(Training):
                                 all the classifies of the network
         """
         X_train, Y_train = training_data
-
-        print "shape training data:", X_train.shape
-
         
         callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
 
@@ -628,34 +622,31 @@ class Probing(Training):
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
 
-       #generate and shuffle examples
-       treebank = generate_treebank(languages, digits=digits)
-       random.shuffle(treebank.examples)
+        # generate and shuffle examples
+        treebank = generate_treebank(languages, digits=digits)
+        random.shuffle(treebank.examples)
 
-       # create dictionary with outputs
-       X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
+        # create dictionary with outputs
+        X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
 
-       # loop over examples
-       for expression, answer in treebank.examples:
-           expression.get_targets()
-           input_seq = [dmap[i] for i in str(expression).split()]
-           X.append(input_seq)
-           for classifier in classifiers:
-               target = expression.targets[classifier]
-               Y[classifier].append(target)
-               
-       # pad sequences to have the same length
-       assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
-       X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+        # loop over examples
+        for expression, answer in treebank.examples:
+            expression.get_targets()
+            input_seq = [dmap[i] for i in str(expression).split()]
+            X.append(input_seq)
+            for classifier in classifiers:
+                target = expression.targets[classifier]
+                Y[classifier].append([target])
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
 
-       print "X_padded shape:", X_padded.shape
 
-       # make numpy arrays from Y data
-       for output in Y:
-           Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
-           # print "Y_padded", Y[output]
-           # print "shape :", Y[output].shape
-           # raw_input()
-
-       return X_padded, Y
+        # make numpy arrays from Y data
+        for output in Y:
+            Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
+            # print "Y_padded", Y[output]
+            print "shape :", Y[output].shape
+            # raw_input()
+        return X_padded, Y
 
