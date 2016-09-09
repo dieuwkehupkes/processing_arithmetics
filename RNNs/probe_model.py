@@ -44,15 +44,23 @@ def test_model(training, languages_test, dmap, digits, maxlen, test_separately, 
 
     hist = training.trainings_history
 
-    print "\nAccuracy for for training set %s:\n" % \
-        '\n'.join(['\t%s:\t %s' % (output, '\t'.join('%s: %f' % (name_metric, hist.metrics_train[output][name_metric][-1]) for name_metric in hist.metrics[output])) for output in hist.metrics_train])
+    try:
+        print "\nAccuracy for for training set %s:\t" % \
+            '\n'.join(['\t%s:\t %s' % (output, '\t'.join('%s: %f' % (name_metric, hist.metrics_train[output][name_metric][-1]) for name_metric in hist.metrics[output])) for output in hist.metrics_train])
+    except TypeError:
+        print "typeerror"
+        print hist.metrics_train
+        '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
             
             
+    try:
+        print "Accuracy for for validation set %s:\t" % \
+            '\n'.join(['%s:\t %s' % (output, '\t'.join('%s: %f' % (name_metric, hist.metrics_val[output][name_metric][-1]) for name_metric in hist.metrics[output])) for output in hist.metrics_val])
+    except TypeError:
+        '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
 
-    print "Accuracy for for validation set %s:\n" % \
-        '\n'.join(['\t%s:\t %s' % (output, '\t'.join('%s: %f' % (name_metric, hist.metrics_val[output][name_metric][-1]) for name_metric in hist.metrics[output])) for output in hist.metrics_val])
 
-
+        # '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
     for name, X, Y in test_data:
         acc = training.model.evaluate(X, Y)
         print "\nAccuracy for for test set %s:" % name,

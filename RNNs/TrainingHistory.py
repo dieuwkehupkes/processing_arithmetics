@@ -13,7 +13,7 @@ class TrainingHistory(Callback):
         self.recurrent_id = recurrent_id
         self.param_id = param_id
         self.metrics = metrics
-        if (isinstance(metrics, dict) and len(metrics) > 1):
+        if isinstance(metrics, dict):
             self.mo = True
         else:
             self.mo = False
@@ -63,20 +63,28 @@ class TrainingHistory(Callback):
         self.esp.append(spec)
 
     def on_epoch_end_1o(self, epoch, logs):
+        print logs
+        raw_input()
         self.losses.append(logs.get('loss'))
         self.val_losses.append(logs.get('val_loss'))
         for metric in self.metrics:
+            print 'metrics',self.metrics
             self.metrics_train[metric].append(logs.get(metric))
             self.metrics_val[metric].append(logs.get('val_'+metric))
 
     def on_epoch_end_mo(self, epoch, logs):
         for output in self.metrics:
-            self.losses[output].append(logs.get(output+'_loss'))
-            self.losses[output].append(logs.get('val_'+output+'_loss'))
+            if len(self.metrics) == 1:
+                name = ''
+            else:
+                name = output + '_'
+
+            self.losses[output].append(logs.get(name+'loss'))
+            self.losses[output].append(logs.get('val_'+name+'loss'))
 
             for metric in self.metrics[output]:
-                self.metrics_train[output][metric].append(logs.get(output+'_'+metric))
-                self.metrics_val[output][metric].append(logs.get('val_'+output+'_'+metric))
+                self.metrics_train[output][metric].append(logs.get(name+metric))
+                self.metrics_val[output][metric].append(logs.get('val_'+name+metric))
 
 
 
