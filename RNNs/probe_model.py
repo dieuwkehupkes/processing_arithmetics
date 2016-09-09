@@ -42,19 +42,20 @@ def test_model(training, languages_test, dmap, digits, maxlen, test_separately, 
                                             classifiers=classifiers,
                                             test_separately=test_separately)
 
-    # hist = training.trainings_history
-    # print hist
-    # print hist.metrics_train
-    # print hist.metrics_val
-    # raw_input()
+    hist = training.trainings_history
 
-    # print "Accuracy for for training set %s:\t" % \
-    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
-    # print "Accuracy for for validation set %s:\t" % \
-    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+    print "\nAccuracy for for training set %s:\n" % \
+        '\n'.join(['\t%s:\t %s' % (output, '\t'.join('%s: %f' % (name_metric, hist.metrics_train[output][name_metric][-1]) for name_metric in hist.metrics[output])) for output in hist.metrics_train])
+            
+            
+
+    print "Accuracy for for validation set %s:\n" % \
+        '\n'.join(['\t%s:\t %s' % (output, '\t'.join('%s: %f' % (name_metric, hist.metrics_val[output][name_metric][-1]) for name_metric in hist.metrics[output])) for output in hist.metrics_val])
+
+
     for name, X, Y in test_data:
         acc = training.model.evaluate(X, Y)
-        print "Accuracy for for test set %s:" % name,
+        print "\nAccuracy for for test set %s:" % name,
         print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
 
 
