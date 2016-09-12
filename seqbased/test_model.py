@@ -1,4 +1,6 @@
 from __future__ import print_function
+import sys 
+sys.path.insert(0, '../commonFiles') 
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer

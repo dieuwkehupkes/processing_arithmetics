@@ -1,3 +1,5 @@
+import sys 
+sys.path.insert(0, '../commonFiles') 
 import argparse
 from generate_training_data import generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum
