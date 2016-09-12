@@ -1,4 +1,6 @@
 from keras.callbacks import Callback
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
