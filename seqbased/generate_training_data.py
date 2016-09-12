@@ -4,7 +4,6 @@ arithmetic task.
 """
 from arithmetics import mathTreebank
 
-from auxiliary_functions import max_length
 import keras.preprocessing.sequence
 import re
 import numpy as np
@@ -62,41 +61,4 @@ def string_to_vec(expressions, dmap, pad_to=None):
     return input_seqs
 
 
-def generate_treebank(languages, digits):
-    """
-    Generate training examples.
-    :param languages:   dictionary mapping languages to number of samples
-    """
-    treebank = mathTreebank()
-    for name, N in languages.items():
-        lengths, operators, branching = parse_language(name)
-        treebank.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
-
-    return treebank
-
-def parse_language(language_str):
-    """
-    Give in a string for a language, return
-    a tuple with arguments to generate examples.
-    :return:    (#leaves, operators, branching)
-    """
-    # find # leaves
-    nr = re.compile('[0-9]+')
-    n = int(nr.search(language_str).group())
-
-    # find operators
-    plusmin = re.compile('\+')
-    op = plusmin.search(language_str)
-    if op:
-        operators = [op.group()]
-    else:
-        operators = ['+','-']
-
-    # find branchingness
-    branch = re.compile('left|right')
-    branching = branch.search(language_str)
-    if branching:
-        branching = branching.group()
-
-    return [n], operators, branching
 

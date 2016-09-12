@@ -22,23 +22,6 @@ def print_sum(settings):
         print('%i sentences from %s' % (nr, language))
 
 
-# define padding function
-def pad(array, length):
-    l = len(array)
-    try:
-        l2 = len(array[0])
-        print("length", l2)
-        padded_array = np.concatenate((np.zeros((length-l,l2)), array))
-    except TypeError:
-        try:
-            padded_array = np.concatenate((np.zeros((length-l,)), array))
-        except ValueError:
-            raise ValueError("Array cannot be padded to shorter length")
-    except ValueError:
-        raise ValueError("Array cannot be padded to shorter length")
-    return padded_array
-
-
 def max_length(N):
     """
     Compute length of arithmetic expression

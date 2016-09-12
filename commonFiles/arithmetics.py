@@ -1,19 +1,47 @@
 from __future__ import print_function
-import sys
 import numpy as np
-import pickle
 import operator
 from nltk import Tree
 import random
-import os
-from collections import defaultdict
+import re
 
+def parse_language(language_str):
+    """
+    Give in a string for a language, return
+    a tuple with arguments to generate examples.
+    :return:    (#leaves, operators, branching)
+    """
+    # find # leaves
+    nr = re.compile('[0-9]+')
+    n = int(nr.search(language_str).group())
+
+    # find operators
+    plusmin = re.compile('\+')
+    op = plusmin.search(language_str)
+    if op:
+        operators = [op.group()]
+    else:
+        operators = ['+','-']
+
+    # find branchingness
+    branch = re.compile('left|right')
+    branching = branch.search(language_str)
+    if branching:
+        branching = branching.group()
+
+    return [n], operators, branching
 
 class mathTreebank():
-    def __init__(self):
-        self.examples = []          # attribute containing examples of the treebank
-        self.operators = set([])    # attribute containing operators in the treebank
-        self.digits = set([])       # digits in the treebank
+    def __init__(self,languages, digits):
+        self.examples = []  # attribute containing examples of the treebank
+        self.operators = set([])  # attribute containing operators in the treebank
+        self.digits = set([])  # digits in the treebank
+        for name, N in languages.items():
+            lengths, operators, branching = parse_language(name)
+            [self.operators.add(op) for op in operators]
+            self.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
+
+
 
     def generateExamples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
         """
