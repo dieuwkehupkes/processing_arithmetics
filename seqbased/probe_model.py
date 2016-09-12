@@ -3,6 +3,8 @@
 # representations and testing how accurately they can extract
 # different features from these representation
 
+import sys 
+sys.path.insert(0, '../commonFiles') 
 import argparse
 import re
 import pickle
