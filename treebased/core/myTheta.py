@@ -321,7 +321,7 @@ class WordMatrix(dict):
       else: del self[key]
 
   def __missing__(self, key):
-#    print 'WM missing:', key
+    #print 'WM missing:', key, type(key)
     if key == self.default: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None
     if key in self.voc:
       self[key] = np.zeros_like(self[self.default])
