@@ -32,7 +32,7 @@ def parse_language(language_str):
     return [n], operators, branching
 
 class mathTreebank():
-    def __init__(self,languages, digits):
+    def __init__(self, languages, digits):
         self.examples = []  # attribute containing examples of the treebank
         self.operators = set([])  # attribute containing operators in the treebank
         self.digits = set([])  # digits in the treebank
