@@ -11,7 +11,7 @@ import pickle
 import re
 import numpy as np
 
-def test_model(architecture, model_architecture, model_weights, dmap, optimizer, loss, metrics, digits, test_sets, test_separately=True):
+def test_model(architecture, model_architecture, model_weights, dmap, optimizer, loss, metrics, digits, test_sets, test_separately=True, print_results=True):
     # load model
     model = model_from_json(open(model_architecture).read())
     model.load_weights(model_weights)
@@ -42,9 +42,10 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
     metrics = model.metrics_names
     test_results = dict([(metric, OrderedDict()) for metric in metrics])
     for name, X_test, Y_test in test_data:
-        print("Accuracy for %s\t" % name, end=" ")
-        acc = model.evaluate(X_test, Y_test, verbose=0)
-        print('\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))]))
+        if print_results:
+            print("Accuracy for %s\t" % name, end=" ")
+            acc = model.evaluate(X_test, Y_test, verbose=0)
+            print('\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))]))
         # store test results
         for i in xrange(len(acc)):
             try:
