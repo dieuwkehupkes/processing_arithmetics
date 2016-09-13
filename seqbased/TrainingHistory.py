@@ -63,8 +63,6 @@ class TrainingHistory(Callback):
         self.esp.append(spec)
 
     def on_epoch_end_1o(self, epoch, logs):
-        print logs
-        raw_input()
         self.losses.append(logs.get('loss'))
         self.val_losses.append(logs.get('val_loss'))
         for metric in self.metrics:
