@@ -18,7 +18,6 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     dmap = pickle.load(open(model_dmap, 'rb'))
-    dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
     maxlen = model.layers[2].input_shape[1]
 
     # TODO dmap should be identical for model and testset, currently there
