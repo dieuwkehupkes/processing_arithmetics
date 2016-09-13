@@ -16,8 +16,7 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
     model = model_from_json(open(model_architecture).read())
     model.load_weights(model_weights)
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-
-    dmap = pickle.load(open(model_dmap, 'rb'))
+    dmap = pickle.load(open(dmap, 'rb'))
     maxlen = model.layers[2].input_shape[1]
 
     # TODO dmap should be identical for model and testset, currently there
@@ -30,9 +29,16 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
 
     elif isinstance(test_sets, list):
         test_data = []
-        for filename in test_sets:
-            X_val, Y_val = pickle.load(open(filename, 'rb'))
-            test_data.append((filename, X_val, Y_val))
+        for item in test_sets:
+            if isinstance(item, str):
+                X_val, Y_val = pickle.load(open(filename, 'rb'))
+                test_data.append((filename, X_val, Y_val))
+            elif isinstance(item, tuple):
+                name, treebank = item
+                assert isinstance(treebank, mathTreebank)
+                X_val, Y_val = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=maxlen)
+                test_data.append((name, X_val, Y_val))
+
 
     else:
         print("Invalid format test data")
