@@ -2,7 +2,6 @@ from keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
-from generate_training_data import generate_treebank, parse_language
 from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
@@ -368,7 +367,7 @@ class A1(Training):
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank = generate_treebank(languages, digits=digits)
+        treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
         # create empty input and targets
@@ -507,9 +506,9 @@ class A4(Training):
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank1 = generate_treebank(languages, digits=digits)
+        treebank1 = mathTreebank(languages, digits=digits)
         random.shuffle(treebank1.examples)
-        treebank2 = generate_treebank(languages, digits=digits)
+        treebank2 = mathTreebank(languages, digits=digits)
         random.shuffle(treebank2.examples)
 
         # create empty input and targets
@@ -644,7 +643,7 @@ class Probing(Training):
     def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
 
         # generate and shuffle examples
-        treebank = generate_treebank(languages, digits=digits)
+        treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
         # create dictionary with outputs
