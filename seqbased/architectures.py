@@ -2,6 +2,8 @@ from keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
+import sys
+sys.path.insert(0, '../commonFiles') 
 from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
@@ -344,8 +346,6 @@ class A1(Training):
         """
         X_train, Y_train = training_data
 
-        print X_train.shape
-
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
                                             embeddings_id=1)
 
@@ -370,22 +370,9 @@ class A1(Training):
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
-        # create empty input and targets
-        X, Y = [], []
+        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to)
 
-        # loop over examples
-        for expression, answer in treebank.examples:
-            input_seq = [dmap[i] for i in str(expression).split()]
-            answer = answer
-            X.append(input_seq)
-            Y.append(answer)
-
-        # pad sequences to have the same length
-        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
-        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
-
-
-        return X_padded, np.array(Y)
+        return data
 
     @staticmethod
     def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True):
@@ -408,6 +395,23 @@ class A1(Training):
             test_data = [(name, X, Y)]
 
         return test_data
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None):
+        """
+        Generate test data from a mathTreebank object.
+        """
+        X, Y = [], []
+        for expression, answer in treebank.examples:
+            input_seq = [dmap[i] for i in str(expression).split()]
+            answer = answer
+            X.append(input_seq)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+        return X_padded, np.array(Y)
 
     @staticmethod
     def get_recurrent_layer_id():
@@ -511,6 +515,42 @@ class A4(Training):
         treebank2 = mathTreebank(languages, digits=digits)
         random.shuffle(treebank2.examples)
 
+        treebanks = (treebank1, treebank2)
+
+        # X1, X2, Y = [], [], []
+
+        # # loop over examples
+        # for example1, example2 in zip(treebank1.examples, treebank2.examples):
+        #     expr1, answ1 = example1
+        #     expr2, answ2 = example2
+        #     input_seq1 = [dmap[i] for i in str(expr1).split()]
+        #     input_seq2 = [dmap[i] for i in str(expr2).split()]
+        #     answer = np.zeros(3)
+        #     answer[np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])] = 1
+        #     X1.append(input_seq1)
+        #     X2.append(input_seq2)
+        #     Y.append(answer)
+
+        # # pad sequences to have the same length
+        # assert pad_to is None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
+        # X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
+        # X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
+
+        # X_padded = [X1_padded, X2_padded]
+
+        # return X_padded, np.array(Y)
+
+        X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None)
+
+        return X_padded, Y
+
+
+    @staticmethod
+    def data_from_treebank(treebanks, dmap, pad_to=None, classifiers=None):
+        """
+        Generate data from mathTreebank object.
+        """
+        treebank1, treebank2 = treebanks
         # create empty input and targets
         X1, X2, Y = [], [], []
 
@@ -534,6 +574,7 @@ class A4(Training):
         X_padded = [X1_padded, X2_padded]
 
         return X_padded, np.array(Y)
+
 
     @staticmethod
     def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=False):
