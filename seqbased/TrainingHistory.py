@@ -66,7 +66,6 @@ class TrainingHistory(Callback):
         self.losses.append(logs.get('loss'))
         self.val_losses.append(logs.get('val_loss'))
         for metric in self.metrics:
-            print 'metrics',self.metrics
             self.metrics_train[metric].append(logs.get(metric))
             self.metrics_val[metric].append(logs.get('val_'+metric))
 
