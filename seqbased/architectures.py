@@ -517,29 +517,6 @@ class A4(Training):
 
         treebanks = (treebank1, treebank2)
 
-        # X1, X2, Y = [], [], []
-
-        # # loop over examples
-        # for example1, example2 in zip(treebank1.examples, treebank2.examples):
-        #     expr1, answ1 = example1
-        #     expr2, answ2 = example2
-        #     input_seq1 = [dmap[i] for i in str(expr1).split()]
-        #     input_seq2 = [dmap[i] for i in str(expr2).split()]
-        #     answer = np.zeros(3)
-        #     answer[np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])] = 1
-        #     X1.append(input_seq1)
-        #     X2.append(input_seq2)
-        #     Y.append(answer)
-
-        # # pad sequences to have the same length
-        # assert pad_to is None or len(X1[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X1[0]), pad_to)
-        # X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
-        # X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
-
-        # X_padded = [X1_padded, X2_padded]
-
-        # return X_padded, np.array(Y)
-
         X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None)
 
         return X_padded, Y
