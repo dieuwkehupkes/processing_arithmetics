@@ -521,7 +521,6 @@ class A4(Training):
 
         return X_padded, Y
 
-
     @staticmethod
     def data_from_treebank(treebanks, dmap, pad_to=None, classifiers=None):
         """
