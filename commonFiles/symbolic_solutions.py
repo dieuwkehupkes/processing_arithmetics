@@ -8,17 +8,17 @@ def solveRecursiveExplicit(expr):
     outcome = 0
     op = operator.add
     numberstack = []
-    operatorstack=[]
+    operatorstack = []
     symbols = iterate(expr)
     for symbol in symbols:
-        if symbol == '(': # enter recursion
+        if symbol == '(':  # enter recursion
             # store what you were doing
             numberstack.append(outcome)
             operatorstack.append(op)
             # and start anew
             outcome = 0
             op = operator.add
-        elif symbol == ')': # exit recursion
+        elif symbol == ')':  # exit recursion
             # accumulate intermediate result with previous depth
             op = operatorstack.pop()
             outcome = op(numberstack.pop(),outcome)
@@ -29,7 +29,7 @@ def solveRecursiveExplicit(expr):
         else:
             # symbol is digit
             outcome = op(outcome,int(symbol))
-    assert len(operatorstack)==0, len(numberstack)==0
+    assert len(operatorstack) == 0, len(numberstack) == 0
     return outcome
 
 
@@ -113,15 +113,71 @@ def iterate(expression):
     # print(symbols)
     return symbols
 
+def solveAlmost(expr):
+    """
+    Input a syntactically correct bracketet
+    expression, solve by counting brackets
+    and depth.
+    ( ( a + b ) )
+    """
+  
+    symbols = iterate(expr)
+  
+    result = 0
+    subtracting = False
+  
+    symbols = iterate(expr)
+  
+    for symbol in symbols:
+        if symbol[-1].isdigit():
+            digit = int(symbol)
+            if subtracting:
+                result -= digit
+            else:
+                result += digit
+        elif symbol == '-':
+            subtracting = not subtracting
+ 
+        if symbol == ')':
+            if subtracting:
+                subtracting = False
+
+    return result
+
 
 if __name__ == '__main__':
+    from collections import OrderedDict
+    import matplotlib.pylab as plt
     m = mathTreebank()
-    examples = m.generateExamples(operators=['+','-'], digits=np.arange(10), n=5000, lengths=[6,7,8,9])
+    # examples = m.generateExamples(operators=['+','-'], digits=np.arange(10), n=5000, lengths=[6,7,8,9])
     # x = '( 1 - ( ( ( 0 + 0 ) - 5 ) + ( 3 + 4 ) ) )'
     # print(x)
     # print(solveLocally(x))
     # print(eval(x))
     # exit()
+    percentage_correct = OrderedDict([])
+
+    for i in np.arange(1,21):
+        examples = m.generateExamples(operators=['+','-'], digits=np.arange(-10, 10), n=5000, lengths=[i])
+        correct = 0
+
+        for expression, answer in examples:
+            outcome = solveAlmost(str(expression))
+            if outcome == answer:
+                correct += 1
+
+        percentage_correct[i] = correct/float(50)
+    
+    plt.plot(percentage_correct.keys(), percentage_correct.values())
+    plt.title("Percentage correct for approximate strategy")
+    plt.xlabel("Expression length")
+    plt.ylabel("Percentage correct")
+    plt.axis([0, 20, 0, 110])
+    plt.show()
+
+    exit()
+
+
     for expression, answer in examples:
         outcome = solveRecursive(str(expression))
         if outcome != answer:
