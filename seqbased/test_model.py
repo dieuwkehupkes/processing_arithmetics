@@ -6,6 +6,7 @@ from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer
 from architectures import *
 import argparse
+from collections import OrderedDict
 import pickle
 import re
 import numpy as np
@@ -39,10 +40,24 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
 
     # compute overall accuracy
     metrics = model.metrics_names
+    test_results = dict([(metric, OrderedDict()) for metric in metrics])
     for name, X_test, Y_test in test_data:
         print("Accuracy for %s\t" % name, end=" ")
         acc = model.evaluate(X_test, Y_test, verbose=0)
         print('\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))]))
+        # store test results
+        for i in xrange(len(acc)):
+            try:
+                test_results[metrics[i]][name] = acc[i]
+            except KeyError:
+                assert metrics[i] == 'loss'
+
+    return test_results
+
+def print_test_results(test_results):
+    # Print test results in readable way
+    raise NotImplementedError
+
 
 if __name__ == '__main__':
 
@@ -66,4 +81,5 @@ if __name__ == '__main__':
         model_weights = pref+'_weights.h5'     # name of file containing model weights
         model_dmap = pref+'.dmap'              # dmap of the embeddings layer of the model
 
-        test_model(architecture=settings.architecture, model_architecture=model_architecture, model_weights=model_weights, dmap=model_dmap, optimizer=settings.optimizer, metrics=settings.metrics, loss=settings.loss, digits=settings.digits, test_sets=settings.test_sets, test_separately= settings.test_separately)
+        results = test_model(architecture=settings.architecture, model_architecture=model_architecture, model_weights=model_weights, dmap=model_dmap, optimizer=settings.optimizer, metrics=settings.metrics, loss=settings.loss, digits=settings.digits, test_sets=settings.test_sets, test_separately= settings.test_separately)
+
