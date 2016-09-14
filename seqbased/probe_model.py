@@ -8,8 +8,7 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 import re
 import pickle
-import os
-from auxiliary_functions import generate_embeddings_matrix, print_sum
+from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
 from architectures import Probing, A1
 
 
@@ -97,25 +96,4 @@ if __name__ == '__main__':
         test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers)
 
     # save model
-    save = raw_input("\nSave model? y/n ")
-    if save == 'n' or save == 'N':
-        pass
-    elif save == 'y' or save == 'Y':
-        exists = True
-        while exists:
-            model_string = raw_input("Provide filename (without extension) ")
-            exists = os.path.exists(model_string + '_weights.h5')
-            if exists:
-                overwrite = raw_input("File name exists, overwrite? (y/n) ")
-                if overwrite == 'y':
-                    exists = False
-                continue
-
-        model_json = training.model.to_json()
-        open(model_string + '.json', 'w').write(model_json)
-        training.model.save_weights(model_string + '_weights.h5')
-        hist = training.trainings_history
-        trainings_history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
-        pickle.dump(trainings_history, open(model_string + '.history', 'wb'))
-
-
+    save_model(training)
