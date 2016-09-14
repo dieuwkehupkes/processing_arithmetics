@@ -596,12 +596,29 @@ class Probing(Training):
         corresponding metrics, loss function, activation functions
         and output sizes.
         """
-        # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
-        loss = {'grammatical': 'binary_crossentropy', 'intermediate_locally': 'mean_squared_error'}   # TODO create a dictionary with lossfunctions for different outcomes
-        metrics = {'grammatical': ['acc'], 'intermediate_locally': ['mean_squared_prediction_error']}  # TODO create dictionary with metrics for all classifiers
-        activations = {'grammatical':'sigmoid', 'intermediate_locally': 'linear'}
-        output_size = {'grammatical':1, 'intermediate_locally': 1}
+        loss = {'grammatical': 'binary_crossentropy',
+                'intermediate_locally': 'mean_squared_error',
+                'subtracting':'binary_crossentropy',
+                'intermediate_recursively':'mean_squared_error',
+                'top_stack':'mean_squared_error_ignore'
+                }
 
+        metrics = {'grammatical': ['binary_accuracy', 'binary_accuracy_ignore0'],
+                   'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
+                   'subtracting': ['binary_accuracy'],
+                   'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
+                   'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
+        activations = {'grammatical':'sigmoid',
+                       'intermediate_locally': 'linear',
+                       'subtracting': 'sigmoid',
+                       'intermediate_recursively':'linear',
+                       'top_stack': 'linear'}
+
+        output_size = {'grammatical':1,
+                       'intermediate_locally': 1,
+                       'subtracting':1,
+                       'intermediate_recursively':1,
+                       'top_stack':1}
 
 
         self.loss_functions = dict([(key, loss[key]) for key in classifiers])
