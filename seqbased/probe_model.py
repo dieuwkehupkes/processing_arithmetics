@@ -8,11 +8,12 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 import re
 import pickle
+import os
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import Probing, A1
 
 
-def probe_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, languages_val, verbosity, maxlen):
+def train_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, languages_val, verbosity, maxlen):
 
     training = Probing(classifiers)
 
@@ -90,9 +91,31 @@ if __name__ == '__main__':
 
     settings = __import__(import_string)
 
-    training = probe_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, languages_val=settings.languages_val, verbosity=settings.verbosity)
+    training = train_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, languages_val=settings.languages_val, verbosity=settings.verbosity)
 
     if settings.languages_test:
         test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers)
+
+    # save model
+    save = raw_input("\nSave model? y/n ")
+    if save == 'n' or save == 'N':
+        pass
+    elif save == 'y' or save == 'Y':
+        exists = True
+        while exists:
+            model_string = raw_input("Provide filename (without extension) ")
+            exists = os.path.exists(model_string + '_weights.h5')
+            if exists:
+                overwrite = raw_input("File name exists, overwrite? (y/n) ")
+                if overwrite == 'y':
+                    exists = False
+                continue
+
+        model_json = training.model.to_json()
+        open(model_string + '.json', 'w').write(model_json)
+        training.model.save_weights(model_string + '_weights.h5')
+        hist = training.trainings_history
+        trainings_history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+        pickle.dump(trainings_history, open(model_string + '.history', 'wb'))
 
 
