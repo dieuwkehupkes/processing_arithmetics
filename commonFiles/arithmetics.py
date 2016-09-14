@@ -32,7 +32,7 @@ def parse_language(language_str):
     return [n], operators, branching
 
 class mathTreebank():
-    def __init__(self, languages, digits):
+    def __init__(self, languages={}, digits=[]):
         self.examples = []  # attribute containing examples of the treebank
         self.operators = set([])  # attribute containing operators in the treebank
         self.digits = set([])  # digits in the treebank
@@ -132,32 +132,43 @@ class mathExpression(Tree):
         Solve expression recursively.
         """
 
-        stack = [[operator.add, 0]]
+        stack = []
         op = operator.add
+        cur = 0
 
         symbols = self.iterate()
+
+        # return arrays
+        stack_list = []
+        intermediate_results = []
 
         for symbol in symbols:
             if symbol == '(':
                 # push new element on stack
-                stack.append([op, 0])
+                stack.append([op, cur])
                 op = operator.add
+                cur = 0         # reset current computation
             elif symbol == ')':
                 # combine last stack item with
                 # one but last stack item
-                stack_op, outcome = stack.pop(-1)
-                stack[-1][1] = stack_op(stack[-1][1], outcome)
+                stack_op, prev = stack.pop()
+                cur = stack_op(prev, cur)
             elif symbol == '+':
                 op = operator.add
             elif symbol == '-':
                 op = operator.sub
             else:
                 # number is digit
-                stack[-1][1] = op(stack[-1][1], int(symbol))
+                cur = op(cur, int(symbol))
+            stack_list.append(stack)
+            intermediate_results.append(cur)
 
-        assert len(stack) == 1, "expression not grammatical"
+        assert len(stack) == 0, "expression not grammatical"
 
-        return stack[0][1]
+        if return_sequences:
+            return intermediate_results, stack_list
+
+        return cur
 
     def solveLocally(self, return_sequences=False):
         """
@@ -280,7 +291,7 @@ if __name__ == '__main__':
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveAlmost()
+            outcome = expression.solveRecursively()
             if outcome != answer:
                 incorrect += 1
 
