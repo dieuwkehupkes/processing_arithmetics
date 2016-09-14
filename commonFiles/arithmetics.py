@@ -133,8 +133,6 @@ class mathExpression(Tree):
         Solve expression recursively.
         """
 
-        print(self)
-
         stack = []
         op = operator.add
         cur = 0
@@ -224,7 +222,7 @@ class mathExpression(Tree):
 
             intermediate_results.append(result)
             brackets.append(bracket_stack)
-            subtracting_list.append(subtracting)
+            subtracting_list.append({True: [1], False:[0]}[subtracting])
 
         if return_sequences:
             return intermediate_results, brackets, subtracting_list
@@ -288,7 +286,6 @@ class mathExpression(Tree):
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
 
         # element on top of stack
-        print(stack_recursively)
         self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
 
 
