@@ -21,10 +21,9 @@ validation_split    = 0.1
 digits              = np.arange(-10,11)
 
 languages_train             = {'L1':3000, 'L2': 3000, 'L4':3000, 'L6':3000}
-# languages_train             = {'L1':3, 'L2': 2, 'L4':1, 'L6':1}
-languages_val               = None
 # languages_val               = {'L3': 400, 'L5':400, 'L7':400}
-languages_test              = {'L3': 400, 'L5':400, 'L7':400}
+# languages_val               = None
+languages_test              = {'L3': 500, 'L5':500, 'L7':500, 'L7_left':500}
 test_separately             = True
 maxlen                      = max_length(15)
 
