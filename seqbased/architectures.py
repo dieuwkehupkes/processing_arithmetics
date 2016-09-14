@@ -2,7 +2,8 @@ from keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
-from generate_training_data import generate_treebank, parse_language
+import sys
+sys.path.insert(0, '../commonFiles') 
 from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
@@ -345,8 +346,6 @@ class A1(Training):
         """
         X_train, Y_train = training_data
 
-        print X_train.shape
-
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
                                             embeddings_id=1)
 
@@ -368,25 +367,12 @@ class A1(Training):
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank = generate_treebank(languages, digits=digits)
+        treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
-        # create empty input and targets
-        X, Y = [], []
+        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to)
 
-        # loop over examples
-        for expression, answer in treebank.examples:
-            input_seq = [dmap[i] for i in str(expression).split()]
-            answer = answer
-            X.append(input_seq)
-            Y.append(answer)
-
-        # pad sequences to have the same length
-        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
-        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
-
-
-        return X_padded, np.array(Y)
+        return data
 
     @staticmethod
     def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True):
@@ -409,6 +395,23 @@ class A1(Training):
             test_data = [(name, X, Y)]
 
         return test_data
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None):
+        """
+        Generate test data from a mathTreebank object.
+        """
+        X, Y = [], []
+        for expression, answer in treebank.examples:
+            input_seq = [dmap[i] for i in str(expression).split()]
+            answer = answer
+            X.append(input_seq)
+            Y.append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+        return X_padded, np.array(Y)
 
     @staticmethod
     def get_recurrent_layer_id():
@@ -507,11 +510,23 @@ class A4(Training):
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank1 = generate_treebank(languages, digits=digits)
+        treebank1 = mathTreebank(languages, digits=digits)
         random.shuffle(treebank1.examples)
-        treebank2 = generate_treebank(languages, digits=digits)
+        treebank2 = mathTreebank(languages, digits=digits)
         random.shuffle(treebank2.examples)
 
+        treebanks = (treebank1, treebank2)
+
+        X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None)
+
+        return X_padded, Y
+
+    @staticmethod
+    def data_from_treebank(treebanks, dmap, pad_to=None, classifiers=None):
+        """
+        Generate data from mathTreebank object.
+        """
+        treebank1, treebank2 = treebanks
         # create empty input and targets
         X1, X2, Y = [], [], []
 
@@ -535,6 +550,7 @@ class A4(Training):
         X_padded = [X1_padded, X2_padded]
 
         return X_padded, np.array(Y)
+
 
     @staticmethod
     def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=False):
@@ -580,12 +596,29 @@ class Probing(Training):
         corresponding metrics, loss function, activation functions
         and output sizes.
         """
-        # TODO voeg toe: intermediate result, iets over bracket stack, andere classifiers
-        loss = {'grammatical': 'binary_crossentropy', 'intermediate_locally': 'mean_squared_error'}   # TODO create a dictionary with lossfunctions for different outcomes
-        metrics = {'grammatical': ['acc'], 'intermediate_locally': ['mean_squared_prediction_error']}  # TODO create dictionary with metrics for all classifiers
-        activations = {'grammatical':'sigmoid', 'intermediate_locally': 'linear'}
-        output_size = {'grammatical':1, 'intermediate_locally': 1}
+        loss = {'grammatical': 'binary_crossentropy',
+                'intermediate_locally': 'mean_squared_error',
+                'subtracting':'binary_crossentropy',
+                'intermediate_recursively':'mean_squared_error',
+                'top_stack':'mean_squared_error_ignore'
+                }
 
+        metrics = {'grammatical': ['binary_accuracy', 'binary_accuracy_ignore0'],
+                   'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
+                   'subtracting': ['binary_accuracy'],
+                   'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
+                   'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
+        activations = {'grammatical':'sigmoid',
+                       'intermediate_locally': 'linear',
+                       'subtracting': 'sigmoid',
+                       'intermediate_recursively':'linear',
+                       'top_stack': 'linear'}
+
+        output_size = {'grammatical':1,
+                       'intermediate_locally': 1,
+                       'subtracting':1,
+                       'intermediate_recursively':1,
+                       'top_stack':1}
 
 
         self.loss_functions = dict([(key, loss[key]) for key in classifiers])
@@ -644,7 +677,7 @@ class Probing(Training):
     def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
 
         # generate and shuffle examples
-        treebank = generate_treebank(languages, digits=digits)
+        treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
         # create dictionary with outputs

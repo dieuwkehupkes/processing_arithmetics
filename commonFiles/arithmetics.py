@@ -1,19 +1,48 @@
 from __future__ import print_function
-import sys
 import numpy as np
-import pickle
 import operator
 from nltk import Tree
 import random
-import os
-from collections import defaultdict
+import copy
+import re
 
+def parse_language(language_str):
+    """
+    Give in a string for a language, return
+    a tuple with arguments to generate examples.
+    :return:    (#leaves, operators, branching)
+    """
+    # find # leaves
+    nr = re.compile('[0-9]+')
+    n = int(nr.search(language_str).group())
+
+    # find operators
+    plusmin = re.compile('\+')
+    op = plusmin.search(language_str)
+    if op:
+        operators = [op.group()]
+    else:
+        operators = ['+','-']
+
+    # find branchingness
+    branch = re.compile('left|right')
+    branching = branch.search(language_str)
+    if branching:
+        branching = branching.group()
+
+    return [n], operators, branching
 
 class mathTreebank():
-    def __init__(self):
-        self.examples = []          # attribute containing examples of the treebank
-        self.operators = set([])    # attribute containing operators in the treebank
-        self.digits = set([])       # digits in the treebank
+    def __init__(self, languages={}, digits=[]):
+        self.examples = []  # attribute containing examples of the treebank
+        self.operators = set([])  # attribute containing operators in the treebank
+        self.digits = set([])  # digits in the treebank
+        for name, N in languages.items():
+            lengths, operators, branching = parse_language(name)
+            [self.operators.add(op) for op in operators]
+            self.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
+
+
 
     def generateExamples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
         """
@@ -104,32 +133,49 @@ class mathExpression(Tree):
         Solve expression recursively.
         """
 
-        stack = [[operator.add, 0]]
+        stack = []
         op = operator.add
+        cur = 0
 
         symbols = self.iterate()
+
+        # return arrays
+        stack_list = []
+        intermediate_results = []
 
         for symbol in symbols:
             if symbol == '(':
                 # push new element on stack
-                stack.append([op, 0])
+                stack.append([op, cur])
                 op = operator.add
+                cur = 0         # reset current computation
             elif symbol == ')':
                 # combine last stack item with
                 # one but last stack item
-                stack_op, outcome = stack.pop(-1)
-                stack[-1][1] = stack_op(stack[-1][1], outcome)
+                stack_op, prev = stack.pop()
+                cur = stack_op(prev, cur)
             elif symbol == '+':
                 op = operator.add
             elif symbol == '-':
                 op = operator.sub
             else:
                 # number is digit
-                stack[-1][1] = op(stack[-1][1], int(symbol))
+                cur = op(cur, int(symbol))
+            # store state
 
-        assert len(stack) == 1, "expression not grammatical"
+            if stack == []:
+                stack_list.append([(-12345, -12345)])     # empty stack representation
+            else:
+                stack_list.append(copy.copy(stack))
 
-        return stack[0][1]
+            intermediate_results.append(cur)
+
+        assert len(stack) == 0, "expression not grammatical"
+
+        if return_sequences:
+            return intermediate_results, stack_list
+
+        return cur
 
     def solveLocally(self, return_sequences=False):
         """
@@ -144,6 +190,7 @@ class mathExpression(Tree):
         # return arrays
         intermediate_results = []
         brackets = []
+        subtracting_list = []
 
         symbols = self.iterate()
 
@@ -175,9 +222,10 @@ class mathExpression(Tree):
 
             intermediate_results.append(result)
             brackets.append(bracket_stack)
+            subtracting_list.append({True: [1], False:[0]}[subtracting])
 
         if return_sequences:
-            return intermediate_results, brackets
+            return intermediate_results, brackets, subtracting_list
         
         else:
             return result
@@ -218,8 +266,8 @@ class mathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally = self.solveLocally(return_sequences=True)
-        sequences_recursively = self.solveRecursively(return_sequences=True)
+        intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
+        intermediate_recursively, stack_recursively = self.solveRecursively(return_sequences=True)
 
         self.targets = {}
 
@@ -228,12 +276,25 @@ class mathExpression(Tree):
         grammatical[-1] = [1]
         self.targets['grammatical'] = grammatical
 
-
         # intermediate outcomes local computation
         self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
-        # TODO introduce more!!
+        # subtracting
+        self.targets['subtracting'] = subtracting
 
+        # intermediate outcomes recursive computation
+        self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
+
+        # element on top of stack
+        self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
+
+
+    def print_all_targets(self):
+        """
+        List all possible targets
+        """
+        for target in self.targets:
+            print(target)
 
 
     def iterate(self):
@@ -245,14 +306,21 @@ class mathExpression(Tree):
 
 
 if __name__ == '__main__':
-    m = mathTreebank()
     ops = ['+','-']
     digits = np.arange(-5,5)
+    languages = {'L4':1}
+    m = mathTreebank(languages=languages, digits=digits)
+    for expression, answer in m.examples:
+        expression.get_targets()
+        print(expression)
+        for target in expression.targets:
+            print("\n%s: %s" % (target, expression.targets[target]))
+    exit()
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveAlmost()
+            outcome = expression.solveRecursively()
             if outcome != answer:
                 incorrect += 1
 

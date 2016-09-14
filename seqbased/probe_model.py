@@ -8,11 +8,11 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 import re
 import pickle
-from auxiliary_functions import generate_embeddings_matrix, print_sum
+from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
 from architectures import Probing, A1
 
 
-def probe_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, languages_val, verbosity, maxlen):
+def train_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, languages_val, verbosity, maxlen):
 
     training = Probing(classifiers)
 
@@ -90,9 +90,10 @@ if __name__ == '__main__':
 
     settings = __import__(import_string)
 
-    training = probe_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, languages_val=settings.languages_val, verbosity=settings.verbosity)
+    training = train_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, languages_val=settings.languages_val, verbosity=settings.verbosity)
 
     if settings.languages_test:
         test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers)
 
-
+    # save model
+    save_model(training)

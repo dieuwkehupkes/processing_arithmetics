@@ -2,57 +2,32 @@ from __future__ import division
 
 from collections import defaultdict, Counter
 
-import sys
-sys.path.insert(0, '../commonFiles')
-import arithmetics as math
-#import core.natlog as natlog
-#import core.trainingRoutines as tr
+import data
+import pickle
+import core.myTheta as myTheta
+import core.trainingRoutines as tr
 import argparse
+import sys
 
 
 
-def confusionS(matrix,labels):
-  if True:#len(labels)<15:
-    s = ''
-    for label in labels:
-      s+='\t'+label
-    s+='\n'
-    for t in labels:
-      s+= t
-      for p in labels:
-        s+= '\t'+str(matrix[t][p])
-      s+='\n'
 
-  else: #compacter representations
-    s = 'target: (prediction,times)\n'
-    for t,ps in matrix.items():
-      s+=str(t)+':'
-      for p, v in ps.items():
-        s+= ' ('+p+','+str(matrix[t][p])+')'
-      s+='\n'
-  return s
+def install(thetaFile, d=0, noComparison = False):
+  digits = [str(w) for w in range(-10, 11)]
+  operators = ['+','-']
+  ttb, htb, testtb = data.getTBs(digits, operators,noComparison=noComparison)
 
-def evaluate(tb,theta,n=0):
-  if n == 0: n=tb.n
-  elif n > tb.n: n=tb.n
-  print 'Evaluating on ',n, 'examples.'
-  error = 0
-  true = 0
-  confusion = defaultdict(Counter)
-  for nw, target in tb.getExamples(n):
-    error+=nw.evaluate(theta,target)
-    prediction = nw.predict(theta,None, False,False)
-    confusion[target][prediction] += 1
-    if prediction == target: true +=1
-  accuracy = true/n
-  loss = error/n
-
-  print 'Loss:', loss,'Accuracy:', accuracy, 'Confusion:'
-  print confusionS(confusion, tb.labels)
-
-
-  return loss, accuracy, confusion
-
+  try:
+    with open(thetaFile, 'rb') as f:
+      theta = pickle.load(f)
+  except:
+    dims = {'inside': d, 'outside': d, 'word': d, 'maxArity': 3, 'arity': 2}
+    voc = ['UNKNOWN'] + digits + operators
+    #voc = [str(w) for w in voc]
+    grammar = {operator: {'(digit, ' + operator + ', digit)': 5} for operator in operators}
+    theta = myTheta.Theta('RNN', dims, grammar, embeddings=None, vocabulary=voc)
+    theta.extend4Classify(2,3,3*d)
+  return theta, ttb, htb, testtb
 
 def main(args):
 
@@ -63,42 +38,25 @@ def main(args):
     print 'initializing with additive composition, but then train the function: nonsens, abort'
     sys.exit()
 
-  if args['kind'] =='math':
-    theta, ttb, htb = math.install(args['pars'], kind=args['model'],d=args['word'],noComparison=noComp)
-    tetb = None
-  elif args['kind']=='natlog': theta, ttb, htb, tetb = natlog.install(args['src'], kind=args['model'],d=args['word'],noComparison=noComp)
-  tr.plainTrain(ttb, htb, hyperParams, theta, args['outDir'], args['cores'])
-  
+  theta, ttb, htb, testtb = install(args['pars'],d=args['word'],noComparison=noComp)
 
-  if args['model']== 'RNN':
-    if args['kind'] == 'math': testn = 1000
-    else: testn = 0
-    print 'evaluation on held-out data:'
-    loss, accuracy, confusion=evaluate(htb, theta,testn)
-    print 'evaluation on train data:'
-    loss, accuracy, confusion=evaluate(ttb, theta,testn)
-    if tetb is not None and tetb.n>0:
-      print 'evaluation on test data:'
-      loss, accuracy, confusion = evaluate(tetb, theta, testn)
+  datasets=[(ttb,htb,testtb)]
+  phases=[10]
+  hypers = [hyperParams]
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=args['nEpochs'])
+  #(theta, datasets, outDir, hyperParams, alt = [10, 1], n = 5):
+  #tr.plainTrain(ttb, htb, testtb, hyperParams, theta, args['outDir'])
 
-  elif args['model']== 'IORNN':
-    for nw in htb.getExamples():
-      nw.evaluate(theta, target=None, sample=1, verbose = True)
 
 def mybool(string):
   if string in ['F', 'f', 'false', 'False']: return False
-  if string in ['T', 't', 'true', 'True']: return True
-  raise Exception('Not a valid choice for arg: '+string)
-  hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs']}
-
+  elif string in ['T', 't', 'true', 'True']: return True
+  else: raise Exception('Not a valid choice for arg: '+string)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train classifier')
  # data:
   parser.add_argument('-exp','--experiment', type=str, help='Identifier of the experiment', required=True)
-  parser.add_argument('-m','--model', choices=['RNN','IORNN','RAE'], default='RNN', required=False)
-  parser.add_argument('-k','--kind', choices=['math','natlog'], default='math', required=False)
-  parser.add_argument('-s','--src', type=str, default='',help='Directory with training data', required=False)
   parser.add_argument('-o','--outDir', type=str, help='Output dir to store pickled theta', required=True)
   parser.add_argument('-p','--pars', type=str, default='', help='File with pickled theta', required=False)
   # network hyperparameters:

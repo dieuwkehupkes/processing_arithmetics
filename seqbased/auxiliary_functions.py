@@ -21,23 +21,33 @@ def print_sum(settings):
     for language, nr in settings.languages_train.items():
         print('%i sentences from %s' % (nr, language))
 
+def save_model(training):
+    """
+    Save model to file.
+    """
+    import pickle
+    import os
+    save = raw_input("\nSave model? y/n ")
+    if save == 'n' or save == 'N':
+        pass
+    elif save == 'y' or save == 'Y':
+        exists = True
+        while exists:
+            model_string = raw_input("Provide filename (without extension) ")
+            exists = os.path.exists(model_string + '_weights.h5')
+            if exists:
+                overwrite = raw_input("File name exists, overwrite? (y/n) ")
+                if overwrite == 'y':
+                    exists = False
+                continue
 
-# define padding function
-def pad(array, length):
-    l = len(array)
-    try:
-        l2 = len(array[0])
-        print("length", l2)
-        padded_array = np.concatenate((np.zeros((length-l,l2)), array))
-    except TypeError:
-        try:
-            padded_array = np.concatenate((np.zeros((length-l,)), array))
-        except ValueError:
-            raise ValueError("Array cannot be padded to shorter length")
-    except ValueError:
-        raise ValueError("Array cannot be padded to shorter length")
-    return padded_array
-
+        model_json = training.model.to_json()
+        open(model_string + '.json', 'w').write(model_json)
+        training.model.save_weights(model_string + '_weights.h5')
+        hist = training.trainings_history
+        trainings_history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+        pickle.dump(trainings_history, open(model_string + '.history', 'wb'))
+    return
 
 def max_length(N):
     """
