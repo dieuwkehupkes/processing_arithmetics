@@ -183,6 +183,7 @@ class mathExpression(Tree):
         # return arrays
         intermediate_results = []
         brackets = []
+        subtracting_list = []
 
         symbols = self.iterate()
 
@@ -214,6 +215,7 @@ class mathExpression(Tree):
 
             intermediate_results.append(result)
             brackets.append(bracket_stack)
+            subtracting_list.append(subtracting)
 
         if return_sequences:
             return intermediate_results, brackets
@@ -257,8 +259,8 @@ class mathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally = self.solveLocally(return_sequences=True)
-        sequences_recursively = self.solveRecursively(return_sequences=True)
+        intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
+        intermediate_recursively, stack_recursively = self.solveRecursively(return_sequences=True)
 
         self.targets = {}
 
@@ -267,12 +269,17 @@ class mathExpression(Tree):
         grammatical[-1] = [1]
         self.targets['grammatical'] = grammatical
 
-
         # intermediate outcomes local computation
         self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
-        # TODO introduce more!!
+        # subtracting
+        self.targets['subtracting'] = subtracting
 
+        # intermediate outcomes recursive computation
+        self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
+
+        # element on top of stack
+        self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
 
 
     def iterate(self):
