@@ -3,6 +3,7 @@ import numpy as np
 import operator
 from nltk import Tree
 import random
+import copy
 import re
 
 def parse_language(language_str):
@@ -132,6 +133,8 @@ class mathExpression(Tree):
         Solve expression recursively.
         """
 
+        print(self)
+
         stack = []
         op = operator.add
         cur = 0
@@ -160,7 +163,13 @@ class mathExpression(Tree):
             else:
                 # number is digit
                 cur = op(cur, int(symbol))
-            stack_list.append(stack)
+            # store state
+
+            if stack == []:
+                stack_list.append([(-12345, -12345)])     # empty stack representation
+            else:
+                stack_list.append(copy.copy(stack))
+
             intermediate_results.append(cur)
 
         assert len(stack) == 0, "expression not grammatical"
@@ -218,7 +227,7 @@ class mathExpression(Tree):
             subtracting_list.append(subtracting)
 
         if return_sequences:
-            return intermediate_results, brackets
+            return intermediate_results, brackets, subtracting_list
         
         else:
             return result
@@ -279,7 +288,16 @@ class mathExpression(Tree):
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
 
         # element on top of stack
+        print(stack_recursively)
         self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
+
+
+    def print_all_targets(self):
+        """
+        List all possible targets
+        """
+        for target in self.targets:
+            print(target)
 
 
     def iterate(self):
@@ -291,9 +309,16 @@ class mathExpression(Tree):
 
 
 if __name__ == '__main__':
-    m = mathTreebank()
     ops = ['+','-']
     digits = np.arange(-5,5)
+    languages = {'L4':1}
+    m = mathTreebank(languages=languages, digits=digits)
+    for expression, answer in m.examples:
+        expression.get_targets()
+        print(expression)
+        for target in expression.targets:
+            print("\n%s: %s" % (target, expression.targets[target]))
+    exit()
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
