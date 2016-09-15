@@ -680,6 +680,15 @@ class Probing(Training):
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
+        X_padded, Y = Probing.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=classifiers)
+
+        return X_padded, Y
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to, classifiers):
+        """
+        Generate test data from a mathTreebank object.
+        """
         # create dictionary with outputs
         X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
 
