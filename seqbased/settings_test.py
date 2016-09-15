@@ -1,18 +1,21 @@
 # imports
 from keras.layers import SimpleRNN, GRU, LSTM
 from auxiliary_functions import max_length
-from architectures import A1, A4
+from architectures import A1, A4, Probing
 from collections import OrderedDict
 import numpy as np
 
 
-architecture = A1
-prefs = 'models/SRN_A1_1', 'models/SRN_A1_2', 'models/SRN_A1_3', 'models/SRN_A1_4'
+architecture = Probing
+# prefs = 'models/GRU_A1_1', 'models/GRU_A1_2'
+prefs = 'test',
+dmap = 'models/dmap'
+classifiers = ['grammatical', 'intermediate_locally']
 
 # SETTINGS OF NETWORK
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
 loss = 'mse'            # loss function
-metrics = ['mean_squared_prediction_error']         # metrics to be monitored
+metrics = ['mean_squared_prediction_error', 'binary_accuracy']         # metrics to be monitored
 
 
 # optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
@@ -31,6 +34,8 @@ L_right = [('L1_right',500), ('L2_right',500), ('L3_right',500), ('L4_right',150
 L_test = L + L_left + L_right
 
 L_test = [('L1',5000), ('L2',5000), ('L3',5000), ('L5',10000), ('L6',10000), ('L7', 10000), ('L9', 10000), ('L9_left',15000)]
+
+L_test = [('L2', 200), ('L3', 200)]
 
 test_sets = OrderedDict(L_test)
 test_separately = True
