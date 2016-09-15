@@ -38,7 +38,7 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
             elif isinstance(item, tuple):
                 name, treebank = item
                 assert isinstance(treebank, mathTreebank)
-                X_val, Y_val = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=maxlen)
+                X_val, Y_val = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=maxlen, classifiers=classifiers)
                 test_data.append((name, X_val, Y_val))
 
 
@@ -49,9 +49,9 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
     metrics = model.metrics_names
     test_results = dict([(metric, OrderedDict()) for metric in metrics])
     for name, X_test, Y_test in test_data:
+        acc = model.evaluate(X_test, Y_test, verbose=0)
         if print_results:
             print("Accuracy for %s\t" % name, end=" ")
-            acc = model.evaluate(X_test, Y_test, verbose=0)
             print('\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))]))
         # store test results
         for i in xrange(len(acc)):
