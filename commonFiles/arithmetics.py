@@ -117,6 +117,16 @@ class mathExpression(Tree):
         """
         return eval(self.__str__())
 
+    def toString(self, format='infix'):
+        if len(self) > 1:
+            children = [child.stringify(format) for child in self]
+            if format=='infix': return '( ' + ' '.join(children) + ' )'
+            else:
+                childS = '( ' + ' '.join([children[0],children[2]]) + ' )'
+                if format == 'prefix': return children[1] +' ' +childS
+                elif format == 'postfix': return  childS +' '+children[1]
+        else: return str(self[0])
+
     def __str__(self):
         """
         Return string representation of tree.
