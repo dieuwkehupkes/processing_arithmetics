@@ -11,13 +11,12 @@ def evaluate(theta, testData, sample=1):
   n=0
   examples = random.sample(testData,int(sample*len(testData)))
   for (nw, target) in examples:
-    performance.append(nw.evaluate(theta, target, sample, True))
+    performance.append(nw.evaluate(theta, target, True))
     try:
-      prediction = nw.predict(theta, None, False, False)
-      if prediction == target: true += 1
+      prediction = nw.predict(theta, activate = False, verbose = False)
+      if str(prediction) == str(target): true += 1
       n+=1
-    except:
-      continue
+    except:  continue
   return sum(performance)/len(performance), true/len(examples)
 
 
@@ -30,32 +29,34 @@ def storeTheta(theta, outFile):
   except: True #file did not exist, don't bother
   print '\tWrote theta to file: ',outFile
 
-def alternate(theta, datasets, outDir, hyperParams, alt, n=5):
+def alternate(theta, datasets, outDir, hyperParams, alt, n=5, names=None):
+  if names is not None: assert len(names)==len(alt)
+  else: names=['']*len(alt)
   assert len(datasets) == len(alt)
   assert len(hyperParams) == len(alt)
   counters = [0]*len(alt)
   histGrad = theta.gradient()
-  kinds = ['training', 'heldout', 'test']
   outFile = os.path.join(outDir, 'initial' + '.theta.pik')
   storeTheta(theta, outFile)
 
-  for phase, (traintb, heldouttb, testtb) in enumerate(datasets):
-    for i, tb in enumerate([traintb, heldouttb, testtb]):
-      tb.evaluate(theta, kinds[i])
+
+  for phase, dataset in enumerate(datasets):
+    print 'Evaluating',names[phase]
+    [tb.evaluate(theta, name=kind) for kind, tb in dataset.iteritems()]
 
   for iteration in range(n):
-    for phase, (traintb, heldouttb, testtb) in enumerate(datasets):
-      plainTrain(traintb, heldouttb, theta, hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase], histGrad=histGrad)
+    for phase, dataset in enumerate(datasets):
+      print 'Training phase', names[phase]
+      plainTrain(dataset['train'],dataset['heldout'], theta, hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase], histGrad=histGrad)
       outFile = os.path.join(outDir,'phase'+str(phase)+'startEpoch'+str(counters[phase])+'.theta.pik')
       storeTheta(theta, outFile)
-      for i, tb in enumerate([traintb, heldouttb, testtb]):
-        tb.evaluate(theta, kinds[i])
+      print 'Evaluation phase', names[phase]
+      [tb.evaluate(theta, name=kind) for kind, tb in dataset.iteritems()]
       counters[phase]+=alt[phase]
 
 
 
 def plainTrain(tTreebank, hTreebank, theta, hyperParams, nEpochs, nStart = 0, histGrad = None):
-  print 'Start of training phase'
   hData = hTreebank.getExamples()
   tData = tTreebank.getExamples()
 
@@ -74,15 +75,14 @@ def plainTrain(tTreebank, hTreebank, theta, hyperParams, nEpochs, nStart = 0, hi
       minibatch = tData[batch * batchsize:(batch + 1) * batchsize]
       error = trainBatch(theta, grads, minibatch, fixWords=False, fixWeights=False)
       errors.append(error)
-      if batch % 25 == 0:
+      if batch % 50 == 0:
         print '\t\tBatch', batch, ', average error:', error / len(minibatch), ', theta norm:', theta.norm()
 
       # update theta: regularize and apply collected gradients
       theta.regularize(hyperParams['alpha'] / len(minibatch), hyperParams['lambda'])
       theta.add2Theta(grads, hyperParams['alpha'], histGrad)
     loss, acc = evaluate(theta,hData)
-    print '\tTraining loss:', sum(errors)/len(errors), 'heldout loss:',loss, 'heldout accuracy:',acc
-  print 'End of training phase'
+    print '\tTraining loss:', sum(errors)/len(tData), 'heldout loss:',loss, 'heldout accuracy:',acc
 
 
 def trainBatch(theta, grads, examples, fixWords = False,fixWeights=False):
