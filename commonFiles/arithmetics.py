@@ -120,7 +120,7 @@ class mathExpression(Tree):
 
     def toString(self, format='infix'):
         if len(self) > 1:
-            children = [child.stringify(format) for child in self]
+            children = [child.toString(format) for child in self]
             if format=='infix': return '( ' + ' '.join(children) + ' )'
             else:
                 childS = '( ' + ' '.join([children[0],children[2]]) + ' )'
