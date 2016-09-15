@@ -2,14 +2,13 @@ import NN
 import numpy as np
 
 class Predictor(NN.Node):
-  def __init__(self, children):
-    comparison = NN.Node(children, [self], ('comparison',), 'ReLU')
-    NN.Node.__init__(self, [comparison], [], ('predict',))
+  def __init__(self, child):
+    NN.Node.__init__(self, [child], [], ('predict',),'identity')
 
-  def predict(self, theta, activate = True, round = False):
+  def predict(self, theta, activate = True, roundoff = True,verbose = False):
     if activate: self.forward(theta)
-    if not round: return self.a
-    else: return round(self.a)
+    if roundoff: return int(round(self.a[0],0))
+    else: return self.a[0]
 
   def backprop(self, theta, delta, gradient, addOut=False, moveOn=True, fixWords=False, fixWeights=False):
     if fixWeights:  # ignore fixWeights for the classifier weights
@@ -17,17 +16,19 @@ class Predictor(NN.Node):
     NN.Node.backprop(self, theta, delta, gradient, addOut=addOut, moveOn=moveOn, fixWords=fixWords,
                      fixWeights=fixWeights)
 
-  def error(self, theta, target, activate=True):
+  def error(self, theta, target, activate=True, roundoff = False):
     if activate: self.forward(theta)
-    return (target-self.a)**2
+    pred = self.predict(theta,activate=activate, roundoff=roundoff)
+    return (target-pred)**2
 
-  def train(self, theta, gradient, activate, target, fixWords, fixWeights):
+  def train(self, theta, gradient, activate, target, fixWords=False, fixWeights=False):
     if activate: self.forward(theta)
+    delta = -2*(target - self.a)
     # TODO: write appropriate delta message
-    delta = None
+    #delta = None
     self.backprop(theta, delta, gradient, addOut=False, moveOn=True, fixWords=fixWords, fixWeights=fixWeights)
-    error = self.error(theta, target, False)
-    return error
+
+    return self.error(theta, target, False)
 
   def evaluate(self, theta, target, activate=True):
     return self.error(theta,target,activate)
@@ -68,14 +69,14 @@ class Classifier(NN.Node):
     return err
 
   def evaluate(self, theta, target, sample=1, verbose=False):
-    return self.error(theta,target,True)
+    return self.error(theta,target)
 
   def evaluate2(self, theta, children, gold, fixed = True):
     self.replaceChildren(children, fixed)
     loss = self.error(theta,gold,True)
     return loss
 
-  def predict(self,theta,children=None, fixed = True, activate = True):
+  def predict(self,theta,children=None, fixed = True, activate = True, verbose = False):
     if children is not None: self.replaceChildren(children, fixed)
     if activate: self.forward(theta)
     return self.labels[self.a.argmax(axis=0)]
@@ -127,7 +128,7 @@ class ClassifierNoComparison(NN.Node):
     loss = self.error(theta,gold,True)
     return loss
 
-  def predict(self,theta,children=None, fixed = True, activate = True):
+  def predict(self,theta,children=None, fixed = True, activate = True, verbose = False):
     if children is not None: self.replaceChildren(children, fixed)
     if activate: self.forward(theta)
     return self.labels[self.a.argmax(axis=0)]

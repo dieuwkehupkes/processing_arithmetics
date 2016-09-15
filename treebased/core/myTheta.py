@@ -44,14 +44,20 @@ class Theta(dict):
         if key[-1]=='B': self[key]=np.zeros_like(self[key])
 
   def extend4Classify(self,nChildren, nClasses,dComparison = 0):
-    if dComparison == 0: 
-	try: dComparison = self.dims['comparison']
-	except: dComparison = (nChildren+1)*self.dims['inside']
-    self.newMatrix(('comparison','M'),None,(dComparison,self.dims['arity']*self.dims['inside']))
-    self.newMatrix(('classify','M'),None,(nClasses,dComparison))
-    self.newMatrix(('comparison','B'),None,(dComparison,))
-    self.newMatrix(('classify','B'),None,(nClasses,))
+    if dComparison == 0:
+      try: dComparison = self.dims['comparison']
+      except: dComparison = (nChildren+1)*self.dims['inside']
+      self.newMatrix(('comparison','M'),None,(dComparison,nChildren*self.dims['inside']))
+      self.newMatrix(('classify','M'),None,(nClasses,dComparison))
+      self.newMatrix(('comparison','B'),None,(dComparison,))
+      self.newMatrix(('classify','B'),None,(nClasses,))
+    elif dComparison < 0:
+        self.newMatrix(('classify', 'M'), None, (nClasses, nChildren*self.dims['inside']))
+        self.newMatrix(('classify', 'B'), None, (nClasses,))
 
+  def extend4Prediction(self):
+    self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
+    self.newMatrix(('predict', 'B'), None, (1,))
 
   def installMatrices(self):
     if self.style == 'classifier':
@@ -201,12 +207,12 @@ class Theta(dict):
   def __iadd__(self, other):
     for key in self:
       if isinstance(self[key],np.ndarray):
-        if th: self[key] = self[key]+other[key]
-        else: self[key] = self[key]+other
+        try: self[key] = self[key]+other[key]
+        except: self[key] = self[key]+other
       elif isinstance(self[key],dict):
         for word in other[key]:
-          if th: self[key][word] = self[key][word]+other[key][word]
-          else: self[key][word] = self[key][word]+other
+          try: self[key][word] = self[key][word]+other[key][word]
+          except: self[key][word] = self[key][word]+other
       else:
         print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
         sys.exit()
