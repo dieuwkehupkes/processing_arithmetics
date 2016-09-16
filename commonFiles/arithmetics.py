@@ -5,6 +5,7 @@ from nltk import Tree
 import random
 import copy
 import re
+from collections import defaultdict
 
 def parse_language(language_str):
     """
@@ -31,6 +32,8 @@ def parse_language(language_str):
         branching = branching.group()
 
     return [n], operators, branching
+
+
 
 class mathTreebank():
     def __init__(self, languages={}, digits=[]):
@@ -90,6 +93,34 @@ class mathTreebank():
             f.write(str(expression)+'\t'+str(answer[1])+'\n')
         f.close()
 
+class indexedTreebank(mathTreebank):
+    def __init__(self, languages={}, digits=[]):
+        self.index={'length':defaultdict(list),'maxDepth':defaultdict(list),'accumDepth':defaultdict(list)}
+        mathTreebank.__init__(self,languages,digits)
+        self.examples = tuple(self.examples)
+        self.updateIndex()
+
+    def updateIndex(self,fromPoint = 0,keys=[]):
+        for i, (tree, label) in enumerate(self.examples[fromPoint:]):
+            for key in (self.index.keys() if keys ==[] else keys):
+              value = tree.property(key)
+              if i+fromPoint not in self.index[key][value]:
+                  self.index[key][value].append(i+fromPoint)
+
+    def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
+                     n=1000, lengths=range(1, 6)):
+        fromPoint = len(self.examples)
+        self.examples+=tuple(self.generateExamples(operators=operators, digits=digits, branching=branching,
+                                               min=min_answ, max=max_answ, n=n, lengths=lengths))
+        self.updateIndex(fromPoint)
+
+    def getExamplesProperty(self, property):
+        if property not in self.index.keys(): raise KeyError('not a valid property in this indexedTreebank')
+        else: return self.index[property]
+
+
+    def getExamplesPropertyValue(self, property,value):
+        return self.getExamplesProperty(property)[value]
 
 class mathExpression(Tree):
     def __init__(self, length, operators, digits, branching=None):
@@ -99,6 +130,7 @@ class mathExpression(Tree):
                 Tree.__init__(self,'digit',[random.choice(digits)])
             except IndexError:
                 Tree.__init__(self, 'operator', [random.choice(operators)])
+            self.maxDepth = 0
         else:
             if branching == 'left':
                 left, right = length-1, 1
@@ -111,6 +143,15 @@ class mathExpression(Tree):
             operator = random.choice(operators)
             children.insert(1, mathExpression(1, [operator], []))
             Tree.__init__(self,operator,children)
+            self.maxDepth = max([child.maxDepth for child in children])+1
+        self.length = length
+
+
+    def property(self, propname):
+        if propname=='length': return self.length
+        elif propname == 'maxDepth': return self.maxDepth
+        elif propname == 'accumDepth': return self.length-1 #number of left brackets, len(re.findall('\(',str(self)))
+        else: raise KeyError(propname+' is not a valid property of mathExpression')
 
     def solve(self):
         """
@@ -135,7 +176,7 @@ class mathExpression(Tree):
         if len(self) > 1:
             return '( '+' '.join([str(child) for child in self])+' )'
         else:
-            return self[0]
+            return str(self[0])
 
 
     def solveRecursively(self, return_sequences=False):
