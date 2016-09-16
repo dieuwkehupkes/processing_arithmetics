@@ -68,7 +68,7 @@ class CompareClassifyTB(TB):
       confusion = defaultdict(Counter)
       for nw, target in self.getExamples(n):
         error += nw.evaluate(theta, target)
-        prediction = nw.predict(theta, None, False, False)
+        prediction = nw.predict(theta, False, False)
         confusion[target][prediction] += 1
         if prediction == target: true += 1
         else:

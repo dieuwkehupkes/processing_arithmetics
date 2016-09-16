@@ -8,6 +8,7 @@ import core.myTheta as myTheta
 import core.trainingRoutines as tr
 import argparse
 import sys
+import copy
 import core.gradient_check as check
 
 
@@ -23,6 +24,13 @@ def install(thetaFile, d, noComparison, predictH):
     with open(thetaFile, 'rb') as f:
       theta = pickle.load(f)
     print 'initialized theta from file:', thetaFile
+    if noComparison and ('comparison','M') in theta.keys():
+      theta.extend4Classify(2, 3, 3 * d)
+      #theta.newMatrix(('classify','M'))
+      #theta.newMatrix(('classify', 'B'))
+    if not noComparison and ('comparison', 'M') not in theta.keys():
+      theta.extend4Classify(2, 3, 3 * d)
+
   except:
     print 'initializing theta from scratch'
     dims = {'inside': d, 'outside': d, 'word': d, 'maxArity': 3, 'arity': 2}
@@ -48,46 +56,53 @@ def main(args):
   embnames = [('word',)]
 
 
-  hyperParamsCompare = hyperParams.copy()
-  hyperParamsPredict = hyperParams.copy()
-  hyperParamsPredict['tofix']+=compositionnames+embnames
+  hyperParamsCompare = copy.deepcopy(hyperParams)
+  hyperParamsPredict = copy.deepcopy(hyperParams)
+
 
   theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'],predictH=True)
+  datasets = [compareData, predictData]
+  names = ['compare expressions', 'scalarprediction']
+
+  for k, dataset in zip (names,datasets):
+    print 'Evaluating initial theta on', k
+    for name, d in dataset.iteritems():
+      d.evaluate(theta, name)
+
 
   verbose = args['verbose']
   #nw,tar = predictData['train'].examples[0]
   #check.gradientCheck(theta,nw,tar)
 
   if args['kind']=='a1': #train alternating, but only train embeddings/ composition function during comparison training
+    hyperParamsCompare['tofix'] += compositionnames + embnames
     datasets=[predictData,compareData]
-    hyperParamsPredict['fixEmb'] = True
-    hyperParamsPredict['fixW'] =  True
     hypers = [hyperParamsPredict, hyperParamsCompare]
     phases=[10,5] #number of epochs for either phase
     names = ['scalarprediction','compare expressions']
   elif args['kind'] == 'a2': #train alternating, but only train embeddings/ composition function during prediction training
+    hyperParamsPredict['tofix'] += compositionnames + embnames
     datasets = [compareData,predictData]
-    hyperParamsCompare['fixEmb'] = True
-    hyperParamsCompare['fixW'] = True
     hypers = [hyperParamsCompare,hyperParamsPredict]
     phases = [10, 5]  # number of epochs for either phase
     names = ['compare expressions','scalarprediction']
   elif args['kind'] == 'a3': #train alternating, and train embeddings/ composition function during both training phases
       datasets = [predictData, compareData]
       hypers = [hyperParamsPredict, hyperParamsCompare]
-      phases = [10, 10]  # number of epochs for either phase
+      phases = [3, 3]  # number of epochs for either phase
       names = ['scalarprediction', 'compare expressions']
-
-
   elif args['kind']=='c':
     datasets=[compareData]
     hypers = [hyperParamsCompare]
     phases=[10] #number of epochs per round
     names = ['compare expressions']
-  elif args['kind'] == 's':
-    #hyperParamsPredict['fixEmb'] = True
-    #hyperParamsPredict['fixW'] = True
-
+  elif args['kind'] == 's1': #train scalar prediction but leave embeddings/ composition as is
+    hyperParamsPredict['tofix'] += compositionnames + embnames
+    datasets = [predictData]
+    hypers = [hyperParamsPredict]
+    phases = [2]  # number of epochs per round
+    names = ['scalarprediction']
+  elif args['kind'] == 's2':
     datasets = [predictData]
     hypers = [hyperParamsPredict]
     phases = [2]  # number of epochs per round
@@ -96,17 +111,10 @@ def main(args):
     print 'no kind!',args['kind']
     sys.exit()
 
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
-  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
-  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
-  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
-  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
-  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
 
+
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
+  #predictData['train'].evaluate(theta,'train',n=20, verbose=True)
 
 def mybool(string):
   if string in ['F', 'f', 'false', 'False']: return False

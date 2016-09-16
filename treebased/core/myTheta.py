@@ -152,10 +152,10 @@ class Theta(dict):
         size = self[cat].shape
         self[cat] = np.random.random_sample(size)*.2-.1
 
-  def newMatrix(self, name,M= None, size = (0,0)):
+  def newMatrix(self, name,M= None, size = (0,0), overwrite = True):
     if name in self:
-      return
-
+      if not overwrite: return
+      else: size = self[name].shape
     if M is not None: self[name] = np.copy(M)
     else: self[name] = np.random.random_sample(size)*.2-.1
 

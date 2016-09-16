@@ -27,7 +27,7 @@ def storeTheta(theta, outFile):
   with open(outFile,'wb') as f: pickle.dump(theta,f)
   try: os.remove(outFile+'.back-up')
   except: True #file did not exist, don't bother
-  print '\tWrote theta to file: ',outFile
+  print 'Wrote theta to file: ',outFile
 
 def alternate(theta, datasets, outDir, hyperParams, alt, n=5, names=None,verbose=False):
   if names is not None: assert len(names)==len(alt)
@@ -38,11 +38,6 @@ def alternate(theta, datasets, outDir, hyperParams, alt, n=5, names=None,verbose
   histGrad = theta.gradient()
   outFile = os.path.join(outDir, 'initial' + '.theta.pik')
   storeTheta(theta, outFile)
-
-
-  for phase, dataset in enumerate(datasets):
-    print 'Evaluating',names[phase]
-    [tb.evaluate(theta, name=kind) for kind, tb in dataset.iteritems()]
 
   for iteration in range(n):
     for phase, dataset in enumerate(datasets):
