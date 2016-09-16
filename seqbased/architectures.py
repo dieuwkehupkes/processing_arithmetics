@@ -107,7 +107,7 @@ class Training(object):
         return
 
     @staticmethod
-    def generate_test_data(architecture, languages, dmap, digits, pad_to=None, test_separately=True, classifiers=None):
+    def generate_test_data(architecture, languages, dmap, digits, pad_to=None, test_separately=True, classifiers=None, format='infix'):
         """
         Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
         :param languages:       dictionary mapping language names to numbers
@@ -118,11 +118,11 @@ class Training(object):
         if test_separately:
             test_data = []
             for name, N in languages.items():
-                X, Y = architecture.generate_training_data({name: N}, dmap, digits, classifiers, pad_to=pad_to)
+                X, Y = architecture.generate_training_data({name: N}, dmap, digits, classifiers, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = architecture.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to)
+            X, Y = architecture.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to, format=format)
             name = ', '.join(languages.keys())
             test_data = [(name, X, Y)]
 
@@ -357,7 +357,7 @@ class A1(Training):
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None):
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix'):
         """
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
@@ -370,12 +370,12 @@ class A1(Training):
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
-        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to)
+        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to, format='infix')
 
         return data
 
     @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True):
+    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True, format='infix'):
         """
         Take a dictionary that maps language names to number of sentences and return numpy array
         with test data.
@@ -386,24 +386,24 @@ class A1(Training):
         if test_separately:
             test_data = []
             for name, N in languages.items():
-                X, Y = A1.generate_training_data({name: N}, dmap, digits, pad_to=pad_to)
+                X, Y = A1.generate_training_data({name: N}, dmap, digits, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = A1.generate_training_data(languages, dmap, digits, pad_to=pad_to)
+            X, Y = A1.generate_training_data(languages, dmap, digits, pad_to=pad_to, format=format)
             name = ', '.join(languages.keys())
             test_data = [(name, X, Y)]
 
         return test_data
 
     @staticmethod
-    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None):
+    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
         Generate test data from a mathTreebank object.
         """
         X, Y = [], []
         for expression, answer in treebank.examples:
-            input_seq = [dmap[i] for i in str(expression).split()]
+            input_seq = [dmap[i] for i in expression.toString(format).split()]
             answer = answer
             X.append(input_seq)
             Y.append(answer)
@@ -500,7 +500,7 @@ class A4(Training):
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None):
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix'):
         """
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
@@ -522,7 +522,7 @@ class A4(Training):
         return X_padded, Y
 
     @staticmethod
-    def data_from_treebank(treebanks, dmap, pad_to=None, classifiers=None):
+    def data_from_treebank(treebanks, dmap, pad_to=None, classifiers=None, format='infix'):
         """
         Generate data from mathTreebank object.
         """
@@ -534,8 +534,8 @@ class A4(Training):
         for example1, example2 in zip(treebank1.examples, treebank2.examples):
             expr1, answ1 = example1
             expr2, answ2 = example2
-            input_seq1 = [dmap[i] for i in str(expr1).split()]
-            input_seq2 = [dmap[i] for i in str(expr2).split()]
+            input_seq1 = [dmap[i] for i in expr1.toString(format).split()]
+            input_seq2 = [dmap[i] for i in expr2.toString(format).split()]
             answer = np.zeros(3)
             answer[np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])] = 1
             X1.append(input_seq1)
@@ -553,7 +553,7 @@ class A4(Training):
 
 
     @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=False):
+    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=False, format='infix'):
         """
         Take a dictionary that maps language names to number of sentences and return numpy array
         with test data.
@@ -566,11 +566,11 @@ class A4(Training):
         if test_separately:
             test_data = []
             for name, N in languages.items():
-                X, Y = A4.generate_training_data({name: N}, dmap, digits, pad_to=pad_to)
+                X, Y = A4.generate_training_data({name: N}, dmap, digits, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = A4.generate_training_data(languages, dmap, digits, pad_to=pad_to)
+            X, Y = A4.generate_training_data(languages, dmap, digits, pad_to=pad_to, format=format)
             name = ', '.join(languages.keys())
             test_data = [(name, X, Y)]
 
@@ -674,19 +674,28 @@ class Probing(Training):
         self.trainings_history = callbacks[0]
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, classifiers, pad_to=None):
+    def generate_training_data(languages, dmap, digits, classifiers, pad_to=None, format='infix'):
 
         # generate and shuffle examples
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
+        X_padded, Y = Probing.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=classifiers, format=format)
+
+        return X_padded, Y
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to, classifiers, format='infix'):
+        """
+        Generate test data from a mathTreebank object.
+        """
         # create dictionary with outputs
         X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
 
         # loop over examples
         for expression, answer in treebank.examples:
             expression.get_targets()
-            input_seq = [dmap[i] for i in str(expression).split()]
+            input_seq = [dmap[i] for i in expression.toString(format).split()]
             X.append(input_seq)
             for classifier in classifiers:
                 target = expression.targets[classifier]
@@ -701,7 +710,7 @@ class Probing(Training):
         return X_padded, Y
 
     @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to, test_separately, classifiers):
+    def generate_test_data(languages, dmap, digits, pad_to, test_separately, classifiers, format='infix'):
         """
         Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
         :param languages:       dictionary mapping language names to numbers
@@ -712,11 +721,11 @@ class Probing(Training):
         if test_separately:
             test_data = []
             for name, N in languages.items():
-                X, Y = Probing.generate_training_data(languages={name: N}, dmap=dmap, digits=digits, pad_to=pad_to, classifiers=classifiers)
+                X, Y = Probing.generate_training_data(languages={name: N}, dmap=dmap, digits=digits, pad_to=pad_to, classifiers=classifiers, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = Probing.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to)
+            X, Y = Probing.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to, format=format)
             name = ', '.join(languages.keys())
             test_data = [(name, X, Y)]
 
