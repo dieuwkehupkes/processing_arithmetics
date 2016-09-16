@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, '../commonFiles')
 import arithmetics
 from collections import defaultdict, Counter
-
+import re
 
 class TB():
   def __init__(self, examples):
@@ -56,12 +56,12 @@ class CompareClassifyTB(TB):
       if la < ra: label = '<'
       elif la > ra: label = '>'
       else: label = '='
-      if self.noComp: classifier = cl.ClassifierNoComparison([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
-      else: classifier = cl.Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
+      if self.noComp: classifier = cl.ClassifierNoComparison([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels)
+      else: classifier = cl.Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels)
       examples.append((classifier,label))
     return examples
 
-  def evaluate(self, theta, name='', n=0):
+  def evaluate(self, theta, name='', n=0, verbose=False):
       if n == 0: n = len(self.examples)
       error = 0.0
       true = 0.0
@@ -71,6 +71,8 @@ class CompareClassifyTB(TB):
         prediction = nw.predict(theta, None, False, False)
         confusion[target][prediction] += 1
         if prediction == target: true += 1
+        else:
+          if verbose: print 'wrong prediction:', prediction,'target:',target
       accuracy = true / n
       loss = error / n
       print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
@@ -78,12 +80,12 @@ class CompareClassifyTB(TB):
       print confusionS(confusion, self.labels)
 
 class ScalarPredictionTB(TB):
-  def __init__(self, examples):
-    self.examples = self.convertExamples(examples)
-  def convertExamples(self,items):
+  def __init__(self, examples, hiddenLayer = False):
+    self.examples = self.convertExamples(examples, hiddenLayer)
+  def convertExamples(self,items, hiddenLayer):
     examples = []
     for tree,label in items:
-      predictor = cl.Predictor(myRNN.RNN(tree).root)
+      predictor = cl.Predictor(myRNN.RNN(tree).root, hiddenLayer=hiddenLayer)
       examples.append((predictor,label))
     return examples
 
@@ -91,13 +93,15 @@ class ScalarPredictionTB(TB):
     if n == 0: n = len(self.examples)
     sse = 0.0
     sspe = 0.0
-    true =0.
+    true =0.0
     for nw, target in self.getExamples(n):
       pred = nw.predict(theta,roundoff=True)
       sse += nw.error(theta, target, activate=False, roundoff = False)
       sspe += nw.error(theta, target, activate=False, roundoff = True)
       if target==pred: true +=1
-      if verbose: print ('right' if target==pred else 'wrong'), 'prediction:' , pred, 'target:', target, 'error:', nw.error(theta, target, activate=False, roundoff = True),'('+str(nw.error(theta, target, activate=False, roundoff = False))+')'
+      if verbose:
+        length = (len(str(nw).split(' '))+3)/4
+        print 'length:',length,('right' if target==pred else 'wrong'), 'prediction:' , pred, 'target:', target, 'error:', nw.error(theta, target, activate=False, roundoff = True),'('+str(nw.error(theta, target, activate=False, roundoff = False))+')'
     mse=sse/n
     accuracy = true / n
     mspe = sspe / n
@@ -106,8 +110,15 @@ class ScalarPredictionTB(TB):
 
 
 def getTBs(digits, operators, predict = False, noComparison = False, split = 0.1):
-  languages_train = {'L1': 10000, 'L2': 10000, 'L4': 10000, 'L6': 10000}
+  #languages_train = {'L1': 30000, 'L2': 30000, 'L4': 30000, 'L6': 30000}
+  # languages_train = {'L1':500,'L2':500}
+  # languages_test = {'L1': 50,'L2':50}
+
+  languages_train = {'L1': 3000, 'L2': 3000, 'L4': 3000, 'L6': 3000}
   languages_test = {'L3': 400, 'L5': 400, 'L7': 400}
+  print 'Training languages:', str(languages_train)
+  print 'Testing languages:', str(languages_test)
+
 
   trainData = arithmetics.mathTreebank(languages_train, digits)
   testData = arithmetics.mathTreebank(languages_test, digits)

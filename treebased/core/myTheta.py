@@ -44,20 +44,30 @@ class Theta(dict):
         if key[-1]=='B': self[key]=np.zeros_like(self[key])
 
   def extend4Classify(self,nChildren, nClasses,dComparison = 0):
-    if dComparison == 0:
-      try: dComparison = self.dims['comparison']
-      except: dComparison = (nChildren+1)*self.dims['inside']
+    if dComparison < 0:
+        self.newMatrix(('classify', 'M'), None, (nClasses, nChildren*self.dims['inside']))
+        self.newMatrix(('classify', 'B'), None, (nClasses,))
+    else:
+      if dComparison == 0:
+        try: dComparison = self.dims['comparison']
+        except: dComparison = (nChildren+1)*self.dims['inside']
       self.newMatrix(('comparison','M'),None,(dComparison,nChildren*self.dims['inside']))
       self.newMatrix(('classify','M'),None,(nClasses,dComparison))
       self.newMatrix(('comparison','B'),None,(dComparison,))
       self.newMatrix(('classify','B'),None,(nClasses,))
-    elif dComparison < 0:
-        self.newMatrix(('classify', 'M'), None, (nClasses, nChildren*self.dims['inside']))
-        self.newMatrix(('classify', 'B'), None, (nClasses,))
 
-  def extend4Prediction(self):
-    self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
-    self.newMatrix(('predict', 'B'), None, (1,))
+  def extend4Prediction(self, dHidden = 0):
+    if dHidden<0:
+      self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
+      self.newMatrix(('predict', 'B'), None, (1,))
+    else:
+      if dHidden == 0:
+        try: dHidden = self.dims['hidden']
+        except: dHidden = self.dims['inside']
+      self.newMatrix(('predict', 'M'), None, (1, dHidden))
+      self.newMatrix(('predict', 'B'), None, (1,))
+      self.newMatrix(('predictH', 'M'), None, (dHidden, self.dims['inside']))
+      self.newMatrix(('predictH', 'B'), None, (dHidden,))
 
   def installMatrices(self):
     if self.style == 'classifier':
@@ -149,14 +159,16 @@ class Theta(dict):
     if M is not None: self[name] = np.copy(M)
     else: self[name] = np.random.random_sample(size)*.2-.1
 
-  def regularize(self, alphaDsize, lambdaL2):
+  def regularize(self, alphaDsize, lambdaL2,tofix=[]):
     if lambdaL2==0: return
     for name in self.keys():
+      if name in tofix: continue
       if name[-1] == 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
       else: continue
 
-  def add2Theta(self, gradient, alpha, historicalGradient = None):
+  def add2Theta(self, gradient, alpha, historicalGradient = None,tofix=[]):
     for key in gradient.keys():
+      if key in tofix: continue
       grad = gradient[key]
       if historicalGradient is not None:
         histgrad = historicalGradient[key]
@@ -276,6 +288,12 @@ class Gradient(Theta):
     self.molds = molds
     dict.__setitem__(self,('word',),wordM)
     self.update(kvs)
+
+  def erase(self, key):
+    try: self[key] = np.zeros_like(self[key])
+    except:
+      try: self[key].erase()
+      except: print 'cannot erase', key
 
   def __reduce__(self):
     return(self.__class__,(self.molds,self[('word',)],self.items()))

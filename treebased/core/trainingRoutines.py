@@ -29,7 +29,7 @@ def storeTheta(theta, outFile):
   except: True #file did not exist, don't bother
   print '\tWrote theta to file: ',outFile
 
-def alternate(theta, datasets, outDir, hyperParams, alt, n=5, names=None):
+def alternate(theta, datasets, outDir, hyperParams, alt, n=5, names=None,verbose=False):
   if names is not None: assert len(names)==len(alt)
   else: names=['']*len(alt)
   assert len(datasets) == len(alt)
@@ -50,8 +50,9 @@ def alternate(theta, datasets, outDir, hyperParams, alt, n=5, names=None):
       plainTrain(dataset['train'],dataset['heldout'], theta, hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase], histGrad=histGrad)
       outFile = os.path.join(outDir,'phase'+str(phase)+'startEpoch'+str(counters[phase])+'.theta.pik')
       storeTheta(theta, outFile)
-      print 'Evaluation phase', names[phase]
-      [tb.evaluate(theta, name=kind) for kind, tb in dataset.iteritems()]
+      for ephase, edataset in enumerate(datasets):
+        print 'Evaluation phase', names[ephase]
+        [tb.evaluate(theta, name=kind,verbose=verbose) for kind, tb in edataset.iteritems()]
       counters[phase]+=alt[phase]
 
 
@@ -73,19 +74,22 @@ def plainTrain(tTreebank, hTreebank, theta, hyperParams, nEpochs, nStart = 0, hi
     for batch in xrange((len(tData) + batchsize - 1) // batchsize):
       grads = theta.gradient()
       minibatch = tData[batch * batchsize:(batch + 1) * batchsize]
-      error = trainBatch(theta, grads, minibatch, fixWords=False, fixWeights=False)
+      error = trainBatch(theta, grads, minibatch, tofix = hyperParams['tofix'])
       errors.append(error)
       if batch % 50 == 0:
         print '\t\tBatch', batch, ', average error:', error / len(minibatch), ', theta norm:', theta.norm()
 
       # update theta: regularize and apply collected gradients
-      theta.regularize(hyperParams['alpha'] / len(minibatch), hyperParams['lambda'])
-      theta.add2Theta(grads, hyperParams['alpha'], histGrad)
+      theta.regularize(hyperParams['alpha'] / len(minibatch), hyperParams['lambda'], tofix=hyperParams['tofix'])
+
+
+
+      theta.add2Theta(grads, hyperParams['alpha'], histGrad, tofix=hyperParams['tofix'])
     loss, acc = evaluate(theta,hData)
     print '\tTraining loss:', sum(errors)/len(tData), 'heldout loss:',loss, 'heldout accuracy:',acc
 
 
-def trainBatch(theta, grads, examples, fixWords = False,fixWeights=False):
+def trainBatch(theta, grads, examples, tofix=[]):
   error = 0
   if len(examples)>0:
     #print 'done'
@@ -97,9 +101,9 @@ def trainBatch(theta, grads, examples, fixWords = False,fixWeights=False):
       except:
         label = None
       #print 'start training example:', str(nw), label
-      derror = nw.train(theta,grads,activate=True, target = label, fixWords=fixWords, fixWeights=fixWeights)
+      derror = nw.train(theta,grads,activate=True, target = label)
       error+= derror
-      if fixWords: grads[('word',)].erase()
-      #sys.exit()
+      for name in tofix: grads.erase(name) #[name].erase()
+
     grads /= len(examples)
   return error

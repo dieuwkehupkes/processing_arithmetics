@@ -12,7 +12,7 @@ import core.gradient_check as check
 
 
 
-def install(thetaFile, d=0, noComparison = False):
+def install(thetaFile, d, noComparison, predictH):
   digits = [str(w) for w in range(-10, 11)]
   operators = ['+','-']
 
@@ -22,49 +22,91 @@ def install(thetaFile, d=0, noComparison = False):
   try:
     with open(thetaFile, 'rb') as f:
       theta = pickle.load(f)
+    print 'initialized theta from file:', thetaFile
   except:
+    print 'initializing theta from scratch'
     dims = {'inside': d, 'outside': d, 'word': d, 'maxArity': 3, 'arity': 2}
     voc = ['UNKNOWN'] + digits + operators
     grammar = {operator: {'(digit, ' + operator + ', digit)': 5} for operator in operators}
     theta = myTheta.Theta('RNN', dims, grammar, embeddings=None, vocabulary=voc)
     if noComparison: theta.extend4Classify(2,3,-1)
     else: theta.extend4Classify(2,3,3*d)
-    theta.extend4Prediction()
+  if predictH: theta.extend4Prediction()
+  else: theta.extend4Prediction(-1)
   return theta, compareData, predictData
 
 def main(args):
 
   print args
   hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs']}
+  hyperParams['tofix']=[]
+
+
+  classifynames = [('classify', 'M'), ('classify', 'B'),('comparison', 'B'), ('comparison', 'M')]
+  predictnames = [('predict', 'B'),('predict', 'M'), ('predictH', 'M'), ('predictH', 'B')]
+  compositionnames =  [('composition', '  # X#', '(#X#)', 'I', 'M'), ('composition', '#X#', '(#X#)', 'I', 'B'),('composition','#X#', '(#X#, #X#, #X#)', 'I', 'B'),('composition', '#X#', '(#X#, #X#)', 'I', 'B'), ('composition', '#X#', '(#X#, #X#)', 'I', 'M'), ('composition', '#X#', '(#X#, #X#,  # X#)', 'I', 'M')]
+  embnames = [('word',)]
+
+
   hyperParamsCompare = hyperParams.copy()
   hyperParamsPredict = hyperParams.copy()
-  hyperParamsCompare['fixEmb'] = False
-  hyperParamsCompare['fixW'] = False
-  hyperParamsPredict['fixEmb'] = False#True
-  hyperParamsPredict['fixW'] = False#True
+  hyperParamsPredict['tofix']+=compositionnames+embnames
 
-  theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'])
+  theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'],predictH=True)
 
+  verbose = args['verbose']
   #nw,tar = predictData['train'].examples[0]
   #check.gradientCheck(theta,nw,tar)
 
-#  datasets=[predictData,compareData]
-#  hypers = [hyperParamsPredict, hyperParamsCompare]
-#  phases=[10,5] #number of epochs for either phase
-#  names = ['scalarprediction','compare expressions']
+  if args['kind']=='a1': #train alternating, but only train embeddings/ composition function during comparison training
+    datasets=[predictData,compareData]
+    hyperParamsPredict['fixEmb'] = True
+    hyperParamsPredict['fixW'] =  True
+    hypers = [hyperParamsPredict, hyperParamsCompare]
+    phases=[10,5] #number of epochs for either phase
+    names = ['scalarprediction','compare expressions']
+  elif args['kind'] == 'a2': #train alternating, but only train embeddings/ composition function during prediction training
+    datasets = [compareData,predictData]
+    hyperParamsCompare['fixEmb'] = True
+    hyperParamsCompare['fixW'] = True
+    hypers = [hyperParamsCompare,hyperParamsPredict]
+    phases = [10, 5]  # number of epochs for either phase
+    names = ['compare expressions','scalarprediction']
+  elif args['kind'] == 'a3': #train alternating, and train embeddings/ composition function during both training phases
+      datasets = [predictData, compareData]
+      hypers = [hyperParamsPredict, hyperParamsCompare]
+      phases = [10, 10]  # number of epochs for either phase
+      names = ['scalarprediction', 'compare expressions']
 
-  # datasets = [predictData]
-  # hypers = [hyperParamsPredict]
-  # phases = [25]  # number of epochs for either phase
-  # names = ['scalarprediction']
 
-  datasets = [compareData]
-  hypers = [hyperParamsPredict]
-  phases = [25]  # number of epochs for either phase
-  names = ['compare expressions']
+  elif args['kind']=='c':
+    datasets=[compareData]
+    hypers = [hyperParamsCompare]
+    phases=[10] #number of epochs per round
+    names = ['compare expressions']
+  elif args['kind'] == 's':
+    #hyperParamsPredict['fixEmb'] = True
+    #hyperParamsPredict['fixW'] = True
 
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=args['nEpochs'], names=names)
+    datasets = [predictData]
+    hypers = [hyperParamsPredict]
+    phases = [2]  # number of epochs per round
+    names = ['scalarprediction']
+  else:
+    print 'no kind!',args['kind']
+    sys.exit()
+
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
   predictData['train'].evaluate(theta,'train',n=20, verbose=True)
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
+  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
+  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
+  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
+  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
+  predictData['train'].evaluate(theta,'train',n=20, verbose=True)
+
 
 def mybool(string):
   if string in ['F', 'f', 'false', 'False']: return False
@@ -75,6 +117,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train classifier')
  # data:
   parser.add_argument('-exp','--experiment', type=str, help='Identifier of the experiment', required=True)
+  parser.add_argument('-k', '--kind', type=str, help='scalar prediction (sp) or comparison (c) or alternating (a1/a2/a3)', required=True)
   parser.add_argument('-o','--outDir', type=str, help='Output dir to store pickled theta', required=True)
   parser.add_argument('-p','--pars', type=str, default='', help='File with pickled theta', required=False)
   # network hyperparameters:
@@ -86,10 +129,9 @@ if __name__ == "__main__":
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)
   parser.add_argument('-ada','--ada', type=mybool, help='Whether adagrad is used', required=True)
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
-  parser.add_argument('-fw','--fixEmb', type=mybool, default=False, help='Whether the word embeddings are fixed', required=False)
-  parser.add_argument('-fc','--fixW', type=mybool, default=False, help='Whether the composition function is fixed', required=False)
   parser.add_argument('-nc','--noComp', type=mybool, default=True, help='Whether the comparison layer is removed', required=False)
-
+  parser.add_argument('-v', '--verbose', type=mybool, default=False, help='Whether a lot of output is printed',
+                      required=False)
 
   args = vars(parser.parse_args())
 
