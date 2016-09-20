@@ -17,6 +17,10 @@ import random
 class Training(object):
     """
     Give elaborate description
+    functions that need to be implemented:
+        - _build
+        - init (set lossfunction and metrics)
+        - train
     """
     def __init__(self, **kwargs):
         """
@@ -583,6 +587,105 @@ class A4(Training):
         :return: (int) id of recurrent layer
         """
         return 3
+
+class Seq2Seq(Training):
+    """
+    Class to do sequence to sequence training.
+    """
+    def __init__(self):
+        # set loss function and metrics
+        self.loss_function = 'mean_squared_error'
+        self.metrics = ['mean_squared_prediction_error', 'mean_squared_error']
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier=None):
+        """
+        Build model
+        """
+
+        # create input layer
+        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               trainable=True,
+                               mask_zero=self.mask_zero,
+                               name='embeddings')(input_layer)
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         weights=W_recurrent,
+                                         trainable=True,
+                                         return_sequences=True,
+                                         dropout_U=self.dropout_recurrent)(embeddings)
+
+        output = TimeDistributed(Dense(1, activation='linear'), name='output')(recurrent)
+
+        self.model = Model(input=input_layer, output=output)
+
+        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics)
+
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
+        """
+        Fit the model.
+        :param weights_animation:    Set to true to create an animation of the development of the embeddings
+                                        after training.
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+                                        embeddings.
+        """
+        X_train, Y_train = training_data
+
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
+                                            embeddings_id=1)
+
+        # fit model
+        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
+                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
+
+        self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    @staticmethod
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix'):
+
+        # generate and shuffle examples
+        treebank = mathTreebank(languages, digits=digits)
+        random.shuffle(treebank.examples)
+
+        X_padded, Y = Seq2Seq.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=None, format=format)
+
+        return X_padded, Y
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to, classifiers=None, format='infix'):
+        """
+        Generate test data from a mathTreebank object.
+        """
+        # create dictionary with outputs
+        X, Y = [], []
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            expression.get_targets()
+            input_seq = [dmap[i] for i in expression.toString(format).split()]
+            X.append(input_seq)
+            Y.append(expression.targets['intermediate_recursively'])
+
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+        Y_padded = keras.preprocessing.sequence.pad_sequences(Y, maxlen=pad_to)
+
+        return X_padded, Y_padded
+
+    @staticmethod
+    def get_recurrent_layer_id():
+        """
+        return recurrent layer ID
+        :return (int) id of recurrent layer
+        """
+        return 2
+
 
 class Probing(Training):
     """
