@@ -37,13 +37,17 @@ training = settings.architecture()
 
 # GENERATE TRAINING DATA
 X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
-                                       digits=settings.digits, pad_to=settings.maxlen)
+                                       digits=settings.digits, format=settings.format,
+                                       pad_to=settings.maxlen)
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
     # generate validation data if dictionary is provided
     X_val, Y_val = training.generate_training_data(settings.languages_val, dmap=dmap,
-                                                   digits=settings.digits, pad_to=settings.maxlen)
+                                                   digits=settings.digits,
+                                                   classifier=settings.classifiers,
+                                                   format=settings.format,
+                                                   pad_to=settings.maxlen)
     validation_data = X_val, Y_val
     validation_split = 0.0
 
@@ -102,9 +106,14 @@ print_sum(settings)
 
 if settings.languages_test:
     # generate test data
-    test_data = training.generate_test_data(settings.languages_test, dmap=dmap,
+    test_data = training.generate_test_data(settings.languages_test,
+                                            dmap=dmap,
                                             digits=settings.digits,
+                                            classifiers=settings.classifiers,
+                                            format=settings.format,
+                                            test_separately=settings.test_separately,
                                             pad_to=settings.maxlen)
+
     hist = training.trainings_history
 
     print "Accuracy for for training set %s:\t" % \

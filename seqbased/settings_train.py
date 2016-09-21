@@ -1,13 +1,14 @@
 # imports
 from keras.layers import SimpleRNN, GRU, LSTM
 from auxiliary_functions import max_length
-from architectures import A1, A4
+from architectures import A1, A4, Probing, Seq2Seq
 import numpy as np
 
 # network details
-architecture        = A4            # Trainings architecture
+architecture        = Seq2Seq            # Trainings architecture
 recurrent_layer     = GRU   # options: SimpleRNN, GRU, LSTM
-size_hidden         = 5            # size of the hidden layer
+size_hidden         = 15            # size of the hidden layer
+classifiers         = None
 
 # INPUT
 train_embeddings  = True          # set to true for cotraining of embeddings
@@ -34,10 +35,12 @@ dropout_recurrent   = 0.00           # fraction of the inputs to drop for recurr
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 digits                      = np.arange(-10, 11)
 languages_train             = {'L1':3000, 'L2': 3000, 'L4':3000, 'L6':3000}
+format                      = 'infix'
 # languages_val               = {'L4': 500}
-# languages_val              = {'L3': 400, 'L5':400, 'L7':400}
+languages_val              = {'L3': 400, 'L5':400, 'L7':400}
 languages_val               = None
 languages_test              = {'L3': 400, 'L5':400, 'L7':400}
+test_separately             = True
 maxlen                      = max_length(15)
 
 # VISUALISATION AND LOGS
