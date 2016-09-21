@@ -35,7 +35,8 @@ class Training(object):
                        train_classifier=True, train_embeddings=True, 
                        train_recurrent=True,
                        mask_zero=True, dropout_recurrent=0.0,
-                       optimizer='adagrad'):
+                       optimizer='adam',
+                       extra_classifiers=None):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -71,6 +72,7 @@ class Training(object):
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
+        self.classifiers = extra_classifiers
 
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
@@ -379,28 +381,6 @@ class A1(Training):
 
         return data
 
-#     @staticmethod
-#     def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True, format='infix', classifiers=None):
-#         """
-#         Take a dictionary that maps language names to number of sentences and return numpy array
-#         with test data.
-#         :param languages:       dictionary mapping language names to numbers
-#         :param pad_to:          desired length of test sequences
-#         :return:                list of tuples containing test set sames, inputs and targets
-#         """
-#         if test_separately:
-#             test_data = []
-#             for name, N in languages.items():
-#                 X, Y = A1.generate_training_data({name: N}, dmap, digits, pad_to=pad_to, format=format)
-#                 test_data.append((name, X, Y))
-# 
-#         else:
-#             X, Y = A1.generate_training_data(languages, dmap, digits, pad_to=pad_to, format=format)
-#             name = ', '.join(languages.keys())
-#             test_data = [(name, X, Y)]
-# 
-#         return test_data
-
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
@@ -623,7 +603,7 @@ class Seq2Seq(Training):
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix'):
+    def generate_training_data(languages, dmap, digits, classifiers=None, pad_to=None, format='infix'):
 
         # generate and shuffle examples
         treebank = mathTreebank(languages, digits=digits)
@@ -670,47 +650,48 @@ class Probing(Training):
     test what information is extratable from the representations
     the model generates.
     """
-    def __init__(self, classifiers):
+    def __init__(self):
         """
         List with classifiers, create dictionaries with 
         corresponding metrics, loss function, activation functions
         and output sizes.
         """
-        loss = {'grammatical': 'binary_crossentropy',
+        self.loss = {
+                'grammatical': 'binary_crossentropy',
                 'intermediate_locally': 'mean_squared_error',
                 'subtracting':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
-                'top_stack':'mean_squared_error_ignore'
-                }
+                'top_stack':'mean_squared_error_ignore'}
 
-        metrics = {'grammatical': ['binary_accuracy', 'binary_accuracy_ignore0'],
-                   'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
-                   'subtracting': ['binary_accuracy'],
-                   'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
-                   'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
-        activations = {'grammatical':'sigmoid',
-                       'intermediate_locally': 'linear',
-                       'subtracting': 'sigmoid',
-                       'intermediate_recursively':'linear',
-                       'top_stack': 'linear'}
+        self.metrics = {
+                'grammatical': ['binary_accuracy', 'binary_accuracy_ignore0'], 
+                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
+                'subtracting': ['binary_accuracy'],
+                'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
+                'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
 
-        output_size = {'grammatical':1,
-                       'intermediate_locally': 1,
-                       'subtracting':1,
-                       'intermediate_recursively':1,
-                       'top_stack':1}
+        self.activations = {
+                'grammatical':'sigmoid',
+                'intermediate_locally': 'linear',
+                'subtracting': 'sigmoid',
+                'intermediate_recursively':'linear',
+                'top_stack': 'linear'}
 
+        self.output_size = {
+                'grammatical':1,
+                'intermediate_locally': 1,
+                'subtracting':1,
+                'intermediate_recursively':1,
+                'top_stack':1}
 
-        self.loss_functions = dict([(key, loss[key]) for key in classifiers])
-        self.metrics = dict([(key, metrics[key]) for key in classifiers])
-        self.output_size = dict([(key, output_size[key]) for key in classifiers])
-        self.activations = dict([(key, activations[key]) for key in classifiers])
-        self.classifiers = classifiers
 
     def _build(self, W_embeddings, W_recurrent, W_classifier=None):
         """
         Build model with given embeddings and recurren weights.
         """
+
+        # set attributes
+        self.set_attributes()
 
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
@@ -739,7 +720,7 @@ class Probing(Training):
 
         self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model
         :param training data:   should be adictionary containing data fo
@@ -752,6 +733,18 @@ class Probing(Training):
         self.model.fit({'input':X_train}, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]
+
+    def set_attributes(self):
+        """
+        Set the classifiers that should be trained and their
+        corresponding lossfunctions, metrics and output sizes
+        as attributes to the class.
+        """
+        self.loss_functions = dict([(key, self.loss[key]) for key in self.classifiers])
+        self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers])
+        self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
+        self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
+
 
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers, pad_to=None, format='infix'):
@@ -788,28 +781,5 @@ class Probing(Training):
         for output in Y:
             Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
         return X_padded, Y
-
-    @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to, test_separately, classifiers, format='infix'):
-        """
-        Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
-        :param languages:       dictionary mapping language names to numbers
-        :param pad_to:          desired length of test sentences
-        :return:                dictionary mapping classifier names to targets
-        """
-
-        if test_separately:
-            test_data = []
-            for name, N in languages.items():
-                X, Y = Probing.generate_training_data(languages={name: N}, dmap=dmap, digits=digits, pad_to=pad_to, classifiers=classifiers, format=format)
-                test_data.append((name, X, Y))
-
-        else:
-            X, Y = Probing.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to, format=format)
-            name = ', '.join(languages.keys())
-            test_data = [(name, X, Y)]
-
-        return test_data
-
 
 

@@ -36,8 +36,10 @@ if settings.pretrained_model:
 training = settings.architecture()
 
 # GENERATE TRAINING DATA
+# TODO rm classifiers from this func
 X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
                                        digits=settings.digits, format=settings.format,
+                                       classifiers=settings.classifiers,
                                        pad_to=settings.maxlen)
 
 # GENERATE VALIDATION DATA
@@ -84,7 +86,8 @@ else:
                             train_embeddings=settings.train_embeddings,
                             train_recurrent=settings.train_recurrent,
                             mask_zero=settings.mask_zero,
-                            optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
+                            optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent,
+                            extra_classifiers=settings.classifiers)
 
 
 training.train(training_data=(X, Y), validation_data=validation_data, validation_split=validation_split,
@@ -118,14 +121,15 @@ if settings.languages_test:
 
     hist = training.trainings_history
 
-    print "Accuracy for for training set %s:\t" % \
-          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
-    print "Accuracy for for validation set %s:\t" % \
-          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
-    for name, X, Y in test_data:
-        acc = training.model.evaluate(X, Y)
-        print "Accuracy for for test set %s:" % name,
-        print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+    # TODO hier gaat iets mis met printen bij probing
+    # print "Accuracy for for training set %s:\t" % \
+    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
+    # print "Accuracy for for validation set %s:\t" % \
+    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+    # for name, X, Y in test_data:
+    #     acc = training.model.evaluate(X, Y)
+    #     print "Accuracy for for test set %s:" % name,
+    #     print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
 
 # save model
 if settings.save_model:
