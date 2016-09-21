@@ -50,13 +50,22 @@ def evaluate(model, data, name):
   results = model.evaluate(data[0], data[1])
   print('Evaluation on '+name+' data ('+str(len(data[0]))+' examples)')
   print('\t'.join(['%s: %f' % (i,j) for i, j in zip(model_metrics,  results)]))
-  saveModel(model, 'model01')  
+  dataPerLength = defaultdict(list)
+  for item, label, string in zip(data):
+    expressionL = (string.split()+3)/4
+    dataPerLength[expressionL].append((item,label))
+  perL = {}
+  for length, data in dataPerLength.iteritems():
+    results=model.evaluate(*zip(data), verbose = 0)
+    perL[length]=results[model_metrics.index('mean_squared_prediction_error')]
+  print('\tMSPE per length: '+ str(perL))
 
 def main():
   trainData,testData = getData()
   model=defineModel()
   trainModel(model,trainData)
+  saveModel(model, 'model01')
   evaluate(model,testData,'test')
-  evaluate(model,trainData,'test')
+  evaluate(model,trainData,'train')
 
 if __name__ == "__main__": main()
