@@ -3,7 +3,7 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 from generate_training_data import generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
-from architectures import A1, A4
+from architectures import Training
 import re
 
 parser = argparse.ArgumentParser()
@@ -36,8 +36,10 @@ if settings.pretrained_model:
 training = settings.architecture()
 
 # GENERATE TRAINING DATA
+# TODO rm classifiers from this func
 X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
                                        digits=settings.digits, format=settings.format,
+                                       classifiers=settings.classifiers,
                                        pad_to=settings.maxlen)
 
 # GENERATE VALIDATION DATA
@@ -84,7 +86,8 @@ else:
                             train_embeddings=settings.train_embeddings,
                             train_recurrent=settings.train_recurrent,
                             mask_zero=settings.mask_zero,
-                            optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent)
+                            optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent,
+                            extra_classifiers=settings.classifiers)
 
 
 training.train(training_data=(X, Y), validation_data=validation_data, validation_split=validation_split,
@@ -102,28 +105,29 @@ if settings.plot_embeddings is True:
 if settings.plot_esp:
     training.plot_esp()
 
-print_sum(settings)
-
 if settings.languages_test:
     # generate test data
-    test_data = training.generate_test_data(settings.languages_test,
-                                            dmap=dmap,
-                                            digits=settings.digits,
-                                            classifiers=settings.classifiers,
-                                            format=settings.format,
-                                            test_separately=settings.test_separately,
-                                            pad_to=settings.maxlen)
+    test_data = Training.generate_test_data(
+            settings.architecture,
+            settings.languages_test,
+            dmap=dmap,
+            digits=settings.digits,
+            classifiers=settings.classifiers,
+            format=settings.format,
+            test_separately=settings.test_separately,
+            pad_to=settings.maxlen)
 
     hist = training.trainings_history
 
-    print "Accuracy for for training set %s:\t" % \
-          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
-    print "Accuracy for for validation set %s:\t" % \
-          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
-    for name, X, Y in test_data:
-        acc = training.model.evaluate(X, Y)
-        print "Accuracy for for test set %s:" % name,
-        print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+    # TODO hier gaat iets mis met printen bij probing, pas dit aan
+    # print "Accuracy for for training set %s:\t" % \
+    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
+    # print "Accuracy for for validation set %s:\t" % \
+    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+    # for name, X, Y in test_data:
+    #     acc = training.model.evaluate(X, Y)
+    #     print "Accuracy for for test set %s:" % name,
+    #     print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
 
 # save model
 if settings.save_model:
