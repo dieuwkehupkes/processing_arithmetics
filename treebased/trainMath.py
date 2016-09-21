@@ -49,7 +49,7 @@ def install(thetaFile, d, noComparison, predictH):
 def main(args):
 
   print args
-  hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs']}
+  hyperParams={k:args[k] for k in ['bSize']}
   hyperParams['tofix']=[]
 
 
@@ -61,8 +61,10 @@ def main(args):
 
 
   theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'],predictH=args['predictH'])
-  if args['ada']: optimizer = opt.Adagrad(theta,)
-  else: optimizer = opt.SGD(theta,)
+  if args['optimizer']=='adagrad': optimizer = opt.Adagrad(theta)#, lambdaL2 = args['lambda'], lr=args['alpha'])
+  if args['optimizer'] == 'adam':  optimizer = opt.Adam(theta)
+  if args['optimizer'] == 'adagrad':  optimizer = opt.SGD(theta)
+  else: print 'not a valid choice for operator:',args['optimizer']
 
   datasets = [compareData, predictData]
   names = ['compare expressions', 'scalarprediction']
@@ -138,7 +140,7 @@ if __name__ == "__main__":
   parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
   parser.add_argument('-l','--lambda', type=float, help='Regularization parameter lambdaL2', required=True)
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)
-  parser.add_argument('-ada','--ada', type=mybool, help='Whether adagrad is used', required=True)
+  parser.add_argument('-opt','--optimizer', type=str, choices = ['sgd','adagrad','adam'], help='Optimizer to be used', required=True)
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
   parser.add_argument('-nc','--noComp', type=mybool, default=True, help='Whether the comparison layer is removed', required=False)
   parser.add_argument('-ph', '--predictH', type=mybool, default=True, help='Whether there is a hidden layer for scalar prediction',
