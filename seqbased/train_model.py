@@ -105,8 +105,6 @@ if settings.plot_embeddings is True:
 if settings.plot_esp:
     training.plot_esp()
 
-print_sum(settings)
-
 if settings.languages_test:
     # generate test data
     test_data = Training.generate_test_data(
@@ -121,7 +119,7 @@ if settings.languages_test:
 
     hist = training.trainings_history
 
-    # TODO hier gaat iets mis met printen bij probing
+    # TODO hier gaat iets mis met printen bij probing, pas dit aan
     # print "Accuracy for for training set %s:\t" % \
     #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
     # print "Accuracy for for validation set %s:\t" % \

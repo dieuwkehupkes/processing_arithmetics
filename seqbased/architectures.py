@@ -135,6 +135,26 @@ class Training(object):
 
         return test_data
 
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
+              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
+        """
+        Fit the model.
+        :param weights_animation:    Set to true to create an animation of the development of the embeddings
+                                        after training.
+        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+                                        embeddings.
+        """
+        X_train, Y_train = training_data
+
+        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id())
+
+        # fit model
+        self.model.fit(X_train, Y_train, validation_data=validation_data,
+                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       callbacks=callbacks, verbose=verbosity, shuffle=True)
+
+        self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
     def model_summary(self):
         print(self.model.summary())
 
@@ -341,28 +361,6 @@ class A1(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
-              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
-        """
-        Fit the model.
-        :param weights_animation:    Set to true to create an animation of the development of the embeddings
-                                        after training.
-        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
-                                        embeddings.
-        """
-        X_train, Y_train = training_data
-
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
-                                            embeddings_id=1)
-
-        # fit model
-        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
-                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
-                       callbacks=callbacks, verbose=verbosity, shuffle=True)
-
-        self.trainings_history = callbacks[0]            # set trainings_history as attribute
-
     @staticmethod
     def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
         """
@@ -396,7 +394,19 @@ class A1(Training):
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
-        return X_padded, np.array(Y)
+        X = {'input':X_padded}
+        Y = {'output':np.array(Y)}
+
+        return X, Y
+
+    @staticmethod
+    def get_embeddings_layer_id():
+        """
+        Return embeddings layer ID
+        :return: (int) id of embeddings layer
+        """
+        return 1
+
 
     @staticmethod
     def get_recurrent_layer_id():
@@ -458,32 +468,6 @@ class A4(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-        # print(self.model.summary())
-
-
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
-              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
-        """
-        Fit the model.
-        :param embeddings_animation:    Set to true to create an animation of the development of the embeddings
-                                        after training.
-        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
-                                        embeddings.
-        """
-        X_train, Y_train = training_data
-
-        X1_train, X2_train = X_train
-
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=3,
-                                            embeddings_id=2)
-
-        # fit model
-        self.model.fit([X1_train, X2_train], {'output': Y_train}, validation_data=None,
-                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
-                       callbacks=callbacks, verbose=verbosity, shuffle=True)
-
-        self.trainings_history = callbacks[0]            # set trainings_history as attribute
-
     @staticmethod
     def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
         """
@@ -503,6 +487,7 @@ class A4(Training):
         treebanks = (treebank1, treebank2)
 
         X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None)
+
 
         return X_padded, Y
 
@@ -532,9 +517,18 @@ class A4(Training):
         X1_padded = keras.preprocessing.sequence.pad_sequences(X1, dtype='int32', maxlen=pad_to)
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
-        X_padded = [X1_padded, X2_padded]
+        X_padded = {'input1':X1_padded, 'input2': X2_padded}
+        Y = {'output': np.array(Y)}
 
-        return X_padded, np.array(Y)
+        return X_padded, Y
+
+    @staticmethod
+    def get_embeddings_layer_id():
+        """
+        Return embeddings layer ID
+        :return: (int) id of embeddings layer
+        """
+        return 2
 
 
     @staticmethod
@@ -582,26 +576,6 @@ class Seq2Seq(Training):
 
         self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics)
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
-        """
-        Fit the model.
-        :param weights_animation:    Set to true to create an animation of the development of the embeddings
-                                        after training.
-        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
-                                        embeddings.
-        """
-        X_train, Y_train = training_data
-
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=2,
-                                            embeddings_id=1)
-
-        # fit model
-        self.model.fit({'input': X_train}, {'output': Y_train}, validation_data=validation_data,
-                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
-                       callbacks=callbacks, verbose=verbosity, shuffle=True)
-
-        self.trainings_history = callbacks[0]            # set trainings_history as attribute
-
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers=None, pad_to=None, format='infix'):
 
@@ -609,9 +583,9 @@ class Seq2Seq(Training):
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
-        X_padded, Y = Seq2Seq.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=None, format=format)
+        X, Y = Seq2Seq.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=None, format=format)
 
-        return X_padded, Y
+        return X, Y
 
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to, classifiers=None, format='infix'):
@@ -633,7 +607,20 @@ class Seq2Seq(Training):
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
         Y_padded = keras.preprocessing.sequence.pad_sequences(Y, maxlen=pad_to)
 
-        return X_padded, Y_padded
+        X = {'input': X_padded}
+        Y = {'output': Y_padded}
+
+
+        return X, Y
+
+    @staticmethod
+    def get_embeddings_layer_id():
+        """
+        Return embeddings layer ID
+        :return (int) id of embeddings layer
+        """
+        return 1
+
 
     @staticmethod
     def get_recurrent_layer_id():
@@ -720,19 +707,19 @@ class Probing(Training):
 
         self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
-        """
-        Fit the model
-        :param training data:   should be adictionary containing data fo
-                                all the classifies of the network
-        """
-        X_train, Y_train = training_data
-        
-        callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
+    # def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
+    #     """
+    #     Fit the model
+    #     :param training data:   should be adictionary containing data fo
+    #                             all the classifies of the network
+    #     """
+    #     X_train, Y_train = training_data
+    #     
+    #     callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
 
-        self.model.fit({'input':X_train}, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
+    #     self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
 
-        self.trainings_history = callbacks[0]
+    #     self.trainings_history = callbacks[0]
 
     def set_attributes(self):
         """
@@ -753,9 +740,9 @@ class Probing(Training):
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
-        X_padded, Y = Probing.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=classifiers, format=format)
+        X, Y = Probing.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=classifiers, format=format)
 
-        return X_padded, Y
+        return X, Y
 
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to, classifiers, format='infix'):
@@ -780,6 +767,25 @@ class Probing(Training):
         # make numpy arrays from Y data
         for output in Y:
             Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
-        return X_padded, Y
 
+        X = {'input': X_padded}
+
+        return X, Y
+
+    @staticmethod
+    def get_embeddings_layer_id():
+        """
+        Return embeddings layer ID
+        :return (int) id of embeddings layer
+        """
+        return 1
+
+
+    @staticmethod
+    def get_recurrent_layer_id():
+        """
+        return recurrent layer ID
+        :return (int) id of recurrent layer
+        """
+        return 2
 
