@@ -10,7 +10,7 @@ import argparse
 import sys
 import copy
 import core.gradient_check as check
-
+import core.Optimizer as opt
 
 
 def install(thetaFile, d, noComparison, predictH):
@@ -20,18 +20,21 @@ def install(thetaFile, d, noComparison, predictH):
 
   compareData,predictData = data.getTBs(digits, operators,noComparison=noComparison)
 
-  try:
+  if thetaFile != '':
     with open(thetaFile, 'rb') as f:
       theta = pickle.load(f)
     print 'initialized theta from file:', thetaFile
     if noComparison and ('comparison','M') in theta.keys():
-      theta.extend4Classify(2, 3, 3 * d)
-      #theta.newMatrix(('classify','M'))
-      #theta.newMatrix(('classify', 'B'))
+      theta.extend4Classify(2, 3, -1)
     if not noComparison and ('comparison', 'M') not in theta.keys():
       theta.extend4Classify(2, 3, 3 * d)
 
-  except:
+    if '+' not in theta[('word',)].voc:
+      theta[('word',)].extendVocabulary(['+','-'])
+      theta[('word',)]['+']=theta[('word',)]['plus']
+      theta[('word',)]['-'] = theta[('word',)]['minus']
+
+  else:
     print 'initializing theta from scratch'
     dims = {'inside': d, 'outside': d, 'word': d, 'maxArity': 3, 'arity': 2}
     voc = ['UNKNOWN'] + digits + operators
@@ -50,24 +53,26 @@ def main(args):
   hyperParams['tofix']=[]
 
 
-  classifynames = [('classify', 'M'), ('classify', 'B'),('comparison', 'B'), ('comparison', 'M')]
-  predictnames = [('predict', 'B'),('predict', 'M'), ('predictH', 'M'), ('predictH', 'B')]
-  compositionnames =  [('composition', '  # X#', '(#X#)', 'I', 'M'), ('composition', '#X#', '(#X#)', 'I', 'B'),('composition','#X#', '(#X#, #X#, #X#)', 'I', 'B'),('composition', '#X#', '(#X#, #X#)', 'I', 'B'), ('composition', '#X#', '(#X#, #X#)', 'I', 'M'), ('composition', '#X#', '(#X#, #X#,  # X#)', 'I', 'M')]
-  embnames = [('word',)]
+  classifynames = ['classify','comparison'] #'('classify', 'M'), ('classify', 'B'),('comparison', 'B'), ('comparison', 'M')]
+  predictnames = ['predict','predictH'] #('predict', 'B'),('predict', 'M'), ('predictH', 'M'), ('predictH', 'B')]
+  compositionnames =  ['composition']#('composition', '  # X#', '(#X#)', 'I', 'M'), ('composition', '#X#', '(#X#)', 'I', 'B'),('composition','#X#', '(#X#, #X#, #X#)', 'I', 'B'),('composition', '#X#', '(#X#, #X#)', 'I', 'B'), ('composition', '#X#', '(#X#, #X#)', 'I', 'M'), ('composition', '#X#', '(#X#, #X#,  # X#)', 'I', 'M')]
+  embnames = ['word']#'('word',)]
 
 
-  hyperParamsCompare = copy.deepcopy(hyperParams)
-  hyperParamsPredict = copy.deepcopy(hyperParams)
 
+  theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'],predictH=args['predictH'])
+  if args['ada']: optimizer = opt.Adagrad(theta,)
+  else: optimizer = opt.SGD(theta,)
 
-  theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'],predictH=True)
   datasets = [compareData, predictData]
   names = ['compare expressions', 'scalarprediction']
+  hyperParamsCompare = copy.deepcopy(hyperParams)
+  hyperParamsPredict = copy.deepcopy(hyperParams)
 
   for k, dataset in zip (names,datasets):
     print 'Evaluating initial theta on', k
     for name, d in dataset.iteritems():
-      d.evaluate(theta, name)
+      d.evaluate(theta, name,verbose=args['verbose'])
 
 
   verbose = args['verbose']
@@ -100,20 +105,18 @@ def main(args):
     hyperParamsPredict['tofix'] += compositionnames + embnames
     datasets = [predictData]
     hypers = [hyperParamsPredict]
-    phases = [2]  # number of epochs per round
+    phases = [10]  # number of epochs per round
     names = ['scalarprediction']
   elif args['kind'] == 's2':
     datasets = [predictData]
     hypers = [hyperParamsPredict]
-    phases = [2]  # number of epochs per round
+    phases = [10]  # number of epochs per round
     names = ['scalarprediction']
   else:
     print 'no kind!',args['kind']
-    sys.exit()
+#    sys.exit()
 
-
-
-  tr.alternate(theta, datasets,alt=phases, outDir=args['outDir'], hyperParams=hypers, n=1, names=names, verbose=verbose)
+  tr.alternate(optimizer, args['outDir'], datasets, hypers, phases, n = args['nEpochs'], names = names, verbose = verbose)
   #predictData['train'].evaluate(theta,'train',n=20, verbose=True)
 
 def mybool(string):
@@ -138,6 +141,8 @@ if __name__ == "__main__":
   parser.add_argument('-ada','--ada', type=mybool, help='Whether adagrad is used', required=True)
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
   parser.add_argument('-nc','--noComp', type=mybool, default=True, help='Whether the comparison layer is removed', required=False)
+  parser.add_argument('-ph', '--predictH', type=mybool, default=True, help='Whether there is a hidden layer for scalar prediction',
+                      required=False)
   parser.add_argument('-v', '--verbose', type=mybool, default=False, help='Whether a lot of output is printed',
                       required=False)
 

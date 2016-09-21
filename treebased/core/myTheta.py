@@ -44,6 +44,7 @@ class Theta(dict):
         if key[-1]=='B': self[key]=np.zeros_like(self[key])
 
   def extend4Classify(self,nChildren, nClasses,dComparison = 0):
+    self.remove(['classify','comparison'])
     if dComparison < 0:
         self.newMatrix(('classify', 'M'), None, (nClasses, nChildren*self.dims['inside']))
         self.newMatrix(('classify', 'B'), None, (nClasses,))
@@ -57,6 +58,7 @@ class Theta(dict):
       self.newMatrix(('classify','B'),None,(nClasses,))
 
   def extend4Prediction(self, dHidden = 0):
+    self.remove(['predict', 'predictH'])
     if dHidden<0:
       self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
       self.newMatrix(('predict', 'B'), None, (1,))
@@ -152,44 +154,27 @@ class Theta(dict):
         size = self[cat].shape
         self[cat] = np.random.random_sample(size)*.2-.1
 
+  def remove(self, cats):
+    for key in self.keys():
+      if key[0] in cats:
+        del self[key]
+        print 'removed', key
+
   def newMatrix(self, name,M= None, size = (0,0), overwrite = True):
     if name in self:
       if not overwrite: return
       else: size = self[name].shape
     if M is not None: self[name] = np.copy(M)
-    else: self[name] = np.random.random_sample(size)*.2-.1
-
-  def regularize(self, alphaDsize, lambdaL2,tofix=[]):
-    if lambdaL2==0: return
-    for name in self.keys():
-      if name in tofix: continue
-      if name[-1] == 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
-      else: continue
-
-  def add2Theta(self, gradient, alpha, historicalGradient = None,tofix=[]):
-    for key in gradient.keys():
-      if key in tofix: continue
-      grad = gradient[key]
-      if historicalGradient is not None:
-        histgrad = historicalGradient[key]
-
-
-#        historical_grad[name] += np.square(grad[name])
-#       theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
-
-        if type(self[key]) == np.ndarray:
-          histgrad+= np.square(grad)
-          self[key] -= alpha*np.divide(grad,np.sqrt(histgrad)+1e-6)#
-        elif type(self[key]) == WordMatrix:
-          for word in grad:
-            histgrad[word]+= np.square(grad[word])
-            self[key][word] -= alpha*np.divide(grad[word],np.sqrt(histgrad[word])+1e-6)
-        else: raise NameError("Cannot update theta")
+    else:
+      if name[-1]=='M':
+        scale = np.sqrt(6./(size[0]+size[1])) # glorot uniform initialization
+        self[name] = np.random.random_sample(size)*2*scale-scale
+      elif name[-1]=='B':
+        self[name] = np.zeros(size)
       else:
-        try: self[key] -=alpha*grad
-        except:
-          for word in grad: self[key][word] -=alpha*grad[word]
-#      print self[('word',)]['UNKNOWN']
+        print 'cannot initialize', name
+        sys.exit()
+
 
   def norm(self):
     names = [name for name in self.keys() if name[-1] == 'M']
@@ -309,6 +294,7 @@ class Gradient(Theta):
           return self[fakeKey]
       else:
         print key,'not in gradient(missing), and not able to create it.'
+        sys.exit()
         return None
   def __setitem__(self, key,val):
     if key in self.molds: dict.__setitem__(self, key, val)
@@ -329,6 +315,13 @@ class WordMatrix(dict):
     dict.__setitem__(self, self.default, dval)
     [dicItems.remove((k,v)) for (k,v) in dicItems if k==dkey]
     self.update(dicItems)
+  def extendVocabulary(self, wordlist):
+    for word in wordlist:
+      self.voc.append(word)
+      self[word] = self[self.default]
+
+
+
 
   def __setitem__(self, key,val):
     if self.default not in self: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None

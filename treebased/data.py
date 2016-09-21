@@ -92,27 +92,32 @@ class ScalarPredictionTB(TB):
   def evaluate(self, theta, name='', n=0, verbose = False):
     if n == 0: n = len(self.examples)
     sse = 0.0
-    sspe = 0.0
-    true =0.0
+    sspe = defaultdict(float)#.0
+    lens = defaultdict(int)  # .0
+    true = 0.0
     for nw, target in self.getExamples(n):
+
       pred = nw.predict(theta,roundoff=True)
       sse += nw.error(theta, target, activate=False, roundoff = False)
-      sspe += nw.error(theta, target, activate=False, roundoff = True)
+      length = nw.length
+      sspe[length] += nw.error(theta, target, activate=False, roundoff = True)
+      lens[length]+=1
       if target==pred: true +=1
       if verbose:
         length = (len(str(nw).split(' '))+3)/4
         print 'length:',length,('right' if target==pred else 'wrong'), 'prediction:' , pred, 'target:', target, 'error:', nw.error(theta, target, activate=False, roundoff = True),'('+str(nw.error(theta, target, activate=False, roundoff = False))+')'
+
     mse=sse/n
     accuracy = true / n
-    mspe = sspe / n
+    mspe = sum(sspe.values()) / n
     print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
     print '\tLoss (MSE):', mse, 'Accuracy:', accuracy, 'MSPE:', mspe
+    print '\tMSPE per length: ', [(length,(sspe[length]/lens[length] if lens[length]>0 else 'undefined')) for length in sspe.keys()]
 
-
-def getTBs(digits, operators, predict = False, noComparison = False, split = 0.1):
+def getTBs(digits, operators, noComparison = False, split = 0.1):
   #languages_train = {'L1': 30000, 'L2': 30000, 'L4': 30000, 'L6': 30000}
-  # languages_train = {'L1':500,'L2':500}
-  # languages_test = {'L1': 50,'L2':50}
+  #languages_train = {'L1':500,'L2':500}
+  #languages_test = {'L1': 50,'L2':50}
 
   languages_train = {'L1': 3000, 'L2': 3000, 'L4': 3000, 'L6': 3000}
   languages_test = {'L3': 400, 'L5': 400, 'L7': 400}
@@ -123,18 +128,48 @@ def getTBs(digits, operators, predict = False, noComparison = False, split = 0.1
   trainData = arithmetics.mathTreebank(languages_train, digits)
   testData = arithmetics.mathTreebank(languages_test, digits)
 
-  if not predict:
-    items = trainData.examples[:]
-    random.shuffle(items)
-    htb = CompareClassifyTB(items[:int(split*len(items))],noComparison=noComparison)
-    ttb = CompareClassifyTB(items[int(split * len(items)):], noComparison=noComparison)
-    testtb = CompareClassifyTB(testData.examples, noComparison=noComparison)
-    compareData={'train':ttb,'heldout':htb,'test':testtb}
 
-    htb = ScalarPredictionTB(items[:int(split * len(items))])
-    ttb = ScalarPredictionTB(items[int(split * len(items)):])
-    testtb = ScalarPredictionTB(testData.examples)
-    predictData = {'train':ttb,'heldout':htb,'test':testtb}
+  items = trainData.examples[:]
+  random.shuffle(items)
+  htb = CompareClassifyTB(items[:int(split*len(items))],noComparison=noComparison)
+  ttb = CompareClassifyTB(items[int(split * len(items)):], noComparison=noComparison)
+  testtb = CompareClassifyTB(testData.examples, noComparison=noComparison)
+  compareData={'train':ttb,'heldout':htb,'test':testtb}
+  htb = ScalarPredictionTB(items[:int(split * len(items))])
+  ttb = ScalarPredictionTB(items[int(split * len(items)):])
+  testtb = ScalarPredictionTB(testData.examples)
+  predictData = {'train':ttb,'heldout':htb,'test':testtb}
 
   return compareData, predictData
+
+def makeFile(digits, theta, directory):
+  languages = [{'L1': 3000, 'L2': 3000, 'L4': 3000, 'L6': 3000}, {'L3': 400, 'L5': 400, 'L7': 400}]
+  #print 'Training languages:', str(languages_train)
+  #print 'Testing languages:', str(languages_test)
+  import pickle, numpy as np
+
+  train = True
+  for i in range(2):
+    tb = arithmetics.mathTreebank(languages[i], digits)
+    inputs = []
+    outputs = []
+    strings = []
+    for me, answer in tb.examples:
+      nw = myRNN.RNN(me)
+      nw.activate(theta)
+      strings.append(str(me))
+      inputs.append(nw.root.a)
+      outputs.append(answer)
+
+    for data, name in [(inputs,'X_'),(outputs,'Y_'),(strings,'strings_')]:
+      with open(directory + '/' +name + ('train' if train else 'test') + '.pkl', 'wb') as f:
+        pickle.dump(np.array(data),f)
+
+    with open(directory + '/' + ('train' if train else 'test') + 'Data.txt', 'w') as f:
+          f.write('inputs='+str(inputs)+'\n')
+          f.write('outputs=' + str(outputs)+'\n')
+          f.write('strings='+str(strings)+'\n')
+    train = False
+
+
 

@@ -6,6 +6,8 @@ class Predictor(NN.Node):
     self.hiddenLayer = hiddenLayer
     if hiddenLayer: NN.Node.__init__(self, [NN.node(child,[],('predictH','tanh'))], [], ('predict',),'identity')
     else: NN.Node.__init__(self, [child], [], ('predict',),'identity')
+    #self.root = child
+    self.length = (len(str(child).split())+3)/4
 
   def predict(self, theta, activate = True, roundoff = True,verbose = False):
     if activate: self.forward(theta)
@@ -29,6 +31,7 @@ class Predictor(NN.Node):
 
   def evaluate(self, theta, target, activate=True):
     return self.error(theta,target,activate)
+
 
 class Classifier(NN.Node):
   def __init__(self,children, labels):
