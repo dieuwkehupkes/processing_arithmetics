@@ -15,6 +15,7 @@ import random
 
 
 class Training(object):
+    #TODO write which functions a training class should implement
     """
     Give elaborate description
     functions that need to be implemented:
@@ -122,11 +123,11 @@ class Training(object):
         if test_separately:
             test_data = []
             for name, N in languages.items():
-                X, Y = architecture.generate_training_data({name: N}, dmap, digits, classifiers, pad_to=pad_to, format=format)
+                X, Y = architecture.generate_training_data({name: N}, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = architecture.generate_training_data(languages, dmap, digits, classifiers, pad_to=pad_to, format=format)
+            X, Y = architecture.generate_training_data(languages=languages, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
             name = ', '.join(languages.keys())
             test_data = [(name, X, Y)]
 
@@ -361,7 +362,7 @@ class A1(Training):
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix'):
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
         """
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
@@ -378,27 +379,27 @@ class A1(Training):
 
         return data
 
-    @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True, format='infix'):
-        """
-        Take a dictionary that maps language names to number of sentences and return numpy array
-        with test data.
-        :param languages:       dictionary mapping language names to numbers
-        :param pad_to:          desired length of test sequences
-        :return:                list of tuples containing test set sames, inputs and targets
-        """
-        if test_separately:
-            test_data = []
-            for name, N in languages.items():
-                X, Y = A1.generate_training_data({name: N}, dmap, digits, pad_to=pad_to, format=format)
-                test_data.append((name, X, Y))
-
-        else:
-            X, Y = A1.generate_training_data(languages, dmap, digits, pad_to=pad_to, format=format)
-            name = ', '.join(languages.keys())
-            test_data = [(name, X, Y)]
-
-        return test_data
+#     @staticmethod
+#     def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=True, format='infix', classifiers=None):
+#         """
+#         Take a dictionary that maps language names to number of sentences and return numpy array
+#         with test data.
+#         :param languages:       dictionary mapping language names to numbers
+#         :param pad_to:          desired length of test sequences
+#         :return:                list of tuples containing test set sames, inputs and targets
+#         """
+#         if test_separately:
+#             test_data = []
+#             for name, N in languages.items():
+#                 X, Y = A1.generate_training_data({name: N}, dmap, digits, pad_to=pad_to, format=format)
+#                 test_data.append((name, X, Y))
+# 
+#         else:
+#             X, Y = A1.generate_training_data(languages, dmap, digits, pad_to=pad_to, format=format)
+#             name = ', '.join(languages.keys())
+#             test_data = [(name, X, Y)]
+# 
+#         return test_data
 
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
@@ -504,7 +505,7 @@ class A4(Training):
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix'):
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
         """
         Take a dictionary that maps languages to number of sentences and
          return numpy arrays with training data.
@@ -555,30 +556,6 @@ class A4(Training):
 
         return X_padded, np.array(Y)
 
-
-    @staticmethod
-    def generate_test_data(languages, dmap, digits, pad_to=None, test_separately=False, format='infix'):
-        """
-        Take a dictionary that maps language names to number of sentences and return numpy array
-        with test data.
-        :param languages:       dictionary mapping language names to numbers
-        :param architecture:    architecture for which to generate test data
-        :param pad_to:          desired length of test sequences
-        :return:                list of tuples containing test set sames, inputs and targets
-        """
-
-        if test_separately:
-            test_data = []
-            for name, N in languages.items():
-                X, Y = A4.generate_training_data({name: N}, dmap, digits, pad_to=pad_to, format=format)
-                test_data.append((name, X, Y))
-
-        else:
-            X, Y = A4.generate_training_data(languages, dmap, digits, pad_to=pad_to, format=format)
-            name = ', '.join(languages.keys())
-            test_data = [(name, X, Y)]
-
-        return test_data
 
     @staticmethod
     def get_recurrent_layer_id():

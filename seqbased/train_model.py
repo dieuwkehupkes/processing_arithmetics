@@ -3,7 +3,7 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 from generate_training_data import generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
-from architectures import A1, A4
+from architectures import Training
 import re
 
 parser = argparse.ArgumentParser()
@@ -106,13 +106,15 @@ print_sum(settings)
 
 if settings.languages_test:
     # generate test data
-    test_data = training.generate_test_data(settings.languages_test,
-                                            dmap=dmap,
-                                            digits=settings.digits,
-                                            classifiers=settings.classifiers,
-                                            format=settings.format,
-                                            test_separately=settings.test_separately,
-                                            pad_to=settings.maxlen)
+    test_data = Training.generate_test_data(
+            settings.architecture,
+            settings.languages_test,
+            dmap=dmap,
+            digits=settings.digits,
+            classifiers=settings.classifiers,
+            format=settings.format,
+            test_separately=settings.test_separately,
+            pad_to=settings.maxlen)
 
     hist = training.trainings_history
 
