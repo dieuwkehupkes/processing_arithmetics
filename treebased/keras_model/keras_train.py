@@ -4,6 +4,8 @@ from keras.layers import Dense, Input
 import numpy as np
 import pickle
 from keras.models import model_from_json
+from collections import defaultdict
+import sys
 
 def getData(directory = '../data4keras'):
   trainData = []
@@ -29,11 +31,9 @@ def defineModel():
 
 	return model
 
-def trainModel(model,data, verbose = 0):
+def trainModel(model,data, verbose = 2):
 	# train the model, takes 10 percent out of the training data for validation
-	model.fit({'input': data[0]}, {'output': data[1]}, validation_split=0.1, batch_size=24, nb_epoch=200, shuffle=True, verbose = verbose)
-
-
+	history = model.fit({'input': data[0]}, {'output': data[1]}, validation_split=0.1, batch_size=24, nb_epoch=200, shuffle=True, verbose = verbose)
 
 def saveModel(model, name = 'something'):
 	model.save_weights(name+'_weights.h5',overwrite=True)
@@ -61,10 +61,11 @@ def evaluate(model, data, name):
   print('\tMSPE per length: '+ str(perL))
 
 def main():
+  name  = 'model'+sys.argv[1]
   trainData,testData = getData()
   model=defineModel()
   trainModel(model,trainData)
-  saveModel(model, 'model01')
+  saveModel(model, name)
   evaluate(model,testData,'test')
   evaluate(model,trainData,'train')
 
