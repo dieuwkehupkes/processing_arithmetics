@@ -62,9 +62,11 @@ def main(args):
 
   theta, compareData,predictData = install(args['pars'],d=args['word'],noComparison=args['noComp'],predictH=args['predictH'])
   if args['optimizer']=='adagrad': optimizer = opt.Adagrad(theta)#, lambdaL2 = args['lambda'], lr=args['alpha'])
-  if args['optimizer'] == 'adam':  optimizer = opt.Adam(theta)
-  if args['optimizer'] == 'adagrad':  optimizer = opt.SGD(theta)
-  else: print 'not a valid choice for operator:',args['optimizer']
+  elif args['optimizer'] == 'adam':  optimizer = opt.Adam(theta)
+  elif args['optimizer'] == 'sgd':  optimizer = opt.SGD(theta)
+  else:
+    print 'not a valid choice for optimizer:',args['optimizer']
+    sys.exit()
 
   datasets = [compareData, predictData]
   names = ['compare expressions', 'scalarprediction']
@@ -143,8 +145,7 @@ if __name__ == "__main__":
   parser.add_argument('-opt','--optimizer', type=str, choices = ['sgd','adagrad','adam'], help='Optimizer to be used', required=True)
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
   parser.add_argument('-nc','--noComp', type=mybool, default=True, help='Whether the comparison layer is removed', required=False)
-  parser.add_argument('-ph', '--predictH', type=mybool, default=True, help='Whether there is a hidden layer for scalar prediction',
-                      required=False)
+  parser.add_argument('-ph', '--predictH', type=mybool, help='Whether there is a hidden layer for scalar prediction', required=True)
   parser.add_argument('-v', '--verbose', type=mybool, default=False, help='Whether a lot of output is printed',
                       required=False)
 

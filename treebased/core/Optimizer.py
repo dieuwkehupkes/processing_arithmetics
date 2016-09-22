@@ -33,7 +33,9 @@ class SGD(Optimizer):
             if key[0] in tofix:
                 continue
             else:
-                self.theta[key] -= lr * grad
+                if type(grad) == np.ndarray: self.theta[key] -= lr * grad
+                elif type(grad) == WordMatrix:
+                    for word in grad: self.theta[key][word] -= lr* grad[word]
 
 
 class Adagrad(Optimizer):
@@ -53,7 +55,7 @@ class Adagrad(Optimizer):
                 if type(grad) == np.ndarray:
                     self.theta[key] -= lr * np.divide(grad, np.sqrt(self.histgrad[key]) + self.epsilon)
                     self.histgrad[key] += np.square(grad)
-                elif grad == WordMatrix:
+                elif type(grad) == WordMatrix:
                     for word in grad:
                         self[key][word] -= lr * np.divide(grad[word], np.sqrt(self.histgrad[key][word]) + self.epsilon)
                         self.histgrad[word] += np.square(grad[word])
