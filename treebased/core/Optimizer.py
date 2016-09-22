@@ -1,4 +1,5 @@
 import numpy as np
+import myTheta
 
 class Optimizer():
     def __init__(self, theta, lr = 0.01, lambdaL2 = 0):
@@ -34,8 +35,9 @@ class SGD(Optimizer):
                 continue
             else:
                 if type(grad) == np.ndarray: self.theta[key] -= lr * grad
-                elif type(grad) == WordMatrix:
+                elif type(grad) == myTheta.WordMatrix:
                     for word in grad: self.theta[key][word] -= lr* grad[word]
+                else: raise NameError("Cannot update theta")
 
 
 class Adagrad(Optimizer):
@@ -55,7 +57,7 @@ class Adagrad(Optimizer):
                 if type(grad) == np.ndarray:
                     self.theta[key] -= lr * np.divide(grad, np.sqrt(self.histgrad[key]) + self.epsilon)
                     self.histgrad[key] += np.square(grad)
-                elif type(grad) == WordMatrix:
+                elif type(grad) == myTheta.WordMatrix:
                     for word in grad:
                         self[key][word] -= lr * np.divide(grad[word], np.sqrt(self.histgrad[key][word]) + self.epsilon)
                         self.histgrad[word] += np.square(grad[word])
@@ -88,7 +90,7 @@ class Adam(Optimizer):
                     self.ms[key] = self.beta_1*self.ms[key]+(1-self.beta_1)*grad
                     self.vs[key] = self.beta_2 * self.vs[key] + (1 - self.beta_2) * np.square(grad)
                     self.theta[key] -= lr * self.ms[key] / np.sqrt(self.vs[key] + self.epsilon)
-                elif grad == WordMatrix:
+                elif type(grad) == myTheta.WordMatrix:
                     for word in grad:
                         self.ms[key][word] = self.beta_1 * self.ms[key][word] + (1 - self.beta_1) * grad[word]
                         self.vs[key][word] = self.beta_2 * self.vs[key][word] + (1 - self.beta_2) * np.square(grad[word])
