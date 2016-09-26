@@ -1,4 +1,4 @@
-keras.models import Model, model_from_json
+from keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
@@ -15,7 +15,7 @@ import random
 
 
 class Training(object):
-    #TODO write which functions a training class should implement
+    # TODO write which functions a training class should implement
     """
     Give elaborate description
     functions that need to be implemented:
@@ -132,8 +132,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
-              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -145,12 +144,43 @@ class Training(object):
 
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id())
 
+        sample_weight = self.get_sample_weights(training_data, sample_weight)
+
         # fit model
         self.model.fit(X_train, Y_train, validation_data=validation_data,
-                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       validation_split=validation_split, batch_size=batch_size, 
+                       nb_epoch=epochs, sample_weight=sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    def get_sample_weights(self, training_data, sample_weight):
+        """
+        Return a matrix with sample weights for the 
+        input data if sample_weight parameter is true.
+        """
+        if not sample_weight:
+            return None
+
+        X_dict, Y_dict = training_data
+
+        if len(X_dict) != 1:
+            raise NotImplementedError("Number of inputs larger than 1, didn't think I'd need this case so I didn't implement it")
+
+        sample_weights = {}
+        for output in Y_dict:
+            dim = Y_dict[output].ndim
+            if dim == 2:
+                # use sample_weight only for seq2seq models
+                return None
+            else:
+                sample_weight = np.zeros_like(X_dict)
+                sample_weight[X_dict.values()[0] != 0]
+                sample_weights[output] = sample_weight
+
+        return sample_weights
+
+
 
     def model_summary(self):
         print(self.model.summary())
