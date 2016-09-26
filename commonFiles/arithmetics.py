@@ -116,7 +116,7 @@ class indexedTreebank(mathTreebank):
 
     def getExamplesProperty(self, property):
         if property not in self.index.keys(): raise KeyError('not a valid property in this indexedTreebank')
-        else: return self.index[property]
+        else: return {k: self.examples[v] for k, v in self.index[property]}
 
 
     def getExamplesPropertyValue(self, property,value):

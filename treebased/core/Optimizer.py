@@ -47,20 +47,21 @@ class Adagrad(Optimizer):
         self.epsilon = epsilon
 
     def update(self, grads, portion, tofix=[]):
-        lr = portion * self.lr
-        self.regularize(lr, tofix)
+        lr = self.lr #portion * self.lr
+        #print self.lr, portion, lr
+        self.regularize(portion*lr, tofix)
 
         for key, grad in grads.iteritems():
             if key[0] in tofix:
                 continue
             else:
                 if type(grad) == np.ndarray:
-                    self.theta[key] -= lr * np.divide(grad, np.sqrt(self.histgrad[key]) + self.epsilon)
                     self.histgrad[key] += np.square(grad)
+                    self.theta[key] -= lr * np.divide(grad, np.sqrt(self.histgrad[key]) + self.epsilon)
                 elif type(grad) == myTheta.WordMatrix:
                     for word in grad:
-                        self[key][word] -= lr * np.divide(grad[word], np.sqrt(self.histgrad[key][word]) + self.epsilon)
-                        self.histgrad[word] += np.square(grad[word])
+                        self.histgrad[key][word] += np.square(grad[word])
+                        self.theta[key][word] -= lr * np.divide(grad[word], np.sqrt(self.histgrad[key][word]) + self.epsilon)
                 else:
                     raise NameError("Cannot update theta")
 
@@ -94,7 +95,7 @@ class Adam(Optimizer):
                     for word in grad:
                         self.ms[key][word] = self.beta_1 * self.ms[key][word] + (1 - self.beta_1) * grad[word]
                         self.vs[key][word] = self.beta_2 * self.vs[key][word] + (1 - self.beta_2) * np.square(grad[word])
-                        self.theta[key][word] -= lr * self.ms[key][word] / np.sqrt(vs[key][word] + self.epsilon)
+                        self.theta[key][word] -= lr * self.ms[key][word] / np.sqrt(self.vs[key][word] + self.epsilon)
                 else:
                     raise NameError("Cannot update theta")
 

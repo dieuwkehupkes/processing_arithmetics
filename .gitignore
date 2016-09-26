@@ -1,3 +1,4 @@
 *.pyc
 .idea/*
 *.swp
+./treebased/trainedModels/*
