@@ -1,7 +1,6 @@
 *.pyc
 .idea/*
 *.swp
-./treebased/trainedModels/*
-./treebased/keras_model/kerasTrainedModels/*
-
-./keras
+/treebased/trainedModels/*
+/treebased/keras_model/kerasTrainedModels/*
+/keras
