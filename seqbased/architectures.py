@@ -77,7 +77,7 @@ class Training(object):
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
 
-    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam'):
+    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, classifiers=None, mask_zero=True, dropout_recurrent=0.0, optimizer='adam'):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
@@ -107,7 +107,7 @@ class Training(object):
             assert model_info['architecture'] == type(self).__name__
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent)
+        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, extra_classifiers=classifiers)
         return
 
     @staticmethod
@@ -174,8 +174,9 @@ class Training(object):
                 # use sample_weight only for seq2seq models
                 return None
             else:
-                sample_weight = np.zeros_like(X_dict)
-                sample_weight[X_dict.values()[0] != 0]
+                X_padded = X_dict.values()[0]
+                sample_weight = np.zeros_like(X_padded)
+                sample_weight[X_padded != 0] = 1
                 sample_weights[output] = sample_weight
 
         return sample_weights
@@ -621,7 +622,7 @@ class Seq2Seq(Training):
 
         self.model = Model(input=input_layer, output=output)
 
-        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics)
+        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers=None, pad_to=None, format='infix'):
@@ -698,8 +699,8 @@ class Probing(Training):
                 'top_stack':'mean_squared_error_ignore'}
 
         self.metrics = {
-                'grammatical': ['binary_accuracy', 'binary_accuracy_ignore0'], 
-                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
+                'grammatical': ['binary_accuracy'], 
+                'intermediate_locally': ['mean_squared_prediction_error'],
                 'subtracting': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
                 'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
@@ -752,7 +753,7 @@ class Probing(Training):
         # create model
         self.model = Model(input=input_layer, output=classifiers)
 
-        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)
+        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
 
     def set_attributes(self):
