@@ -1,4 +1,4 @@
-from keras.models import Model, model_from_json
+keras.models import Model, model_from_json
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
@@ -76,9 +76,6 @@ class Training(object):
 
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
-
-    def _build(self, W_embeddings, W_recurrent, W_classifier):
-        raise NotImplementedError()
 
     def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam'):
         """
@@ -318,6 +315,26 @@ class Training(object):
             callbacks.append(logger)
 
         return callbacks
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def get_embeddings_layer_id():
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def get_recurrent_layer_id():
+        raise NotImplementedError("Should be implemented in subclass")
+
 
 
 class A1(Training):
@@ -707,19 +724,6 @@ class Probing(Training):
 
         self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)
 
-    # def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
-    #     """
-    #     Fit the model
-    #     :param training data:   should be adictionary containing data fo
-    #                             all the classifies of the network
-    #     """
-    #     X_train, Y_train = training_data
-    #     
-    #     callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
-
-    #     self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
-
-    #     self.trainings_history = callbacks[0]
 
     def set_attributes(self):
         """
