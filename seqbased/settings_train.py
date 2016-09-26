@@ -30,6 +30,7 @@ batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
 dropout_recurrent   = 0.00           # fraction of the inputs to drop for recurrent gates
+sample_weights      = True
 # provide a dictionary that maps languages to number of sentences to
 # generate for that language.
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
@@ -50,7 +51,7 @@ plot_loss = False                    # plot loss
 plot_prediction = False              # plot prediction error
 plot_embeddings = False               # create scatterplot of embeddings
 plot_esp = False                     # plot spectral radius of recurrent connections
-verbose = 1                         # verbosity mode
+verbose = 2                         # verbosity mode
 print_every = False                 # print results
 
 # SAVE MODEL

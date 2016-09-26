@@ -92,6 +92,7 @@ else:
 
 training.train(training_data=(X, Y), validation_data=validation_data, validation_split=validation_split,
                batch_size=settings.batch_size, epochs=settings.nb_epoch, verbosity=settings.verbose,
+               sample_weight=settings.sample_weights,
                weights_animation=settings.weights_animation, plot_embeddings=settings.plot_embeddings,
                logger=settings.print_every)
 
