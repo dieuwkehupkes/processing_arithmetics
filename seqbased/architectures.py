@@ -15,7 +15,7 @@ import random
 
 
 class Training(object):
-    #TODO write which functions a training class should implement
+    # TODO write which functions a training class should implement
     """
     Give elaborate description
     functions that need to be implemented:
@@ -77,10 +77,7 @@ class Training(object):
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
 
-    def _build(self, W_embeddings, W_recurrent, W_classifier):
-        raise NotImplementedError()
-
-    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam'):
+    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, classifiers=None, mask_zero=True, dropout_recurrent=0.0, optimizer='adam'):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
@@ -110,7 +107,7 @@ class Training(object):
             assert model_info['architecture'] == type(self).__name__
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent)
+        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, extra_classifiers=classifiers)
         return
 
     @staticmethod
@@ -135,8 +132,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None,
-              verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, weights_animation=False, plot_embeddings=False, logger=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -148,12 +144,44 @@ class Training(object):
 
         callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id())
 
+        sample_weight = self.get_sample_weights(training_data, sample_weight)
+
         # fit model
         self.model.fit(X_train, Y_train, validation_data=validation_data,
-                       validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs,
+                       validation_split=validation_split, batch_size=batch_size, 
+                       nb_epoch=epochs, sample_weight=sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         self.trainings_history = callbacks[0]            # set trainings_history as attribute
+
+    def get_sample_weights(self, training_data, sample_weight):
+        """
+        Return a matrix with sample weights for the 
+        input data if sample_weight parameter is true.
+        """
+        if not sample_weight:
+            return None
+
+        X_dict, Y_dict = training_data
+
+        if len(X_dict) != 1:
+            raise NotImplementedError("Number of inputs larger than 1, didn't think I'd need this case so I didn't implement it")
+
+        sample_weights = {}
+        for output in Y_dict:
+            dim = Y_dict[output].ndim
+            if dim == 2:
+                # use sample_weight only for seq2seq models
+                return None
+            else:
+                X_padded = X_dict.values()[0]
+                sample_weight = np.zeros_like(X_padded)
+                sample_weight[X_padded != 0] = 1
+                sample_weights[output] = sample_weight
+
+        return sample_weights
+
+
 
     def model_summary(self):
         print(self.model.summary())
@@ -318,6 +346,26 @@ class Training(object):
             callbacks.append(logger)
 
         return callbacks
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def get_embeddings_layer_id():
+        raise NotImplementedError("Should be implemented in subclass")
+
+    @staticmethod
+    def get_recurrent_layer_id():
+        raise NotImplementedError("Should be implemented in subclass")
+
 
 
 class A1(Training):
@@ -574,7 +622,7 @@ class Seq2Seq(Training):
 
         self.model = Model(input=input_layer, output=output)
 
-        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics)
+        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
     @staticmethod
     def generate_training_data(languages, dmap, digits, classifiers=None, pad_to=None, format='infix'):
@@ -651,8 +699,8 @@ class Probing(Training):
                 'top_stack':'mean_squared_error_ignore'}
 
         self.metrics = {
-                'grammatical': ['binary_accuracy', 'binary_accuracy_ignore0'], 
-                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
+                'grammatical': ['binary_accuracy'], 
+                'intermediate_locally': ['mean_squared_prediction_error'],
                 'subtracting': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
                 'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
@@ -705,21 +753,8 @@ class Probing(Training):
         # create model
         self.model = Model(input=input_layer, output=classifiers)
 
-        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics)
+        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
-    # def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, verbosity=1, weights_animation=False, plot_embeddings=False, logger=False):
-    #     """
-    #     Fit the model
-    #     :param training data:   should be adictionary containing data fo
-    #                             all the classifies of the network
-    #     """
-    #     X_train, Y_train = training_data
-    #     
-    #     callbacks = self.generate_callbacks(False, False, False, recurrent_id=2, embeddings_id=1)
-
-    #     self.model.fit(X_train, Y_train, validation_data=validation_data, validation_split=validation_split, batch_size=batch_size, nb_epoch=epochs, callbacks=callbacks, verbose=verbosity, shuffle=True)
-
-    #     self.trainings_history = callbacks[0]
 
     def set_attributes(self):
         """
