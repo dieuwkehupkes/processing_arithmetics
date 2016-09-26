@@ -11,10 +11,9 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 prefs = (
-        'models/GRU_A1_1_probe-1',  # 'models/GRU_A1_1_probe-2', 'models/GRU_A1_1_probe-3',
-        'models/GRU_A1_2_probe-1',  # 'models/GRU_A1_2_probe-2', 'models/GRU_A1_2_probe-3',
-        'models/SRN_A1_2_probe-1',  # 'models/SRN_A1_2_probe-2', 'models/SRN_A1_2_probe-3',
-        'models/GRU_A4_A1_2_probe-1')  #, 'models/GRU_A4_A1_2_probe-2', 'models/GRU_A4_A1_2_probe-3')
+        'models/GRU_A1_1_probe-1', 'models/GRU_A1_1_probe-2', 'models/GRU_A1_1_probe-3',
+        'models/GRU_A1_2_probe-1',  'models/GRU_A1_2_probe-2', 'models/GRU_A1_2_probe-3',
+        'models/GRU_A4_A1_2_probe-1', 'models/GRU_A4_A1_2_probe-2', 'models/GRU_A4_A1_2_probe-3')
 architecture = Probing
 N = 5000
 languages = OrderedDict(zip(['L1','L2','L3','L4','L5','L6','L7','L8','L9'], 9*[N]))
@@ -23,7 +22,7 @@ metrics = {'grammatical': ['binary_accuracy'],
            'intermediate_locally': ['mean_squared_error'],
            'subtracting': ['binary_accuracy'],
            'intermediate_recursively': ['mean_squared_error'],
-           'top_stack': ['mean_squared_error_ignore', 'mean_squared_error']}  
+           'top_stack': ['mean_squared_error']}  
 
 classifiers         = ['grammatical', 'intermediate_locally', 'intermediate_recursively', 'subtracting', 'top_stack']
 

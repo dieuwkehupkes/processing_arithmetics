@@ -34,7 +34,6 @@ dmap['x'] = 0
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 id = settings.architecture.get_recurrent_layer_id()
 maxlen = model.layers[id].input_shape[1]
-print(maxlen)
 
 
 ###########################################################################################
@@ -44,7 +43,7 @@ print(maxlen)
 # TODO seems to be no way to check this? Maybe I should make my own model class
 # check if test sets are provided or should be generated
 if isinstance(settings.test_sets, dict):
-    test_data = A1.generate_test_data(settings.test_sets, dmap=dmap,
+    test_data = architecture.generate_test_data(settings.test_sets, dmap=dmap,
                                                          digits=settings.digits, pad_to=maxlen)
 
 elif isinstance(settings.test_sets, list):

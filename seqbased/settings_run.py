@@ -6,16 +6,16 @@ import numpy as np
 
 
 # NETWORK FILES
-architecture = A1
-pref = 'models/GRU_A1_2'
+architecture = Probing
+pref = 'models/GRU_A1_2_probe-1'
 model_architecture = pref+'.json'         # name of file containing model architecture
 model_weights = pref+'_weights.h5'     # name of file containing model weights
-model_dmap = pref+'.dmap'              # dmap of the embeddings layer of the model
+model_dmap = 'models/dmap'              # dmap of the embeddings layer of the model
 
 # SETTINGS OF NETWORK
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
 loss = 'mse'            # loss function
-metrics = ['mean_squared_prediction_error']         # metrics to be monitored
+metrics = ['binary_accuracy']         # metrics to be monitored
 
 # optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
 # loss = 'mse'            # loss function
