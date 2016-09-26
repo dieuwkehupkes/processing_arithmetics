@@ -144,7 +144,7 @@ if __name__ == "__main__":
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)
   parser.add_argument('-opt','--optimizer', type=str, choices = ['sgd','adagrad','adam'], help='Optimizer to be used', required=True)
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
-  parser.add_argument('-nc','--noComp', type=mybool, default=True, help='Whether the comparison layer is removed', required=False)
+  parser.add_argument('-nc','--noComp', type=mybool, help='Whether the comparison layer is removed', required=True)
   parser.add_argument('-ph', '--predictH', type=mybool, help='Whether there is a hidden layer for scalar prediction', required=True)
   parser.add_argument('-v', '--verbose', type=mybool, default=False, help='Whether a lot of output is printed',
                       required=False)
