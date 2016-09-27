@@ -27,6 +27,7 @@ input_size          = 2             # input dimensionality
 pretrained_model = None
 # pretrained_model = 'models/GRU_A1_5'
 # copy_weights     = ['embeddings', 'recurrent']
+copy_weights = None
 
 # TRAINING
 nb_epoch            = 1            # number of iterations
@@ -50,12 +51,6 @@ maxlen                      = max_length(15)
 # VISUALISATION AND LOGS
 weights_animation = False           # create an animation of layer weights,
                                     # provide tuple of layer and param_id
-plot_loss = False                    # plot loss
-plot_prediction = False              # plot prediction error
-plot_embeddings = False               # create scatterplot of embeddings
-plot_esp = False                     # plot spectral radius of recurrent connections
 verbose = 2                         # verbosity mode
-print_every = False                 # print results
+save_every = False                 # print results
 
-# SAVE MODEL
-save_model = True
