@@ -24,8 +24,8 @@ def heldout_treebank(seed, languages=languages_heldout, digits=np.arange(-10,11)
 
 def test_treebank(seed, languages=languages_test, digits=np.arange(-10,11)):
     np.random.seed(seed)
-    for name, N in language.items():
-        yield name, mathTreebank({name, N})
+    for name, N in languages.items():
+        yield name, mathTreebank({name: N}, digits)
 
 
 def parse_language(language_str):
