@@ -6,9 +6,11 @@ model_architecture = pref+'.json'
 model_weights = pref+'_weights.h5'
 dmap = 'models/dmap'
 
-classifiers         = ['grammatical', 'intermediate_locally', 'intermediate_recursively', 'subtracting']
+# classifiers         = ['grammatical', 'intermediate_locally', 'intermediate_recursively', 'subtracting']
 # classifiers         = ['top_stack']
-nb_epochs           = 1
+classifiers         = ['intermediate_locally', 'subtracting']
+# classifiers         = ['top_stack']
+nb_epochs           = 50
 
 optimizer           = 'adam'
 dropout_recurrent   = 0.0
@@ -27,4 +29,5 @@ languages_test              = {'L3': 500, 'L5':500, 'L7':500, 'L7_left':500}
 sample_weights              = None
 test_separately             = True
 maxlen                      = max_length(15)
+mask_zero                   = True
 

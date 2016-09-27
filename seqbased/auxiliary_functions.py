@@ -24,6 +24,7 @@ def print_sum(settings):
     except AttributeError:
         print('Unknown')
 
+
 def save_model(training):
     """
     Save model to file.

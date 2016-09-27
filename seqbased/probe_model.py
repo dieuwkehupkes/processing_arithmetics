@@ -16,7 +16,11 @@ def train_model(architecture, weights, dmap, classifiers, digits, languages_trai
 
     training = Probing()
 
+<<<<<<< Updated upstream
     training.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, classifiers=classifiers, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
+=======
+    training.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer, classifiers=settings.classifiers)
+>>>>>>> Stashed changes
 
     dmap = pickle.load(open(dmap, 'rb'))
 
@@ -44,7 +48,11 @@ def test_model(training, languages_test, dmap, digits, maxlen, test_separately, 
     dmap = pickle.load(open(dmap, 'rb'))
 
     # generate test data
+<<<<<<< Updated upstream
     test_data = Training.generate_test_data(Probing, settings.languages_test, dmap=dmap,
+=======
+    test_data = Probing.generate_test_data(Probing, settings.languages_test, dmap=dmap,
+>>>>>>> Stashed changes
                                             digits=digits,
                                             pad_to=maxlen,
                                             classifiers=classifiers,

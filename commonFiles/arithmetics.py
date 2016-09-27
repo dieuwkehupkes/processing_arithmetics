@@ -186,10 +186,8 @@ class mathExpression(Tree):
         if len(self) > 1:
             children = [child.toString(format) for child in self]
             if format=='infix': return '( ' + ' '.join(children) + ' )'
-            else:
-                childS = '( ' + ' '.join([children[0],children[2]]) + ' )'
-                if format == 'prefix': return children[1] +' ' +childS
-                elif format == 'postfix': return  childS +' '+children[1]
+            elif format == 'prefix': return '( ' + ' '.join([children[1], children[0],children[2]]) + ' )'
+            elif format == 'postfix': return '( ' + ' '.join([children[0],children[2],children[1]]) + ' )'
         else: return str(self[0])
 
     def __str__(self):
