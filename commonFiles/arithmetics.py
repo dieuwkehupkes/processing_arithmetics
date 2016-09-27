@@ -7,6 +7,27 @@ import copy
 import re
 from collections import defaultdict
 
+languages_train = {'L1':3000, 'L2': 3000, 'L4':3000, 'L5':3000, 'L7':3000}
+languages_heldout = {'L3':500, 'L6':800, 'L8':800}
+languages_test = {'L1': 50, 'L2': 500, 'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000, 'L8': 15000, 'L9': 15000, 'L9lb': 15000} 
+
+def training_treebank(seed, languages=languages_train, digits=np.arange(-10,11)):
+    np.random.seed(seed)
+    m = mathTreebank(languages, digits)
+    return m
+
+
+def heldout_treebank(seed, languages=languages_heldout, digits=np.arange(-10,11)):
+    np.random.seed(seed)
+    m = mathTreebank(languages, digits)
+    return m
+
+def test_treebank(seed, languages=languages_test, digits=np.arange(-10,11)):
+    np.random.seed(seed)
+    for name, N in language.items():
+        yield name, mathTreebank({name, N})
+
+
 def parse_language(language_str):
     """
     Give in a string for a language, return
@@ -32,6 +53,8 @@ def parse_language(language_str):
         branching = branching.group()
 
     return [n], operators, branching
+
+
 
 
 
