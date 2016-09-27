@@ -30,7 +30,7 @@ pretrained_model = None
 copy_weights = None
 
 # TRAINING
-nb_epoch            = 1            # number of iterations
+nb_epoch            = 2            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
@@ -40,8 +40,8 @@ sample_weights      = None
 # generate for that language.
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 digits                      = np.arange(-10, 11)
-languages_train             = {'L1': 3}
 # languages_train             = training_treebank(seed=seed)
+languages_train             = {'L3': 6}
 format                      = 'infix'
 languages_val              = heldout_treebank(seed=seed)
 languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=seed)]
@@ -52,5 +52,6 @@ maxlen                      = max_length(15)
 weights_animation = False           # create an animation of layer weights,
                                     # provide tuple of layer and param_id
 verbose = 2                         # verbosity mode
-save_every = False                 # print results
+save_every = 1                 # print results
+filename = 'test'
 

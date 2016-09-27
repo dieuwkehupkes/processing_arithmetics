@@ -3,13 +3,13 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 import pickle
 from generate_training_data import generate_dmap
-from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
+from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import Training
 from arithmetics import mathTreebank
 import re
 
 
-def train(architecture, languages_train, languages_val, validation_split, dmap, digits, format, classifiers, maxlen, pretrained_model, copy_weights, recurrent_layer, train_classifier, train_embeddings, train_recurrent, mask_zero, optimizer, dropout_recurrent, input_dim, input_size, size_hidden, batch_size, nb_epochs, verbose, sample_weights, save_every):
+def train(architecture, languages_train, languages_val, validation_split, dmap, digits, format, classifiers, maxlen, pretrained_model, copy_weights, recurrent_layer, train_classifier, train_embeddings, train_recurrent, mask_zero, optimizer, dropout_recurrent, input_dim, input_size, size_hidden, batch_size, nb_epochs, verbose, sample_weights, save_every, filename):
     """
     Generate model and train.
     """
@@ -26,7 +26,7 @@ def train(architecture, languages_train, languages_val, validation_split, dmap, 
 
     training.train(training_data=training_data, validation_data=validation_data,
                    validation_split=validation_split, batch_size=batch_size,
-                   epochs=nb_epochs, verbosity=verbose,
+                   epochs=nb_epochs, verbosity=verbose, filename=filename,
                    sample_weight=sample_weights, save_every=save_every)
 
     hist = training.trainings_history
@@ -35,6 +35,9 @@ def train(architecture, languages_train, languages_val, validation_split, dmap, 
           '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
     print "Accuracy for for validation set %s:\t" % \
           '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+
+    history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+    pickle.dump(history, open(filename + '.history', 'wb'))
 
     return training
 
@@ -157,7 +160,7 @@ if __name__ == '__main__':
           train_recurrent=settings.train_recurrent, mask_zero=settings.mask_zero,
           optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent,
           input_dim=input_dim, input_size=settings.input_size, sample_weights=settings.sample_weights,
-          size_hidden=settings.size_hidden, save_every=settings.save_every,
+          size_hidden=settings.size_hidden, save_every=settings.save_every, filename=settings.filename,
           batch_size = settings.batch_size, nb_epochs=settings.nb_epoch, verbose=settings.verbose)
 
 

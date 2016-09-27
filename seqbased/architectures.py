@@ -135,7 +135,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False, filename=None):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -145,7 +145,7 @@ class Training(object):
         """
         X_train, Y_train = training_data
 
-        callbacks = self.generate_callbacks(plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every)
+        callbacks = self.generate_callbacks(plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
         sample_weight = self.get_sample_weights(training_data, sample_weight)
 
@@ -245,13 +245,23 @@ class Training(object):
     def visualise_embeddings(self):
         raise NotImplementedError()
 
-    def save_to_file(self, filename):
-        """Save model to file"""
-        json_string = self.model.to_json()
-        f = open(filename, 'w')
-        f.write(json_string)
-        self.model.save(filename+'_weights.h5')
-        f.close()
+    def save_model(self, filename):
+        """
+        Save model to file
+        """
+        # check if filename exists
+        exists = os.path.exists(filename+'.json')
+        while exists:
+            overwrite = raw_input("Filename exists, overwrite? (y/n)")
+            if overwrite == 'y':
+                exists = False
+                continue
+            filename = raw_input("Provide filename (without extension)")
+              
+        # save file
+        model_json = self.model.to_json()
+        open(filename+'.json', 'w').write(model_json)
+        self.model.save_weights(filename+'_weights.h5')
 
     def plot_loss(self, save_to_file=False):
         """
@@ -318,7 +328,7 @@ class Training(object):
             i += 1
         plt.show()
 
-    def generate_callbacks(self, plot_embeddings, print_every, recurrent_id, embeddings_id, save_every):
+    def generate_callbacks(self, plot_embeddings, print_every, recurrent_id, embeddings_id, save_every, filename):
         """
         Generate sequence of callbacks to use during training
         :param recurrent_id:
@@ -328,7 +338,7 @@ class Training(object):
         :return:
         """
 
-        history = TrainingHistory(metrics=self.metrics, recurrent_id=recurrent_id, param_id=1)
+        history = TrainingHistory(metrics=self.metrics, recurrent_id=recurrent_id, param_id=1, save_every=save_every, filename=filename)
         callbacks = [history]
 
         if plot_embeddings:

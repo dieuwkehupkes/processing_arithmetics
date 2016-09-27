@@ -1,5 +1,6 @@
 from keras.callbacks import Callback
 import numpy as np
+import pickle
 
 
 # noinspection PyAttributeOutsideInit
@@ -8,11 +9,16 @@ class TrainingHistory(Callback):
     Track different aspects of the network and network performance
     during training.
     """
-    def __init__(self, metrics, recurrent_id, param_id=1):
+    def __init__(self, metrics, recurrent_id,  save_every, filename, param_id=1):
         assert (isinstance(metrics, dict) or isinstance(metrics, list))
         self.recurrent_id = recurrent_id
         self.param_id = param_id
         self.metrics = metrics
+        if save_every:
+            self.save_every = save_every
+        else:
+            save_every = float("inf")
+        self.filename = filename
         if isinstance(metrics, dict):
             self.mo = True
         else:
@@ -55,6 +61,9 @@ class TrainingHistory(Callback):
         else:
             self.on_epoch_end_1o(epoch, logs)
 
+        if self.i % self.save_every == 0:
+            self.write_to_file()
+
         self.i += 1
 
         # compute esp
@@ -83,5 +92,16 @@ class TrainingHistory(Callback):
                 self.metrics_train[output][metric].append(logs.get(name+metric))
                 self.metrics_val[output][metric].append(logs.get('val_'+name+metric))
 
+
+    def on_train_end(self, logs):
+        self.write_to_file()
+
+
+    def write_to_file(self):
+        """
+        Save model to file.
+        """
+        f = self.filename+str(self.i)+'.h5'
+        self.model.save(f, overwrite=False)
 
 
