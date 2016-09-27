@@ -6,16 +6,17 @@ from collections import OrderedDict
 import numpy as np
 
 
-architecture = Probing
-# prefs = 'models/GRU_A1_1', 'models/GRU_A1_2'
-prefs = 'test',
+architecture = A1
+models = 'models/GRU_A1_1', 'models/GRU_A1_2'
+models = 'test0.h5',
 dmap = 'models/dmap'
 classifiers = ['grammatical', 'intermediate_locally']
+classifiers = None
 
 # SETTINGS OF NETWORK
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
 loss = 'mse'            # loss function
-metrics = ['mean_squared_prediction_error', 'binary_accuracy']         # metrics to be monitored
+metrics = ['mean_squared_prediction_error', 'binary_accuracy', 'mean_squared_error']         # metrics to be monitored
 
 
 # optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
@@ -35,7 +36,7 @@ L_test = L + L_left + L_right
 
 L_test = [('L1',5000), ('L2',5000), ('L3',5000), ('L5',10000), ('L6',10000), ('L7', 10000), ('L9', 10000), ('L9_left',15000)]
 
-L_test = [('L2', 200), ('L3', 200)]
+L_test = L
 
 test_sets = OrderedDict(L_test)
 test_separately = True

@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys 
 sys.path.insert(0, '../commonFiles') 
-from keras.models import Model, model_from_json
+from keras.models import Model, load_model
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer
 from architectures import A1, A4, Probing
@@ -12,11 +12,9 @@ import pickle
 import re
 import numpy as np
 
-def test_model(architecture, model_architecture, model_weights, dmap, optimizer, loss, metrics, digits, test_sets, classifiers, test_separately=True, print_results=True):
+def test_model(architecture, model, dmap, optimizer, loss, metrics, digits, test_sets, classifiers, test_separately=True, print_results=True):
     # load model
-    model = model_from_json(open(model_architecture).read())
-    model.load_weights(model_weights)
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+    model = load_model(model)
     dmap = pickle.load(open(dmap, 'rb'))
     maxlen = model.layers[2].input_shape[1]
 
@@ -24,7 +22,8 @@ def test_model(architecture, model_architecture, model_weights, dmap, optimizer,
     # TODO seems to be no way to check this? Maybe I should make my own model class
     # check if test sets are provided or should be generated
     if isinstance(test_sets, dict):
-        test_data = architecture.generate_test_data(test_sets, dmap=dmap,
+        test_data = architecture.generate_test_data(architecture=architecture, 
+                                                    languages=test_sets, dmap=dmap,
                                                     digits=digits, pad_to=maxlen,
                                                     test_separately=test_separately,
                                                     classifiers=classifiers)
@@ -83,11 +82,9 @@ if __name__ == '__main__':
 
     settings = __import__(import_string)
 
-    for pref in settings.prefs:
-        print("\ntesting model ", pref)
-        model_architecture = pref+'.json'
-        model_weights = pref+'_weights.h5'
+    for model in settings.models:
+        print("\ntesting model ", model)
         model_dmap = settings.dmap
 
-        results = test_model(architecture=settings.architecture, model_architecture=model_architecture, model_weights=model_weights, dmap=model_dmap, optimizer=settings.optimizer, metrics=settings.metrics, loss=settings.loss, digits=settings.digits, test_sets=settings.test_sets, classifiers=settings.classifiers, test_separately=settings.test_separately)
+        results = test_model(architecture=settings.architecture, model=model, dmap=model_dmap, optimizer=settings.optimizer, metrics=settings.metrics, loss=settings.loss, digits=settings.digits, test_sets=settings.test_sets, classifiers=settings.classifiers, test_separately=settings.test_separately)
 
