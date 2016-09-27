@@ -1,9 +1,11 @@
 import sys 
 sys.path.insert(0, '../commonFiles') 
 import argparse
+import pickle
 from generate_training_data import generate_dmap
 from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
 from architectures import Training
+from arithmetics import mathTreebank
 import re
 
 parser = argparse.ArgumentParser()
@@ -25,8 +27,8 @@ settings = __import__(import_string)
 print_sum(settings)
 
 # GENERATE map from words to vectors
-dmap, N_operators, N_digits = generate_dmap(settings.digits, settings.languages_train,
-                                            settings.languages_val, settings.languages_test)
+dmap = pickle.load(open('models/dmap', 'rb'))
+
 if settings.pretrained_model:
     print("\nWarning: dmaps should be equal!\n")
     # TODO you should also build in some dimensionality check in here somehow,
@@ -34,22 +36,31 @@ if settings.pretrained_model:
 
 # CREATE TRAININGS ARCHITECTURE
 training = settings.architecture()
+languages_train = settings.languages_train
+languages_val = settings.languages_val
 
 # GENERATE TRAINING DATA
-# TODO rm classifiers from this func
-X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
-                                       digits=settings.digits, format=settings.format,
-                                       classifiers=settings.classifiers,
-                                       pad_to=settings.maxlen)
+if isinstance(languages_train, dict):
+    X, Y = training.generate_training_data(settings.languages_train, dmap=dmap,
+                                           digits=settings.digits, format=settings.format,
+                                           classifiers=settings.classifiers,
+                                           pad_to=settings.maxlen)
+elif isinstance(languages_train, mathTreebank):
+    X, Y = training.data_from_treebank(languages_train, dmap=dmap, pad_to=settings.maxlen,
+                                       classifiers=settings.classifiers)
+    
 
 # GENERATE VALIDATION DATA
 if settings.languages_val:
     # generate validation data if dictionary is provided
-    X_val, Y_val = training.generate_training_data(settings.languages_val, dmap=dmap,
-                                                   digits=settings.digits,
-                                                   classifier=settings.classifiers,
-                                                   format=settings.format,
-                                                   pad_to=settings.maxlen)
+    if isinstance(languages_val, dict):
+        X_val, Y_val = training.generate_training_data(settings.languages_val, dmap=dmap,
+                                                       digits=settings.digits,
+                                                       format=settings.format,
+                                                       pad_to=settings.maxlen)
+    elif isinstance(languages_val, mathTreebank):
+        X_val, Y_val = training.data_from_treebank(treebank=languages_val, dmap=dmap,
+                                           pad_to=settings.maxlen, classifiers=settings.classifiers)
     validation_data = X_val, Y_val
     validation_split = 0.0
 
@@ -60,9 +71,6 @@ else:
 # COMPUTE NETWORK DIMENSIONS
 input_dim = len(dmap)+1
 input_length = settings.maxlen
-
-# GENERATE EMBEDDINGS MATRIX
-W_embeddings = generate_embeddings_matrix(N_digits, N_operators, settings.input_size, settings.encoding)
 
 if settings.pretrained_model:
     model_string = settings.pretrained_model + '.json'
@@ -81,7 +89,7 @@ else:
     training.generate_model(settings.recurrent_layer, input_dim=input_dim, input_size=settings.input_size,
                             input_length=input_length, size_hidden=settings.size_hidden,
                             dmap=dmap,
-                            W_embeddings=W_embeddings,
+                            W_embeddings=None,
                             train_classifier=settings.train_classifier, 
                             train_embeddings=settings.train_embeddings,
                             train_recurrent=settings.train_recurrent,
@@ -106,29 +114,37 @@ if settings.plot_embeddings is True:
 if settings.plot_esp:
     training.plot_esp()
 
-if settings.languages_test:
+languages_test = settings.languages_test
+if languages_test:
     # generate test data
-    test_data = Training.generate_test_data(
-            settings.architecture,
-            settings.languages_test,
-            dmap=dmap,
-            digits=settings.digits,
-            classifiers=settings.classifiers,
-            format=settings.format,
-            test_separately=settings.test_separately,
-            pad_to=settings.maxlen)
+    if isinstance(languages_test, dict):
+        test_data = Training.generate_test_data(architecture=training, 
+                                                    languages=languages_test, dmap=dmap,
+                                                    digits=digits, pad_to=settings.maxlen,
+                                                    test_separately=settings.test_separately,
+                                                    classifiers=classifiers)
+
+    elif isinstance(languages_test, mathTreebank):
+        X_test, Y_test = training.data_from_treebank(treebank, dmap=dmap, pad_to=settings.maxlen, classifiers=classifiers)
+        test_data = [('test treebank', X_test, Y_test)]
+
+    elif isinstance(languages_test, list):
+        test_data = []
+        for name, treebank in languages_test:
+            X_test, Y_test = training.data_from_treebank(treebank, dmap=dmap, pad_to=settings.maxlen, classifiers=settings.classifiers)
+            test_data.append((name, X_test, Y_test))
 
     hist = training.trainings_history
 
     # TODO hier gaat iets mis met printen bij probing, pas dit aan
-    # print "Accuracy for for training set %s:\t" % \
-    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
-    # print "Accuracy for for validation set %s:\t" % \
-    #       '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
-    # for name, X, Y in test_data:
-    #     acc = training.model.evaluate(X, Y)
-    #     print "Accuracy for for test set %s:" % name,
-    #     print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+    print "Accuracy for for training set %s:\t" % \
+          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
+    print "Accuracy for for validation set %s:\t" % \
+          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+    for name, X, Y in test_data:
+        acc = training.model.evaluate(X, Y)
+        print "Accuracy for for test set %s:" % name,
+        print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
 
 # save model
 if settings.save_model:

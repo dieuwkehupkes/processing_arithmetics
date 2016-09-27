@@ -1,11 +1,15 @@
 # imports
 from keras.layers import SimpleRNN, GRU, LSTM
 from auxiliary_functions import max_length
-from architectures import A1, A4, Probing, Seq2Seq
+from architectures import A1, A4, Seq2Seq
+from arithmetics import training_treebank, test_treebank, heldout_treebank
 import numpy as np
 
+# numpy seed
+seed = 0
+
 # network details
-architecture        = Seq2Seq            # Trainings architecture
+architecture        = A1            # Trainings architecture
 recurrent_layer     = GRU   # options: SimpleRNN, GRU, LSTM
 size_hidden         = 15            # size of the hidden layer
 classifiers         = None
@@ -25,22 +29,21 @@ pretrained_model = None
 # copy_weights     = ['embeddings', 'recurrent']
 
 # TRAINING
-nb_epoch            = 3000            # number of iterations
+nb_epoch            = 1            # number of iterations
 batch_size          = 24            # batchsize during training
 validation_split    = 0.1          # fraction of data to use for testing
 optimizer           = 'adam'     # sgd, rmsprop, adagrad, adadelta, adam, adamax
 dropout_recurrent   = 0.00           # fraction of the inputs to drop for recurrent gates
-sample_weights      = True
+sample_weights      = None
 # provide a dictionary that maps languages to number of sentences to
 # generate for that language.
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 digits                      = np.arange(-10, 11)
-languages_train             = {'L1':3000, 'L2': 3000, 'L4':3000, 'L6':3000}
+languages_train             = {'L1': 3}
+# languages_train             = training_treebank(seed=seed)
 format                      = 'infix'
-# languages_val               = {'L4': 500}
-languages_val              = {'L3': 400, 'L5':400, 'L7':400}
-languages_val               = None
-languages_test              = {'L3': 400, 'L5':400, 'L7':400}
+languages_val              = heldout_treebank(seed=seed)
+languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=seed)]
 test_separately             = True
 maxlen                      = max_length(15)
 
