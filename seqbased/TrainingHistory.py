@@ -58,9 +58,9 @@ class TrainingHistory(Callback):
         self.i += 1
 
         # compute esp
-        recurrent_weights = self.model.layers[self.recurrent_id].get_weights()[self.param_id]
-        spec = np.max(np.absolute(np.linalg.eig(recurrent_weights)[0]))
-        self.esp.append(spec)
+        # recurrent_weights = self.model.layers[self.recurrent_id].get_weights()[self.param_id]
+        # spec = np.max(np.absolute(np.linalg.eig(recurrent_weights)[0]))
+        # self.esp.append(spec)
 
     def on_epoch_end_1o(self, epoch, logs):
         self.losses.append(logs.get('loss'))

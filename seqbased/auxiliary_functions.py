@@ -21,6 +21,7 @@ def print_sum(settings):
     for language, nr in settings.languages_train.items():
         print('%i sentences from %s' % (nr, language))
 
+
 def save_model(training):
     """
     Save model to file.

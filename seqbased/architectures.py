@@ -1,5 +1,5 @@
 from keras.models import Model, model_from_json
-from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, TimeDistributedDense
+from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import sys
@@ -77,7 +77,10 @@ class Training(object):
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
 
-    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, classifiers=None, mask_zero=True, dropout_recurrent=0.0, optimizer='adam'):
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        raise NotImplementedError()
+
+    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
@@ -618,7 +621,9 @@ class Seq2Seq(Training):
                                          return_sequences=True,
                                          dropout_U=self.dropout_recurrent)(embeddings)
 
-        output = TimeDistributed(Dense(1, activation='linear'), name='output')(recurrent)
+        mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
+
+        output = TimeDistributed(Dense(1, activation='linear'), name='output')(mask)
 
         self.model = Model(input=input_layer, output=output)
 
@@ -653,7 +658,7 @@ class Seq2Seq(Training):
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
-        Y_padded = keras.preprocessing.sequence.pad_sequences(Y, maxlen=pad_to)
+        Y_padded = keras.preprocessing.sequence.pad_sequences(Y, maxlen=pad_to, dtype='float32')
 
         X = {'input': X_padded}
         Y = {'output': Y_padded}
@@ -700,7 +705,7 @@ class Probing(Training):
 
         self.metrics = {
                 'grammatical': ['binary_accuracy'], 
-                'intermediate_locally': ['mean_squared_prediction_error'],
+                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
                 'subtracting': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
                 'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
@@ -708,7 +713,7 @@ class Probing(Training):
         self.activations = {
                 'grammatical':'sigmoid',
                 'intermediate_locally': 'linear',
-                'subtracting': 'sigmoid',
+                'subtracting': 'tanh',
                 'intermediate_recursively':'linear',
                 'top_stack': 'linear'}
 
@@ -730,13 +735,15 @@ class Probing(Training):
 
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+        mask1 = Masking(mask_value=0.0)(input_layer)
+
 
         # create embeddings
         embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
                                input_length=self.input_length, weights=W_embeddings,
                                trainable=False,
                                mask_zero=self.mask_zero,
-                               name='embeddings')(input_layer)
+                               name='embeddings')(mask1)
 
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
@@ -744,11 +751,13 @@ class Probing(Training):
                                          trainable=False,
                                          return_sequences=True,
                                          dropout_U=self.dropout_recurrent)(embeddings)
+
+        mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
         
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier]), name=classifier)(recurrent))
+            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier]), name=classifier)(mask))
 
         # create model
         self.model = Model(input=input_layer, output=classifiers)
