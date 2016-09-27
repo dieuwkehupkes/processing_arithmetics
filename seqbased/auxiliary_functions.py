@@ -18,8 +18,11 @@ def print_sum(settings):
     print('Number of epochs: %i' % settings.nb_epoch)
     print('Optimizer: %s' % settings.optimizer)
     print('Trained on:')
-    for language, nr in settings.languages_train.items():
-        print('%i sentences from %s' % (nr, language))
+    try:
+        for language, nr in settings.languages_train.items():
+            print('%i sentences from %s' % (nr, language))
+    except AttributeError:
+        print('Unknown')
 
 def save_model(training):
     """
