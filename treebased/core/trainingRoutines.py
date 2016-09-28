@@ -13,7 +13,7 @@ def evaluate(theta, testData, sample=1):
   for (nw, target) in examples:
     performance.append(nw.evaluate(theta, target, True))
     try:
-      prediction = nw.predict(theta, activate = False, verbose = False)
+      prediction = nw.predict(theta, activate = False, verbose = 1)
       if str(prediction) == str(target): true += 1
       n+=1
     except:  continue
@@ -29,7 +29,7 @@ def storeTheta(theta, outFile):
   except: True #file did not exist, don't bother
   print 'Wrote theta to file: ',outFile
 
-def alternate(optimizer, outDir, datasets, hyperParams, alt, n=5, names=None,verbose=False):
+def alternate(optimizer, outDir, datasets, hyperParams, alt, n=5, names=None,verbose=1):
   if names is not None: assert len(names)==len(alt)
   else: names=['']*len(alt)
   assert len(datasets) == len(alt)
@@ -41,13 +41,16 @@ def alternate(optimizer, outDir, datasets, hyperParams, alt, n=5, names=None,ver
 
   for iteration in range(n):
     for phase, dataset in enumerate(datasets):
-      print 'Training phase', names[phase], iteration
-      plainTrain(optimizer, dataset['train'],dataset['heldout'], hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase], tofix = hyperParams[phase]['tofix'])
+      tofix = hyperParams[phase]['tofix']
+      print 'Training phase', names[phase], iteration, 'fixing:',tofix
+      plainTrain(optimizer, dataset['train'],dataset['heldout'], hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase], tofix = tofix)
       outFile = os.path.join(outDir,'phase'+str(phase)+'startEpoch'+str(counters[phase])+'.theta.pik')
       storeTheta(optimizer.theta, outFile)
       for ephase, edataset in enumerate(datasets):
         print 'Evaluation phase', names[ephase]
-        [tb.evaluate(optimizer.theta, name=kind,verbose=verbose) for kind, tb in edataset.iteritems()]
+        for kind, tb in edataset.iteritems():
+          if kind=='test': continue
+          else: tb.evaluate(optimizer.theta, name=kind,verbose=verbose)
       counters[phase]+=alt[phase]
 
 
@@ -86,6 +89,4 @@ def trainBatch(theta, examples, tofix=[]):
         label = None
       derror = nw.train(theta,grads,activate=True, target = label)
       error+= derror
-      for key in grads.keys():
-        if key[0] in tofix: grads.erase(key) #[name].erase()
   return grads,error
