@@ -1,6 +1,6 @@
 from __future__ import division
-#import random
-from numpy import random as random
+import random
+#from numpy import random as random
 import sys, os, pickle
 try: import cPickle as pickle
 except: import pickle
@@ -35,7 +35,7 @@ def alternate(optimizer, outDir, datasets, hyperParams, alt, n=5, names=None,ver
     print 'Always give theta a seed!'
     sys.exit()
   else:
-    np.random.seed(seed)
+    random.seed(seed)
 
   if names is not None: assert len(names)==len(alt)
   else: names=['']*len(alt)
