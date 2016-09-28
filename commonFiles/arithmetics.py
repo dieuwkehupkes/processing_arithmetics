@@ -9,7 +9,7 @@ from collections import defaultdict, OrderedDict
 
 languages_train = {'L1':3000, 'L2': 3000, 'L4':3000, 'L5':3000, 'L7':3000}
 languages_heldout = {'L3':500, 'L6':800, 'L8':800}
-languages_test = OrderedDict({'L1': 50, 'L2': 500, 'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000, 'L8': 15000, 'L9': 15000, 'L9lb': 15000})
+languages_test = OrderedDict([('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000), ('L9_left', 15000)])
 
 def training_treebank(seed, languages=languages_train, digits=np.arange(-10,11)):
     np.random.seed(seed)
