@@ -1,5 +1,6 @@
 from __future__ import division
-import random
+#import random
+from numpy import random as random
 import sys, os, pickle
 try: import cPickle as pickle
 except: import pickle
@@ -29,7 +30,13 @@ def storeTheta(theta, outFile):
   except: True #file did not exist, don't bother
   print 'Wrote theta to file: ',outFile
 
-def alternate(optimizer, outDir, datasets, hyperParams, alt, n=5, names=None,verbose=1):
+def alternate(optimizer, outDir, datasets, hyperParams, alt, n=5, names=None,verbose=1, seed = -1):
+  if seed == -1:
+    print 'Always give theta a seed!'
+    sys.exit()
+  else:
+    np.random.seed(seed)
+
   if names is not None: assert len(names)==len(alt)
   else: names=['']*len(alt)
   assert len(datasets) == len(alt)

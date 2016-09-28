@@ -1,4 +1,4 @@
-import random
+from numpy import random as random
 import core.classifier as cl
 import core.myRNN as myRNN
 import sys
@@ -119,12 +119,14 @@ class ScalarPredictionTB(TB):
     return mse, accuracy, mspe
 
 def getTestTBs(seed,noComparison, predictH,subset = 0):
+  random.seed(seed)
   for lan, mathtb in arithmetics.test_treebank(seed):
     items = mathtb.examples
     if subset > 0: items = items[:subset]
     yield lan, CompareClassifyTB(items, noComparison=noComparison), ScalarPredictionTB(items, hiddenLayer=predictH)
 
 def getTBs(seed, noComparison, predictH, sets=['train','heldout'], subset = 0):
+  random.seed(seed)
   predictData={}
   compareData={}
   for name in sets:

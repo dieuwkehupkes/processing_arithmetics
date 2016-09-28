@@ -85,7 +85,7 @@ def main(args):
   theta = installTheta(args['pars'], seed = seed, d=args['word'],noComparison=args['noComp'],predictH=args['predictH'])
 
   fullEvaluation(theta, seed=seed, noComparison=args['noComp'], predictH=args['predictH'])
-  #sys.exit()
+  sys.exit()
 
   compareData,predictData = data.getTBs(seed=seed,noComparison=args['noComp'],predictH=args['predictH'], sets=['train','heldout'])
   if args['optimizer']=='adagrad': optimizer = opt.Adagrad(theta)#, lambdaL2 = args['lambda'], lr=args['alpha'])
@@ -138,7 +138,7 @@ def main(args):
     print 'no kind!',args['kind']
 #    sys.exit()
 
-  tr.alternate(optimizer, args['outDir'], datasets, hypers, phases, n = args['nEpochs'], names = names, verbose = (2 if args['verbose'] else 1))
+  tr.alternate(optimizer, args['outDir'], datasets, hypers, phases, n = args['nEpochs'], names = names, verbose = (2 if args['verbose'] else 1),seed=seed)
   #predictData['train'].evaluate(theta,'train',n=20, verbose=True)
   fullEvaluation(theta, seed=seed, noComparison=args['noComp'], predictH=args['predictH'])
 
