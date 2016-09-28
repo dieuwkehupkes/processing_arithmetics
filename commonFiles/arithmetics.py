@@ -2,7 +2,8 @@ from __future__ import print_function
 import numpy as np
 import operator
 from nltk import Tree
-import random
+#import random
+from numpy import random as random
 import copy
 import re
 from collections import defaultdict, OrderedDict
@@ -10,23 +11,24 @@ from collections import defaultdict, OrderedDict
 languages_train = {'L1':3000, 'L2': 3000, 'L4':3000, 'L5':3000, 'L7':3000}
 languages_heldout = {'L3':500, 'L6':800, 'L8':800}
 languages_test = OrderedDict([('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000), ('L9_left', 15000)])
+ds = np.arange(-10,11)
+ops = ['+','-']
 
-def training_treebank(seed, languages=languages_train, digits=np.arange(-10,11)):
+def training_treebank(seed, languages=languages_train, digits=ds):
     np.random.seed(seed)
     m = mathTreebank(languages, digits=digits)
     return m
 
 
-def heldout_treebank(seed, languages=languages_heldout, digits=np.arange(-10,11)):
+def heldout_treebank(seed, languages=languages_heldout, digits=ds):
     np.random.seed(seed)
     m = mathTreebank(languages, digits=digits)
     return m
 
-def test_treebank(seed, languages=languages_test, digits=np.arange(-10,11)):
+def test_treebank(seed, languages=languages_test, digits=ds):
     np.random.seed(seed)
     for name, N in languages.items():
         yield name, mathTreebank(languages={name: N}, digits=digits)
-
 
 def parse_language(language_str):
     """
@@ -44,7 +46,7 @@ def parse_language(language_str):
     if op:
         operators = [op.group()]
     else:
-        operators = ['+','-']
+        operators = ops
 
     # find branchingness
     branch = re.compile('left|right')
@@ -148,10 +150,10 @@ class indexedTreebank(mathTreebank):
 class mathExpression(Tree):
     def __init__(self, length, operators, digits, branching=None):
         if length < 1: print('whatup?')
-        if length == 1:
+        elif length == 1:
             try:
                 Tree.__init__(self,'digit',[random.choice(digits)])
-            except IndexError:
+            except:
                 Tree.__init__(self, 'operator', [random.choice(operators)])
             self.maxDepth = 0
         else:
@@ -160,7 +162,7 @@ class mathExpression(Tree):
             elif branching == 'right':
                 left, right = 1, length-1
             else:
-                left = random.randint(1, length-1)
+                left = random.randint(1, length)
                 right = length - left
             children = [mathExpression(l,operators, digits, branching) for l in [left,right]]
             operator = random.choice(operators)
@@ -378,7 +380,6 @@ class mathExpression(Tree):
 
 
 if __name__ == '__main__':
-    ops = ['+','-']
     digits = np.arange(-5,5)
     languages = {'L4':1}
     m = mathTreebank(languages=languages, digits=digits)
