@@ -135,7 +135,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, weights_animation=False, plot_embeddings=False, logger=False):
+    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -145,7 +145,7 @@ class Training(object):
         """
         X_train, Y_train = training_data
 
-        callbacks = self.generate_callbacks(weights_animation, plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id())
+        callbacks = self.generate_callbacks(plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every)
 
         sample_weight = self.get_sample_weights(training_data, sample_weight)
 
@@ -318,8 +318,7 @@ class Training(object):
             i += 1
         plt.show()
 
-    def generate_callbacks(self, weights_animation, plot_embeddings, print_every, recurrent_id,
-                           embeddings_id):
+    def generate_callbacks(self, plot_embeddings, print_every, recurrent_id, embeddings_id, save_every):
         """
         Generate sequence of callbacks to use during training
         :param recurrent_id:
@@ -331,11 +330,6 @@ class Training(object):
 
         history = TrainingHistory(metrics=self.metrics, recurrent_id=recurrent_id, param_id=1)
         callbacks = [history]
-
-        if weights_animation:
-            layer_id, param_id = weights_animation
-            draw_weights = DrawWeights(figsize=(4, 4), layer_id=layer_id, param_id=param_id)
-            callbacks.append(draw_weights)
 
         if plot_embeddings:
             if plot_embeddings is True:

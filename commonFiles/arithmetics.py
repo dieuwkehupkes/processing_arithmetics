@@ -6,31 +6,30 @@ from nltk import Tree
 from numpy import random as random
 import copy
 import re
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 languages_train = {'L1':3000, 'L2': 3000, 'L4':3000, 'L5':3000, 'L7':3000}
 languages_heldout = {'L3':500, 'L6':800, 'L8':800}
-languages_test = {'L1': 50, 'L2': 500, 'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000, 'L8': 15000, 'L9': 15000, 'L9lb': 15000} 
+languages_test = {'L1': 50, 'L2': 500, 'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000, 'L8': 15000, 'L9': 15000, 'L9lb': 15000}
 ds = np.arange(-10,11)
 ops = ['+','-']
 
 
 def training_treebank(seed, languages=languages_train, digits=ds):
     np.random.seed(seed)
-    m = mathTreebank(languages, digits)
+    m = mathTreebank(languages, digits=digits)
     return m
 
 
 def heldout_treebank(seed, languages=languages_heldout, digits=ds):
     np.random.seed(seed)
-    m = mathTreebank(languages, digits)
+    m = mathTreebank(languages, digits=digits)
     return m
 
 def test_treebank(seed, languages=languages_test, digits=ds):
     np.random.seed(seed)
     for name, N in languages.items():
-        yield name, mathTreebank({name: N}, digits)
-
+        yield name, mathTreebank(languages={name: N}, digits=digits)
 
 def parse_language(language_str):
     """
