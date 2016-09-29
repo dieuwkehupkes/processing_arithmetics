@@ -6,7 +6,12 @@ from collections import Counter,Iterable
 #warnings.filterwarnings('error')
 class Theta(dict):
 
-  def __init__(self, style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN']):
+  def __init__(self, style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN'], seed = -1):
+    if seed==-1:
+      print 'Always give theta a seed!'
+      sys.exit()
+    else: np.random.seed(seed)
+
     if dims is None:
       print 'No dimensions for initialization of theta'
       sys.exit()
@@ -160,13 +165,15 @@ class Theta(dict):
         del self[key]
         print 'removed', key
 
-  def newMatrix(self, name,M= None, size = (0,0), overwrite = True):
-    if name in self:
-      if not overwrite: return
-      else: size = self[name].shape
+  def newMatrix(self, name,M= None, size = (0,0)):#, overwrite = False):
+    if name in self: return
+      # if not overwrite: return
+      # else: size = self[name].shape
     if M is not None: self[name] = np.copy(M)
     else:
       if name[-1]=='M':
+        #print 'glorot',name
+        #scale = 0.1
         scale = np.sqrt(6./(size[0]+size[1])) # glorot uniform initialization
         self[name] = np.random.random_sample(size)*2*scale-scale
       elif name[-1]=='B':
@@ -202,6 +209,7 @@ class Theta(dict):
       raise KeyError(str(key)+' not in theta (missing).')
 
   def __iadd__(self, other):
+    print 'theta __iadd__'
     for key in self:
       if isinstance(self[key],np.ndarray):
         try: self[key] = self[key]+other[key]
@@ -216,21 +224,23 @@ class Theta(dict):
     return self
 
   def __add__(self, other):
-    if isinstance(other,dict): th=True
-    elif isinstance(other,int): th=False
 
+    #if isinstance(other,dict): th=True
+    #elif isinstance(other,int): th=False
+    print 'theta __add__'
     newT = self.gradient()
-    for key in self:
-      if isinstance(self[key],np.ndarray):
-        if th: newT[key] = self[key]+other[key]
-        else: newT[key] = self[key]+other
-      elif isinstance(self[key],dict):
-        for word in other[key]:
-          if th: newT[key][word] = self[key][word]+other[key][word]
-          else: newT[key][word] = self[key][word]+other
-      else:
-        print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
-        sys.exit()
+    newT+=other
+    # for key in self:
+    #   if isinstance(self[key],np.ndarray):
+    #     if th: newT[key] = self[key]+other[key]
+    #     else: newT[key] = self[key]+other
+    #   elif isinstance(self[key],dict):
+    #     for word in other[key]:
+    #       if th: newT[key][word] = self[key][word]+other[key][word]
+    #       else: newT[key][word] = self[key][word]+other
+    #   else:
+    #    print 'Addition of theta failed:', key, 'of type',str(type(self[key]))
+    #    sys.exit()
     return newT
 
   def __itruediv__(self,other):
@@ -296,6 +306,7 @@ class Gradient(Theta):
         print key,'not in gradient(missing), and not able to create it.'
         sys.exit()
         return None
+
   def __setitem__(self, key,val):
     if key in self.molds: dict.__setitem__(self, key, val)
     else:
@@ -315,6 +326,7 @@ class WordMatrix(dict):
     dict.__setitem__(self, self.default, dval)
     [dicItems.remove((k,v)) for (k,v) in dicItems if k==dkey]
     self.update(dicItems)
+
   def extendVocabulary(self, wordlist):
     for word in wordlist:
       self.voc.append(word)

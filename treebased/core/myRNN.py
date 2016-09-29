@@ -1,6 +1,5 @@
 from __future__ import division
 from NN import *
-import random
 import sys
 import numpy as np
 
