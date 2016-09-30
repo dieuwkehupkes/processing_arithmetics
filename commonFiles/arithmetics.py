@@ -190,6 +190,8 @@ class mathExpression(Tree):
             if format=='infix': return '( ' + ' '.join(children) + ' )'
             elif format == 'prefix': return '( ' + ' '.join([children[1], children[0],children[2]]) + ' )'
             elif format == 'postfix': return '( ' + ' '.join([children[0],children[2],children[1]]) + ' )'
+            else:
+                raise ValueError("%s Unexisting format" % format)
         else: return str(self[0])
 
     def __str__(self):
