@@ -6,6 +6,7 @@
 import sys 
 sys.path.insert(0, '../commonFiles') 
 from train_model import generate_training_data, generate_test_data
+from keras.models import load_model
 import argparse
 import re
 import pickle
@@ -16,6 +17,7 @@ from architectures import Probing, A1, Training
 def train_model(model, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, sample_weights, languages_val, verbosity, maxlen, format, save_every, filename):
 
     training = Probing()
+    model = load_model(model)
 
     training.add_pretrained_model(model, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, classifiers=classifiers, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
 
@@ -45,7 +47,7 @@ def test_model(training, languages_test, dmap, digits, maxlen, test_separately, 
 
     # generate test data
     test_data = generate_test_data(Probing(), languages=languages_test, dmap=dmap,
-                                   digits=digits, pad_to=maxlen, classifiers=classifiers,
+                                   digits=digits, maxlen=maxlen, classifiers=classifiers,
                                    test_separately=test_separately, format=format)
 
     hist = training.trainings_history
@@ -92,6 +94,3 @@ if __name__ == '__main__':
 
     if settings.languages_test:
         test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers, sample_weights=settings.sample_weights, format=settings.format)
-
-    # save model
-    save_model(training)

@@ -1,6 +1,7 @@
 from __future__ import print_function
 import sys 
 sys.path.insert(0, '../commonFiles') 
+import keras.preprocessing.sequence
 from keras.models import Model, load_model
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer
@@ -13,20 +14,34 @@ import pickle
 import re
 import numpy as np
 
-def test_model(architecture, model, dmap, optimizer, loss, metrics, digits, test_sets, classifiers, test_separately=True, print_results=True, format='infix'):
+def test_model(architecture, model, dmap, optimizer, loss, metrics, digits, test_sets, classifiers, test_separately=True, print_results=True, format='infix', crop_to_length=True):
     # load model
-    model = load_model(model)
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+    architecture = architecture()
     dmap = pickle.load(open(dmap, 'rb'))
-    maxlen = model.layers[2].input_shape[1]
+    compiled_model = load_model(model)
 
+    maxlen = compiled_model.layers[2].input_shape[1]
     test_data = generate_test_data(architecture=architecture, languages=test_sets, dmap=dmap, digits=digits, maxlen=maxlen, test_separately=test_separately, classifiers=classifiers, format=format)
 
-    # compute overall accuracy
-    metrics = model.metrics_names
+    metrics = compiled_model.metrics_names
     test_results = dict([(metric, OrderedDict()) for metric in metrics])
     for name, X_test, Y_test in test_data:
-        acc = model.evaluate(X_test, Y_test, verbose=0)
+        if crop_to_length == True:
+            length = re.compile('[0-9]+')
+            n = int(length.search(name).group())
+            maxlen = 4*n-3 
+            architecture.add_pretrained_model(compiled_model, dmap, input_length=maxlen)
+            compiled_model = architecture.model
+
+            for key in X_test:
+                X_test[key] = keras.preprocessing.sequence.pad_sequences(X_test[key], maxlen=maxlen)
+            for key in Y_test:
+                # check whether output needs to be padded
+                if Y_test[key].ndim == 1:
+                    continue
+                Y_test[key] = keras.preprocessing.sequence.pad_sequences(Y_test[key], maxlen=maxlen)
+
+        acc = compiled_model.evaluate(X_test, Y_test, verbose=0)
         if print_results:
             print("Accuracy for %s\t" % name, end=" ")
             print('\t'.join(['%s: %f' % (metrics[i], acc[i]) for i in xrange(len(acc))]))
@@ -65,7 +80,7 @@ if __name__ == '__main__':
         print("\ntesting model ", model)
         model_dmap = settings.dmap
 
-        results_model = test_model(architecture=settings.architecture, model=model, dmap=model_dmap, optimizer=settings.optimizer, metrics=settings.metrics, loss=settings.loss, digits=settings.digits, test_sets=settings.test_sets, classifiers=settings.classifiers, test_separately=settings.test_separately, format=settings.format)
+        results_model = test_model(architecture=settings.architecture, model=model, dmap=model_dmap, optimizer=settings.optimizer, metrics=settings.metrics, loss=settings.loss, digits=settings.digits, test_sets=settings.test_sets, classifiers=settings.classifiers, test_separately=settings.test_separately, format=settings.format, crop_to_length=settings.crop_to_length)
 
         results[model] = results_model
 

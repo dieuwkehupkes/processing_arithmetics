@@ -4,14 +4,14 @@ from arithmetics import training_treebank, test_treebank, heldout_treebank
 
 model = 'models_run2/GRU15_seed3_1500.h5' 
 dmap = 'models/dmap'
-save_every = 800
+save_every = False
 
 seed                = 10
 seed_test           = 100
 classifiers         = ['grammatical', 'intermediate_locally', 'intermediate_recursively', 'subtracting']
-nb_epochs           = 800
+nb_epochs           = 1000
 
-filename = model+'_probe_seed'+str(seed)+'.h5'
+filename = model[:-2]+'_probe_seed'+str(seed)+'.h5'
 
 optimizer           = 'adam'
 dropout_recurrent   = 0.0

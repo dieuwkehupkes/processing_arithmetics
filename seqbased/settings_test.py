@@ -44,5 +44,6 @@ languages_test = OrderedDict([('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000
 test_sets = [(name, treebank) for name, treebank in test_treebank(seed=seed)]
 
 test_separately = True
+crop_to_length = False
 
 

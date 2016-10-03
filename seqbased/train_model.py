@@ -90,10 +90,8 @@ def add_model(architecture, pretrained_model, copy_weights, recurrent_layer, tra
     """
 
     if pretrained_model:
-        model_string = pretrained_model + '.json'
-        model_weights =pretrained_model + '_weights.h5'
-
-        architecture.add_pretrained_model(model_string, model_weights, 
+        model = load_model(pretrained_model)
+        architecture.add_pretrained_model(model=model, 
                                       dmap=dmap, copy_weights=copy_weights,
                                       train_classifier=train_classifier,
                                       train_embeddings=train_embeddings,

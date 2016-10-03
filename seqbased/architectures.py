@@ -80,12 +80,12 @@ class Training(object):
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         raise NotImplementedError()
 
-    def add_pretrained_model(self, model, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None):
+    def add_pretrained_model(self, model, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None, input_length=None):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
         copied.
-        :param json_model:      json filename containing model architecture
+        :param model:           A keras model
         :param model_weights:   h5 file containing model weights
         :param optimizer:       optimizer to use during training
         :param copy_weights:    determines which weights should be copied
@@ -106,11 +106,14 @@ class Training(object):
             W_embeddings = model_info['weights_embeddings']
 
         if 'classifier' in copy_weights:
-            W_classifier = model_info['weights_classifier']
-            assert model_info['architecture'] == type(self).__name__
+            W_classifier = model_info['classifiers']
+
+        assert model_info['architecture'] == type(self).__name__
+
+        input_length = input_length if input_length else model_info['input_length']
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=model_info['input_length'], size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, extra_classifiers=classifiers)
+        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, extra_classifiers=classifiers)
         return
 
     @staticmethod
@@ -197,7 +200,6 @@ class Training(object):
         networks that are trained in one of the architectures
         from this class A1 or A2.
         """
-        model = load_model(model)
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)
@@ -206,6 +208,7 @@ class Training(object):
         # create list with layer objects
 
         model_info = {}
+        model_info['classifiers'] = {}
         # loop through layers to get weight matrices
 
         for n_layer in xrange(n_layers):
@@ -234,11 +237,9 @@ class Training(object):
                 model_info['size_hidden'] = layer.output_dim
 
             if layer_type == 'Dense':
-                assert 'weights_classifier' not in model_info, "Model has too many dense layers"
                 
-                assert (model_info['architecture'] == 'A4' and layer.output_dim == 3) or (model_info['architecture'] == 'A1' and layer.output_dim == 1), 'Model architecture does not match, architecture is %s and output shape is %i' % (model_info['architecture'], layer.output_shape)
-                model_info['weights_classifier'] = weights
-
+                model_info['classifiers'][layer.name] = weights
+                
         return model_info
 
     def visualise_embeddings(self):
@@ -404,7 +405,8 @@ class A1(Training):
                                          dropout_U=self.dropout_recurrent)(embeddings)
 
         # create output layer
-        # TODO linear activation?
+        # TODO might be that something is going wrong here
+        W_classifier = W_classifier['output'] 
         output_layer = Dense(1, activation='linear', weights=W_classifier,
                              trainable=self.train_classifier, name='output')(recurrent)
 
@@ -512,6 +514,7 @@ class A4(Training):
         concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
 
         # create output layer
+        W_classifier = W_classifier['output']
         output_layer = Dense(3, activation='softmax', 
                              trainable=self.train_recurrent,
                              weights=W_classifier, name='output')(concat)
@@ -601,9 +604,9 @@ class Seq2Seq(Training):
     def __init__(self):
         # set loss function and metrics
         self.loss_function = 'mean_squared_error'
-        self.metrics = ['mean_squared_prediction_error', 'mean_squared_error']
+        self.metrics = ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy']
 
-    def _build(self, W_embeddings, W_recurrent, W_classifier=None):
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
         Build model
         """
@@ -627,6 +630,7 @@ class Seq2Seq(Training):
 
         mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
 
+        W_classifier = W_classifier['output']
         output = TimeDistributed(Dense(1, activation='linear'), name='output')(mask)
 
         self.model = Model(input=input_layer, output=output)
@@ -729,7 +733,7 @@ class Probing(Training):
                 'top_stack':1}
 
 
-    def _build(self, W_embeddings, W_recurrent, W_classifier=None):
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
         Build model with given embeddings and recurren weights.
         """
@@ -761,7 +765,8 @@ class Probing(Training):
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier]), name=classifier)(mask))
+            weights = W_classifier[classifier]
+            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(mask))
 
         # create model
         self.model = Model(input=input_layer, output=classifiers)
