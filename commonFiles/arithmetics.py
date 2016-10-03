@@ -204,16 +204,32 @@ class mathExpression(Tree):
             return str(self[0])
 
 
-    def solveRecursively(self, return_sequences=False):
+    def solveRecursively(self, format='infix', return_sequences=False):
         """
         Solve expression recursively.
         """
 
+        symbols = self.iterate(format)
+
+        if format=="infix":
+            return self.recursively_infix(symbols=symbols, return_sequences=return_sequences)
+
+        elif format=="prefix":
+            return self.recursively_postfix(symbols=symbols, return_sequences=return_sequences)
+
+        elif format=="postfix":
+            return self.recursively_postfix(symbols=symbols, return_sequences=return_sequences)
+        
+        else:
+            assert ValueError("Invalid postfix")
+
+    def recursively_infix(self, symbols, return_sequences=False):
+        """
+        Solve recursively for infix operator.
+        """
         stack = []
         op = operator.add
         cur = 0
-
-        symbols = self.iterate()
 
         # return arrays
         stack_list = []
@@ -252,6 +268,43 @@ class mathExpression(Tree):
             return intermediate_results, stack_list
 
         return cur
+
+    def recursively_prefix(self, symbols, return_sequences=False):
+        raise NotImplementedError("method not implemented")
+
+    def recursively_postfix(self, symbols, return_sequences=False):
+
+        stack = []
+        cur = 0
+        stack_list = []
+        intermediate_resuls = []
+
+        for symbol in symbols:
+            if symbol in ['+', '-']:
+                op = {'+':operator.add, '-':operator.sub}[symbol]
+                prev = stack.pop()
+                cur = op(prev, cur)
+            elif symbol in ['(', ')']:
+                pass
+            else:
+                # is digit
+                stack.append(cur)
+                cur = int(symbol)
+
+            if stack == []:
+                stack_list.append([(-12345, -12345)])
+            else:
+                stack_list.append(copy.copy(stack))
+
+            intermediade_results.append(cur)
+
+        assert len(stack) == 0, "expression not grammatical"
+        
+        if return_sequences:
+            return intermediate_results, stack_list
+
+        return cur
+                
 
     def solveLocally(self, return_sequences=False):
         """
@@ -336,14 +389,14 @@ class mathExpression(Tree):
         return result
 
     
-    def get_targets(self):
+    def get_targets(self, format='infix'):
         """
         Compute all intermediate state variables
         that different approaches of computing the outcome
         of the equation would need.
         """
         intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
-        intermediate_recursively, stack_recursively = self.solveRecursively(return_sequences=True)
+        intermediate_recursively, stack_recursively = self.solveRecursively(return_sequences=True, format=format)
 
         self.targets = {}
 
@@ -373,11 +426,11 @@ class mathExpression(Tree):
             print(target)
 
 
-    def iterate(self):
+    def iterate(self, format='infix'):
         """
         Iterate over symbols in expression.
         """
-        for symbol in str(self).split():
+        for symbol in self.toString(format).split():
             yield symbol
 
 
@@ -385,17 +438,12 @@ if __name__ == '__main__':
     digits = np.arange(-5,5)
     languages = {'L4':1}
     m = mathTreebank(languages=languages, digits=digits)
-    for expression, answer in m.examples:
-        expression.get_targets()
-        print(expression)
-        for target in expression.targets:
-            print("\n%s: %s" % (target, expression.targets[target]))
-    exit()
+
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveRecursively()
+            outcome = expression.solveRecursively(format='postfix')
             if outcome != answer:
                 incorrect += 1
 
