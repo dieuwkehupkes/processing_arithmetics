@@ -6,7 +6,7 @@ from arithmetics import training_treebank, test_treebank, heldout_treebank
 import numpy as np
 
 # numpy seed
-seed = 7
+seed = 0
 save_every = 500                 
 
 # network details
@@ -24,7 +24,7 @@ mask_zero           = True          # set to true to apply masking to input
 input_size          = 2             # input dimensionality
 
 n = {GRU: 'GRU', SimpleRNN: 'SRN'}
-filename = 'models_run2/'+n[recurrent_layer]+str(size_hidden)+ '_seed' + str(seed) + '_'
+filename = 'models_run2/'+n[recurrent_layer]+str(size_hidden)+ 'postfix_seed' + str(seed) + '_'
 
 # PRETRAIN
 # Use this to train an already trained model
@@ -45,7 +45,7 @@ sample_weights      = None
 # languages \in L_i, L_i+, L_i-, L_iright, L_ileft for 1<i<8)
 digits                      = np.arange(-10, 11)
 languages_train             = training_treebank(seed=seed)
-format                      = 'infix'
+format                      = 'postfix'
 languages_val              = heldout_treebank(seed=seed)
 languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=seed)]
 test_separately             = True

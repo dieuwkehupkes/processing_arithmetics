@@ -1,5 +1,8 @@
 # imports
 from keras.layers import SimpleRNN, GRU, LSTM
+import sys
+sys.path.insert(0, '../commonFiles')
+from arithmetics import test_treebank
 from auxiliary_functions import max_length
 from architectures import A1, A4, Probing
 from collections import OrderedDict
@@ -7,11 +10,13 @@ import numpy as np
 
 
 architecture = A1
-models = 'models/GRU_A1_1', 'models/GRU_A1_2'
-models = 'test0.h5',
+models = 'models_run2/GRU15postfix_seed0_1500.h5', 'models_run2/GRU15postfix_seed1_1500.h5',  'models_run2/GRU15postfix_seed2_1500.h5', 'models_run2/GRU15postfix_seed3_1500.h5'
+# models = 'models_run2/GRU10_seed0_1500.h5', 'models_run2/GRU10_seed1_1500.h5',  'models_run2/GRU10_seed2_1500.h5', 'models_run2/GRU10_seed3_1500.h5'
 dmap = 'models/dmap'
 classifiers = ['grammatical', 'intermediate_locally']
 classifiers = None
+seed = 100
+format = 'postfix'
 
 # SETTINGS OF NETWORK
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
@@ -34,11 +39,10 @@ L_left = [('L1_left',500), ('L2_left',500), ('L3_left',500), ('L4_left',1500), (
 L_right = [('L1_right',500), ('L2_right',500), ('L3_right',500), ('L4_right',1500), ('L5_right',1500), ('L6_right',2500), ('L7_right', 3500), ('L8_right',4500), ('L9_right', 5500), ('L10_right', 6500)]
 L_test = L + L_left + L_right
 
-L_test = [('L1',5000), ('L2',5000), ('L3',5000), ('L5',10000), ('L6',10000), ('L7', 10000), ('L9', 10000), ('L9_left',15000)]
+languages_test = OrderedDict([('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000), ('L9_left', 15000)])
 
-L_test = L
+test_sets = [(name, treebank) for name, treebank in test_treebank(seed=seed)]
 
-test_sets = OrderedDict(L_test)
 test_separately = True
 
 

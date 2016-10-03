@@ -430,7 +430,7 @@ class A1(Training):
         treebank = mathTreebank(languages, digits=digits)
         random.shuffle(treebank.examples)
 
-        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to, format='infix')
+        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to, format=format)
 
         return data
 
@@ -441,6 +441,7 @@ class A1(Training):
         """
         X, Y = [], []
         for expression, answer in treebank.examples:
+            str_expression = expression.toString(format).split()
             input_seq = [dmap[i] for i in expression.toString(format).split()]
             answer = answer
             X.append(input_seq)
@@ -541,7 +542,7 @@ class A4(Training):
 
         treebanks = (treebank1, treebank2)
 
-        X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None)
+        X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None, format=format)
 
 
         return X_padded, Y

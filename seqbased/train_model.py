@@ -53,31 +53,31 @@ def generate_training_data(architecture, languages, dmap, digits, format, classi
                                                pad_to=maxlen)
     elif isinstance(languages, mathTreebank):
         X, Y = architecture.data_from_treebank(treebank=languages, dmap=dmap, pad_to=maxlen,
-                                           classifiers=classifiers)
+                                           classifiers=classifiers, format=format)
 
     return X, Y
 
 
-def generate_test_data(architecture, languages, dmap, digits, maxlen, test_separately, classifiers):
+def generate_test_data(architecture, languages, dmap, digits, maxlen, test_separately, classifiers, format):
     """
     Generate test data
     """
 
     if isinstance(languages, dict):
-        test_data = Training.generate_test_data(architecture=training, 
+        test_data = Training.generate_test_data(architecture=architecture, 
                                                     languages=languages, dmap=dmap,
-                                                    digits=digits, pad_to=settings.maxlen,
-                                                    test_separately=settings.test_separately,
-                                                    classifiers=classifiers)
+                                                    digits=digits, pad_to=maxlen,
+                                                    test_separately=test_separately,
+                                                    classifiers=classifiers, format=format)
 
     elif isinstance(languages, mathTreebank):
-        X_test, Y_test = training.data_from_treebank(treebank, dmap=dmap, pad_to=settings.maxlen, classifiers=classifiers)
+        X_test, Y_test = architecture.data_from_treebank(languages, dmap=dmap, pad_to=maxlen, classifiers=classifiers, format=format)
         test_data = [('test treebank', X_test, Y_test)]
 
     elif isinstance(languages, list):
         test_data = []
         for name, treebank in languages:
-            X_test, Y_test = training.data_from_treebank(treebank, dmap=dmap, pad_to=settings.maxlen, classifiers=settings.classifiers)
+            X_test, Y_test = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=maxlen, classifiers=classifiers, format=format)
             test_data.append((name, X_test, Y_test))
 
     return test_data
@@ -116,12 +116,12 @@ def add_model(architecture, pretrained_model, copy_weights, recurrent_layer, tra
 
     return architecture
 
-def test_model(training, languages_test, dmap, digits, maxlen, test_separately, classifiers):
+def test_model(training, languages_test, dmap, digits, maxlen, test_separately, classifiers, format=format):
 
     test_data = generate_test_data(architecture=training, languages=languages_test,
                                        dmap=dmap, digits=digits, maxlen=maxlen,
                                        test_separately=test_separately,
-                                       classifiers=classifiers)
+                                       classifiers=classifiers, format=format)
 
     for name, X, Y in test_data:
         acc = training.model.evaluate(X, Y)
@@ -168,5 +168,5 @@ if __name__ == '__main__':
         test_model(training=training, languages_test=settings.languages_test, dmap=dmap,
                    digits=settings.digits, maxlen=settings.maxlen,
                    test_separately=settings.test_separately,
-                   classifiers=settings.classifiers)
+                   classifiers=settings.classifiers, format=settings.format)
 
