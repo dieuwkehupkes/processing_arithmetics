@@ -108,8 +108,6 @@ class Training(object):
         if 'classifier' in copy_weights:
             W_classifier = model_info['classifiers']
 
-        assert model_info['architecture'] == type(self).__name__
-
         input_length = input_length if input_length else model_info['input_length']
 
         # run build function
@@ -381,7 +379,7 @@ class A1(Training):
     """
     def __init__(self):
         self.loss_function = 'mean_squared_error'
-        self.metrics = ['mean_squared_prediction_error']
+        self.metrics = ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -765,7 +763,10 @@ class Probing(Training):
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
-            weights = W_classifier[classifier]
+            try:
+                weights = W_classifier[classifier]
+            except TypeError:
+                weights = None
             classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(mask))
 
         # create model
