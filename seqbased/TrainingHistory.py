@@ -17,7 +17,7 @@ class TrainingHistory(Callback):
         if save_every:
             self.save_every = save_every
         else:
-            save_every = float("inf")
+            self.save_every = float("inf")
         self.filename = filename
         if isinstance(metrics, dict):
             self.mo = True

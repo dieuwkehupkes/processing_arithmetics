@@ -1,4 +1,4 @@
-from keras.models import Model, model_from_json
+from keras.models import Model, load_model
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
@@ -80,7 +80,7 @@ class Training(object):
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         raise NotImplementedError()
 
-    def add_pretrained_model(self, json_model, model_weights, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None):
+    def add_pretrained_model(self, model, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
@@ -91,7 +91,7 @@ class Training(object):
         :param copy_weights:    determines which weights should be copied
         """
 
-        model_info = self.get_model_info(json_model, model_weights)
+        model_info = self.get_model_info(model)
 
         # find recurrent layer
         recurrent_layer = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}[model_info['recurrent_layer']]
@@ -135,7 +135,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False, filename=None):
+    def train(self, training_data, batch_size, epochs, filename, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -189,7 +189,7 @@ class Training(object):
     def model_summary(self):
         print(self.model.summary())
 
-    def get_model_info(self, json_model, model_weights):
+    def get_model_info(self, model):
         """
         Get different type of weights from a json model. Check
         if network falls in family of networks that we are
@@ -197,8 +197,7 @@ class Training(object):
         networks that are trained in one of the architectures
         from this class A1 or A2.
         """
-        model = model_from_json(open(json_model).read())
-        model.load_weights(model_weights)
+        model = load_model(model)
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)

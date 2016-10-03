@@ -5,6 +5,7 @@
 
 import sys 
 sys.path.insert(0, '../commonFiles') 
+from train_model import generate_training_data, generate_test_data
 import argparse
 import re
 import pickle
@@ -12,31 +13,26 @@ from auxiliary_functions import generate_embeddings_matrix, print_sum, save_mode
 from architectures import Probing, A1, Training
 
 
-def train_model(architecture, weights, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, sample_weights, languages_val, verbosity, maxlen):
+def train_model(model, dmap, classifiers, digits, languages_train, optimizer, dropout_recurrent, batch_size, nb_epochs, validation_split, sample_weights, languages_val, verbosity, maxlen, format, save_every, filename):
 
     training = Probing()
 
-<<<<<<< Updated upstream
-    training.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, classifiers=classifiers, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
-=======
-    training.add_pretrained_model(architecture, weights, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, dropout_recurrent=dropout_recurrent, optimizer=optimizer, classifiers=settings.classifiers)
->>>>>>> Stashed changes
+    training.add_pretrained_model(model, dmap, copy_weights=['recurrent', 'embeddings'], train_classifier=True, train_embeddings=False, train_recurrent=False, mask_zero=True, classifiers=classifiers, dropout_recurrent=dropout_recurrent, optimizer=optimizer)
 
     dmap = pickle.load(open(dmap, 'rb'))
 
-    X_train, Y_train = training.generate_training_data(languages_train, dmap, digits, classifiers, pad_to=maxlen)
+    X_train, Y_train = generate_training_data(training, languages_train, dmap, digits, format, classifiers, maxlen)
 
     validation_data = None
     if languages_val:
-        X_val, Y_val = training.generate_training_data(languages_val, dmap, digits, classifiers, pad_to=maxlen)
+        X_val, Y_val = generate_training_data(training, languages_val, dmap, digits, format, classifiers, maxlen)
         validation_data = (X_val, Y_val)
 
-
-    training.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, validation_data=validation_data, sample_weight=sample_weights, verbosity=verbosity)
+    training.train((X_train, Y_train), batch_size=batch_size, epochs=nb_epochs, validation_split=validation_split, validation_data=validation_data, sample_weight=sample_weights, verbosity=verbosity, save_every=save_every, filename=filename)
 
     return training
 
-def test_model(training, languages_test, dmap, digits, maxlen, test_separately, classifiers, sample_weights):
+def test_model(training, languages_test, dmap, digits, maxlen, test_separately, classifiers, sample_weights, format):
     """
     Test model on new test set, plot also the training and validation
     error the model had during training
@@ -48,15 +44,9 @@ def test_model(training, languages_test, dmap, digits, maxlen, test_separately, 
     dmap = pickle.load(open(dmap, 'rb'))
 
     # generate test data
-<<<<<<< Updated upstream
-    test_data = Training.generate_test_data(Probing, settings.languages_test, dmap=dmap,
-=======
-    test_data = Probing.generate_test_data(Probing, settings.languages_test, dmap=dmap,
->>>>>>> Stashed changes
-                                            digits=digits,
-                                            pad_to=maxlen,
-                                            classifiers=classifiers,
-                                            test_separately=test_separately)
+    test_data = generate_test_data(Probing(), languages=languages_test, dmap=dmap,
+                                   digits=digits, pad_to=maxlen, classifiers=classifiers,
+                                   test_separately=test_separately, format=format)
 
     hist = training.trainings_history
 
@@ -98,10 +88,10 @@ if __name__ == '__main__':
 
     settings = __import__(import_string)
 
-    training = train_model(architecture=settings.model_architecture, weights=settings.model_weights, dmap=settings.dmap, digits=settings.digits, languages_train=settings.languages_train, classifiers=settings.classifiers, optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, maxlen=settings.maxlen, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, languages_val=settings.languages_val, sample_weights=settings.sample_weights, verbosity=settings.verbosity)
+    training = train_model(model=settings.model, dmap=settings.dmap, classifiers=settings.classifiers, digits=settings.digits, languages_train=settings.languages_train,  optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent, batch_size=settings.batch_size, nb_epochs=settings.nb_epochs, validation_split=settings.validation_split, sample_weights=settings.sample_weights, languages_val=settings.languages_val, verbosity=settings.verbosity, maxlen=settings.maxlen, format=settings.format, save_every=settings.save_every, filename=settings.filename)
 
     if settings.languages_test:
-        test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers, sample_weights=settings.sample_weights)
+        test_model(training, settings.languages_test, settings.dmap, settings.digits, settings.maxlen, settings.test_separately, settings.classifiers, sample_weights=settings.sample_weights, format=settings.format)
 
     # save model
     save_model(training)
