@@ -277,7 +277,7 @@ class mathExpression(Tree):
         stack = []
         cur = 0
         stack_list = []
-        intermediate_resuls = []
+        intermediate_results = []
 
         for symbol in symbols:
             if symbol in ['+', '-']:
@@ -296,10 +296,8 @@ class mathExpression(Tree):
             else:
                 stack_list.append(copy.copy(stack))
 
-            intermediade_results.append(cur)
+            intermediate_results.append(cur)
 
-        assert len(stack) == 0, "expression not grammatical"
-        
         if return_sequences:
             return intermediate_results, stack_list
 
