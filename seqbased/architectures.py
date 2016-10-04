@@ -550,21 +550,15 @@ class A4(Training):
         """
         Generate data from mathTreebank object.
         """
-        treebank1 = copy.deepcopy(treebank)
-        treebank2 = treebank
-        random.shuffle(treebank1.examples)
-        random.shuffle(treebank2.examples)
         # create empty input and targets
         X1, X2, Y = [], [], []
 
         # loop over examples
-        for example1, example2 in zip(treebank1.examples, treebank2.examples):
-            expr1, answ1 = example1
-            expr2, answ2 = example2
-            input_seq1 = [dmap[i] for i in expr1.toString(format).split()]
-            input_seq2 = [dmap[i] for i in expr2.toString(format).split()]
+        for example1, example2, compare in treebank.pairedExamples:
+            input_seq1 = [dmap[i] for i in example1.toString(format).split()]
+            input_seq2 = [dmap[i] for i in example2.toString(format).split()]
             answer = np.zeros(3)
-            answer[np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])] = 1
+            answer[np.argmax([compare == '<', compare == '=',  compare == '>'])] = 1
             X1.append(input_seq1)
             X2.append(input_seq2)
             Y.append(answer)
