@@ -20,6 +20,9 @@ def test_model(architecture, model, dmap, optimizer, loss, metrics, digits, test
     dmap = pickle.load(open(dmap, 'rb'))
     compiled_model = load_model(model)
 
+    architecture.add_pretrained_model(model=compiled_model, dmap=dmap, classifiers=classifiers)
+    compiled_model = architecture.model
+
     maxlen = compiled_model.layers[2].input_shape[1]
     test_data = generate_test_data(architecture=architecture, languages=test_sets, dmap=dmap, digits=digits, maxlen=maxlen, test_separately=test_separately, classifiers=classifiers, format=format)
 
@@ -30,7 +33,7 @@ def test_model(architecture, model, dmap, optimizer, loss, metrics, digits, test
             length = re.compile('[0-9]+')
             n = int(length.search(name).group())
             maxlen = 4*n-3 
-            architecture.add_pretrained_model(compiled_model, dmap, input_length=maxlen)
+            architecture.add_pretrained_model(compiled_model, dmap, input_length=maxlen, classifiers=classifiers)
             compiled_model = architecture.model
 
             for key in X_test:
