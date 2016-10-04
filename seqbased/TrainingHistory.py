@@ -61,7 +61,7 @@ class TrainingHistory(Callback):
         else:
             self.on_epoch_end_1o(epoch, logs)
 
-        if self.i % self.save_every == 0:
+        if self.i % self.save_every == 0 and self.i!=0:
             self.write_to_file()
 
         self.i += 1
