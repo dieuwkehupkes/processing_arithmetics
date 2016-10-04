@@ -413,7 +413,7 @@ class mathExpression(Tree):
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
 
         # element on top of stack
-        self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
+        # self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
 
 
     def print_all_targets(self):
