@@ -278,6 +278,7 @@ class mathExpression(Tree):
         number_stack = []
         op = None
         cur = 0
+        intermediate_results, stack_list = [], []
 
         for symbol in symbols:
             if symbol in ['+', '-']:
@@ -295,6 +296,17 @@ class mathExpression(Tree):
                 # is digit
                 operator_stack.append(cur)
                 cur = digit
+
+            # store
+            if stack == []:
+                stack_list.append([(-12345, -12345)])     # empty stack representation
+            else:
+                stack_list.append(copy.copy(stack))
+
+            if return_sequences:
+                return intermediate_results, stack_list
+
+            intermediate_results.append(cur)
 
         return cur
 
@@ -382,6 +394,9 @@ class mathExpression(Tree):
         
         else:
             return result
+
+
+    def solve_locally_prefix(symbols, return_sequences=False):
 
 
     def solveAlmost(self, return_sequences=False):
