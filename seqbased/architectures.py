@@ -8,6 +8,7 @@ from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights
 from PlotEmbeddings import PlotEmbeddings
+import copy
 from Logger import Logger
 import matplotlib.pyplot as plt
 import numpy as np
@@ -74,6 +75,7 @@ class Training(object):
         self.model = None
         self.classifiers = extra_classifiers
 
+
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
 
@@ -107,6 +109,7 @@ class Training(object):
 
         if 'classifier' in copy_weights:
             W_classifier = model_info['classifiers']
+
 
         input_length = input_length if input_length else model_info['input_length']
 
@@ -201,7 +204,6 @@ class Training(object):
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)
-        assert (n_layers == 6 or n_layers == 4)
 
         # create list with layer objects
 
@@ -234,9 +236,9 @@ class Training(object):
                 model_info['weights_recurrent'] = weights
                 model_info['size_hidden'] = layer.output_dim
 
-            if layer_type == 'Dense':
-                
-                model_info['classifiers'][layer.name] = weights
+            else:
+                if weights != []:
+                    model_info['classifiers'][layer.name] = weights
                 
         return model_info
 
@@ -403,8 +405,8 @@ class A1(Training):
                                          dropout_U=self.dropout_recurrent)(embeddings)
 
         # create output layer
-        # TODO might be that something is going wrong here
-        W_classifier = W_classifier['output'] 
+        if W_classifier != None:
+            W_classifier = W_classifier['output'] 
         output_layer = Dense(1, activation='linear', weights=W_classifier,
                              trainable=self.train_classifier, name='output')(recurrent)
 
@@ -482,7 +484,7 @@ class A4(Training):
 
         self.metrics = ['categorical_accuracy']
 
-    def _build(self, W_embeddings, W_recurrent, W_classifier):
+    def _build(self, W_embeddings, W_recurrent, W_classifier={'output':None}):
         """
         Build the trainings architecture around
         the model.
@@ -512,7 +514,8 @@ class A4(Training):
         concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
 
         # create output layer
-        W_classifier = W_classifier['output']
+        if W_classifier != None:
+            W_classifier = W_classifier['output']
         output_layer = Dense(3, activation='softmax', 
                              trainable=self.train_recurrent,
                              weights=W_classifier, name='output')(concat)
@@ -535,24 +538,22 @@ class A4(Training):
                                 map from input symbols to integers
         """
         # generate treebank with examples
-        treebank1 = mathTreebank(languages, digits=digits)
-        random.shuffle(treebank1.examples)
-        treebank2 = mathTreebank(languages, digits=digits)
-        random.shuffle(treebank2.examples)
+        treebank = mathTreebank(languages, digits=digits)
 
-        treebanks = (treebank1, treebank2)
-
-        X_padded, Y = A4.data_from_treebank(treebanks, dmap=dmap, pad_to=pad_to, classifiers=None, format=format)
+        X_padded, Y = A4.data_from_treebank(treebank, dmap=dmap, pad_to=pad_to, classifiers=None, format=format)
 
 
         return X_padded, Y
 
     @staticmethod
-    def data_from_treebank(treebanks, dmap, pad_to=None, classifiers=None, format='infix'):
+    def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
         Generate data from mathTreebank object.
         """
-        treebank1, treebank2 = treebanks
+        treebank1 = copy.deepcopy(treebank)
+        treebank2 = treebank
+        random.shuffle(treebank1.examples)
+        random.shuffle(treebank2.examples)
         # create empty input and targets
         X1, X2, Y = [], [], []
 
@@ -711,9 +712,9 @@ class Probing(Training):
 
         self.metrics = {
                 'grammatical': ['binary_accuracy'], 
-                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error'],
+                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy'],
                 'subtracting': ['binary_accuracy'],
-                'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error'],
+                'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy'],
                 'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
 
         self.activations = {
@@ -808,7 +809,7 @@ class Probing(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-            expression.get_targets()
+            expression.get_targets(format=format)
             input_seq = [dmap[i] for i in expression.toString(format).split()]
             X.append(input_seq)
             for classifier in classifiers:
