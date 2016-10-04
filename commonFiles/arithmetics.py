@@ -219,7 +219,7 @@ class mathExpression(Tree):
             return self.recursively_infix(symbols=symbols, return_sequences=return_sequences)
 
         elif format=="prefix":
-            return self.recursively_postfix(symbols=symbols, return_sequences=return_sequences)
+            return self.recursively_prefix(symbols=symbols, return_sequences=return_sequences)
 
         elif format=="postfix":
             return self.recursively_postfix(symbols=symbols, return_sequences=return_sequences)
@@ -274,7 +274,29 @@ class mathExpression(Tree):
         return cur
 
     def recursively_prefix(self, symbols, return_sequences=False):
-        raise NotImplementedError("method not implemented")
+        operator_stack = []
+        number_stack = []
+        op = None
+        cur = 0
+
+        for symbol in symbols:
+            if symbol in ['+', '-']:
+                op = {'+':operator.add, '-':operator.sub}[symbol]
+                operator_stack.append(op)
+                number_stack.append(cur)
+                stack.append(cur)
+            elif symbol == '(':
+                pass
+            elif symbol == ')':
+                op = operator_stack.pop
+                prev = number_stack.pop
+                cur = op(prev, cur)
+            else:
+                # is digit
+                operator_stack.append(cur)
+                cur = digit
+
+        return cur
 
     def recursively_postfix(self, symbols, return_sequences=False):
 
@@ -445,7 +467,7 @@ if __name__ == '__main__':
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveRecursively(format='postfix')
+            outcome = expression.solveRecursively(format='infix')
             if outcome != answer:
                 incorrect += 1
 
