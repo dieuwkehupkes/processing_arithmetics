@@ -342,12 +342,24 @@ class mathExpression(Tree):
         return cur
                 
 
-    def solveLocally(self, return_sequences=False):
+    def solveLocally(self, format='infix', return_sequences=False):
         """
         Input a syntactically correct bracketet
         expression, solve by counting brackets
         and depth.
         """
+
+        symbols = self.iterate(format=format)
+
+        if format == 'infix':
+            return self.solve_locally_infix(symbols, return_sequences=return_sequences)
+
+        elif format == 'prefix':
+            return self.solve_locally_prefix(symbols, return_sequences=return_sequences)
+
+
+    def solve_locally_infix(self, symbols, return_sequences=False):
+
         result = 0
         bracket_stack = []
         subtracting = False
@@ -357,7 +369,7 @@ class mathExpression(Tree):
         brackets = []
         subtracting_list = []
 
-        symbols = self.iterate()
+        symbols = self.iterate(format='infix')
 
         for symbol in symbols:
             
@@ -395,9 +407,35 @@ class mathExpression(Tree):
         else:
             return result
 
+    def solve_locally_prefix(self, symbols, return_sequences=False):
 
-    def solve_locally_prefix(symbols, return_sequences=False):
+        ops = {'+':operator.add, '-': operator.sub, False: operator.add, True: operator.sub}
 
+        subtracting = False
+        cur = 0
+        stack = [False]
+
+        for symbol in symbols:
+            if symbol in ['+', '-']:
+                sub = {'+': False, '-': True}[symbol]
+                subtracting = stack.pop()
+                if subtracting is False:
+                    stack.append(sub)
+                elif subtracting is True:
+                    stack.append(not sub)
+                stack.append(subtracting)
+
+            elif symbol in ['(', ')']:
+                pass
+
+            else:
+                # is digit
+                digit = int(symbol)
+                subtracting = stack.pop()
+                op = ops[subtracting]
+                cur = op(cur, digit)
+
+        return cur
 
     def solveAlmost(self, return_sequences=False):
         """
@@ -465,11 +503,11 @@ class mathExpression(Tree):
             print(target)
 
 
-    def iterate(self, format='infix'):
+    def iterate(self, format):
         """
         Iterate over symbols in expression.
         """
-        for symbol in self.toString(format).split():
+        for symbol in self.toString(format=format).split():
             yield symbol
 
 
@@ -477,13 +515,20 @@ if __name__ == '__main__':
     digits = np.arange(-5,5)
     languages = {'L4':1}
     m = mathTreebank(languages=languages, digits=digits)
+    # for expression, answer in m.examples:
+    #     expression.get_targets()
+    #     print(expression)
+    #     for target in expression.targets:
+    #         print("\n%s: %s" % (target, expression.targets[target]))
 
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveRecursively(format='infix')
+            outcome = expression.solveLocally(format='infix')
             if outcome != answer:
                 incorrect += 1
+                print(expression, answer, outcome)
+                raw_input()
 
         print("percentage incorrect for length %i: %f" % (length, incorrect/50))
