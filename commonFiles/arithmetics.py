@@ -547,11 +547,11 @@ if __name__ == '__main__':
     digits = np.arange(-5,5)
     languages = {'L5':10}
     m = mathTreebank(languages=languages, digits=digits)
-    for expression, answer in m.examples:
-        print(expression.toString())
-        print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-        raw_input('\n')
-    exit()
+    # for expression, answer in m.examples:
+        # print(expression.toString())
+        # print(expression.toString(digit_noise=0.5, operator_noise=0.5))
+        # raw_input('\n')
+
     #     expression.get_targets()
     #     print(expression)
     #     for target in expression.targets:
@@ -561,7 +561,7 @@ if __name__ == '__main__':
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format='infix')
+            outcome = expression.solveLocally(format='prefix')
             if outcome != answer:
                 incorrect += 1
                 print(expression, answer, outcome)

@@ -9,14 +9,17 @@ from collections import OrderedDict
 import numpy as np
 
 
-architecture = A1
-models = 'models_run2/GRU15postfix_seed0_1500.h5', 'models_run2/GRU15postfix_seed1_1500.h5',  'models_run2/GRU15postfix_seed2_1500.h5', 'models_run2/GRU15postfix_seed3_1500.h5'
+architecture = Probing
+models = 'models_probe/GRU15_seed0probe_seed10_500.h5', 'models_probe/GRU15_seed0probe_seed20_500.h5', 'models_probe/GRU15_seed1probe_seed10_500.h5', 'models_probe/GRU15_seed1probe_seed20_500.h5'
+# models =  'models_run2/GRU15_seed1probe_seed10_1000.h5',  'models_run2/GRU15_seed2probe_seed10_1000.h5', 'models_run2/GRU15_seed1probe_seed10_1000.h5',
+# models = 'models_run2/GRU15postfix_seed0_1500.h5', 'models_run2/GRU15postfix_seed1_1500.h5',  'models_run2/GRU15postfix_seed2_1500.h5', 'models_run2/GRU15postfix_seed3_1500.h5'
 # models = 'models_run2/GRU10_seed0_1500.h5', 'models_run2/GRU10_seed1_1500.h5',  'models_run2/GRU10_seed2_1500.h5', 'models_run2/GRU10_seed3_1500.h5'
 dmap = 'models/dmap'
-classifiers = ['grammatical', 'intermediate_locally']
-classifiers = None
+classifiers = ['intermediate_recursively', 'intermediate_locally', 'subtracting']
+classifiers = ['subtracting']
+# classifiers = None
 seed = 100
-format = 'postfix'
+format = 'infix'
 
 # SETTINGS OF NETWORK
 optimizer = 'adam'      # sgd, rmsprop, adagrad, adadelta, adam of adamax
@@ -44,6 +47,6 @@ languages_test = OrderedDict([('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000
 test_sets = [(name, treebank) for name, treebank in test_treebank(seed=seed)]
 
 test_separately = True
-crop_to_length = False
+crop_to_length = True
 
 

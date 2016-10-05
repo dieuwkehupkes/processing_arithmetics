@@ -3,6 +3,7 @@ sys.path.insert(0, '../commonFiles')
 import argparse
 import pickle
 from generate_training_data import generate_dmap
+from keras.models import load_model
 from auxiliary_functions import generate_embeddings_matrix, print_sum
 from architectures import Training
 from arithmetics import mathTreebank
@@ -95,7 +96,7 @@ def add_model(architecture, pretrained_model, copy_weights, recurrent_layer, tra
                                       dmap=dmap, copy_weights=copy_weights,
                                       train_classifier=train_classifier,
                                       train_embeddings=train_embeddings,
-                                      train_recurrent=strain_recurrent,
+                                      train_recurrent=train_recurrent,
                                       mask_zero=mask_zero,
                                       optimizer=optimizer,
                                       dropout_recurrent=dropout_recurrent)
