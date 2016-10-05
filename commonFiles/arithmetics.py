@@ -369,7 +369,7 @@ class mathExpression(Tree):
         brackets = []
         subtracting_list = []
 
-        symbols = self.iterate()
+        symbols = self.iterate(format='infix')
 
         for symbol in symbols:
             
@@ -525,7 +525,7 @@ if __name__ == '__main__':
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format='prefix')
+            outcome = expression.solveLocally(format='infix')
             if outcome != answer:
                 incorrect += 1
                 print(expression, answer, outcome)
