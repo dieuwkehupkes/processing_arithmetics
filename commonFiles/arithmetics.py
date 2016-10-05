@@ -188,7 +188,39 @@ class mathExpression(Tree):
         """
         return eval(self.__str__())
 
-    def toString(self, format='infix'):
+    def toString(self, format='infix', digit_noise=None, operator_noise=None):
+        """
+        :param numbers noise: standard deviation of digit noise
+        :param operator_noise: change of changing operator
+        """
+        string_repr = self.make_string(format=format)
+        if digit_noise or operator_noise:
+            symbol_list = string_repr.split()
+            symbols = [self.add_noise(symbol, digit_noise, operator_noise) for symbol in symbol_list]
+            string_repr = ' '.join(symbols)
+
+        return string_repr
+            
+    def add_noise(self, item, digit_noise, operator_noise):
+        """
+        Add noise to item
+        """
+        if item in ['(', ')']:
+            pass
+        elif item == '+':
+            if np.random.uniform() < operator_noise:
+                item = '-'
+        elif item == '-':
+            if np.random.uniform() < operator_noise:
+                item = '-'
+        else:
+            # item is digit
+            item = str(int(np.round(np.random.normal(loc=int(item), scale=digit_noise))))
+
+        return item
+
+    def make_string(self, format='infix'):
+
         if len(self) > 1:
             children = [child.toString(format) for child in self]
             if format=='infix': return '( ' + ' '.join(children) + ' )'
@@ -513,9 +545,13 @@ class mathExpression(Tree):
 
 if __name__ == '__main__':
     digits = np.arange(-5,5)
-    languages = {'L4':1}
+    languages = {'L5':10}
     m = mathTreebank(languages=languages, digits=digits)
-    # for expression, answer in m.examples:
+    for expression, answer in m.examples:
+        print(expression.toString())
+        print(expression.toString(digit_noise=0.5, operator_noise=0.5))
+        raw_input('\n')
+    exit()
     #     expression.get_targets()
     #     print(expression)
     #     for target in expression.targets:
