@@ -8,15 +8,22 @@ from collections import defaultdict
 import sys
 
 def getData(directory = '../data4keras'):
-  trainData = []
-  testData = []
-  for name in ['X_','Y_','strings_']:
-    with open(directory + '/' +name + 'train' + '.pkl', 'rb') as f:
-        trainData.append(pickle.load(f))
-    with open(directory + '/' +name + 'test' + '.pkl', 'rb') as f:
-        testData.append(pickle.load(f))
-  return trainData,testData
+  import data4keras.trainData02 as trainData
+  import data4keras.testData02 as testData
+#  trainData = []
+#  testData = []
+##  for name in ['X_','Y_','strings_']:
+ #   with open(directory + '/' +name + 'train' + '.pkl', 'rb') as f:
+ #       trainData.append(pickle.load(f))
+ #   with open(directory + '/' +name + 'test' + '.pkl', 'rb') as f:
+ #       testData.append(pickle.load(f))
+  return (trainData.inputs,trainData.outputs,trainData.strings),(testData.inputs,testData.outputs,testData.strings)
 
+
+def shuffleData(d):
+  indices = np.arange(len(d[0]))
+  np.random.shuffle(indices)
+  return zip(*[(d[0][i],d[1][i],d[2][i]) for i in indices])
 
 def defineModel():
 	# generate your input layer, this is not actually containing anything, 
@@ -27,13 +34,13 @@ def defineModel():
 
 	# create the model and compile it
 	model = Model(input=input_layer, output=classifier)
-	model.compile(loss='mean_squared_error', optimizer='sgd', metrics=['mean_squared_prediction_error','binary_accuracy'])
+	model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mean_squared_prediction_error','binary_accuracy'])
 
 	return model
 
 def trainModel(model,data, verbose = 2):
 	# train the model, takes 10 percent out of the training data for validation
-	history = model.fit({'input': data[0]}, {'output': data[1]}, validation_split=0.1, batch_size=24, nb_epoch=200, shuffle=True, verbose = verbose)
+	history = model.fit({'input': np.array(data[0])}, {'output': np.array(data[1])}, validation_split=0.1, batch_size=24, nb_epoch=500, shuffle=True, verbose = verbose)
 
 def saveModel(model, name = 'something'):
 	model.save_weights(name+'_weights.h5',overwrite=True)
@@ -47,22 +54,26 @@ def loadModel(model_name):
 
 def evaluate(model, data, name):
   model_metrics = model.metrics_names
-  results = model.evaluate(data[0], data[1])
+  results = model.evaluate(np.array(data[0]), np.array(data[1]))
   print('Evaluation on '+name+' data ('+str(len(data[0]))+' examples)')
   print('\t'.join(['%s: %f' % (i,j) for i, j in zip(model_metrics,  results)]))
   dataPerLength = defaultdict(list)
-  for item, label, string in zip(data):
-    expressionL = (string.split()+3)/4
+  for item, label, string in zip(*data):
+    expressionL = (len(string.split())+3)/4
     dataPerLength[expressionL].append((item,label))
   perL = {}
-  for length, data in dataPerLength.iteritems():
-    results=model.evaluate(*zip(data), verbose = 0)
-    perL[length]=results[model_metrics.index('mean_squared_prediction_error')]
-  print('\tMSPE per length: '+ str(perL))
+  for length, databit in dataPerLength.iteritems():
+    x,y = zip(*databit)
+    results=model.evaluate(np.array(x),np.array(y))
+    print('results for length '+str(length)+':' +'\t'.join(['%s: %f' % (i,j) for i, j in zip(model_metrics,  results)]))
+    #perL[length]=results[model_metrics.index('mean_squared_prediction_error')]
+#  print('\tMSPE per length: '+ str(perL))
 
 def main():
-  name  = 'model'+sys.argv[1]
+  name  = sys.argv[1]
   trainData,testData = getData()
+  trainData = shuffleData(trainData)
+  testData = shuffleData(testData)
   model=defineModel()
   trainModel(model,trainData)
   saveModel(model, name)
