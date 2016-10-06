@@ -1,54 +1,85 @@
-from generate_training_data import generate_treebank
 import numpy as np
+import sys
+sys.path.insert(0, '../commonFiles') 
+from arithmetics import mathTreebank
 import random
 import matplotlib.pyplot as plt
 
-def compute_baseline(languages, digits, random_range):
-
-    # generate treebanks
-    treebank1 = generate_treebank(languages, digits=digits)
-    random.shuffle(treebank1.examples)
-    treebank2 = generate_treebank(languages, digits=digits)
-    random.shuffle(treebank1.examples)
+def compute_baseline(treebank, digits, random_range):
 
     # initialise accuracy
-    accuracy = 0
+    sse = 0
+    sae = 0
+    correct = 0
+    correct_single = 0
+    
 
-    for example1, example2 in zip(treebank1.examples, treebank2.examples):
-        expr1, answ1 = example1
-        expr2, answ2 = example2
+    for expr1, expr2, comp in treebank.pairedExamples:
+
+        ans1 = expr1.solve()
+        ans2 = expr2.solve()
 
         # generate number within certain range of outckkome of example
-        gen_answ1 = np.random.random_integers(answ1-random_range, answ1+random_range, 1)[0]
-        gen_answ2 = np.random.random_integers(answ2-random_range, answ2+random_range, 1)[0]
+        gen_ans1 = random_range*(np.random.ranf()-0.5) + ans1
+        gen_ans2 = random_range*(np.random.ranf()-0.5) + ans2
 
-        true_answ = np.argmax([answ1 < answ2, answ1 == answ2, answ1 > answ2])
-        gen_answ = np.argmax([gen_answ1 < gen_answ2, gen_answ1 == gen_answ2, gen_answ1 > gen_answ2])
 
-        accuracy += true_answ == gen_answ
+        sae += abs(gen_ans1-ans1)
+        sse += np.power(ans1- gen_ans1, 2)
+        correct_single += ans1 == np.round(gen_ans1)
 
-    acc = float(accuracy)/len(treebank1.examples)
+        gen_c = np.argmax([gen_ans1 < gen_ans2, gen_ans1 == gen_ans2, gen_ans1 > gen_ans2])
+        gen_comp = {0:'<', 2:'>', 1:'='}
 
-    return acc
+        correct += gen_comp == comp
+
+    total = float(len(treebank.examples))
+
+    accuracy = correct/total
+    mse = sse/total
+    mae = sae/total
+    binary_accuracy = correct_single/total
+
+    return accuracy, mse, mae, binary_accuracy
 
 if __name__ == '__main__':
-    languages_train = {'L1':10000, 'L2': 10000, 'L4':10000, 'L6':10000}
-    languages_test = {'L3': 10000, 'L5':10000, 'L7':10000}
+
+    languages_test = dict([('L1', 50), ('L2', 100), ('L3', 150), ('L4', 300), ('L5', 500), ('L6', 1000), ('L7', 1500), ('L8', 1500), ('L9', 1500), ('L9_left', 1500)])
+
+
     digits = np.arange(-10,11)
-    range = 10
 
-    accuracies_train, accuracies_test = [], []
+    treebank = mathTreebank(languages_test, digits=digits)
 
-    ranges = np.arange(0, 30)
+    accs, mses, maes, bin_accs = [], [], [], []
+
+    ranges = np.arange(0, 10)
 
     for r in ranges:
-        print(r)
-        accuracies_train.append(compute_baseline(languages_train, digits, r))
-        accuracies_test.append(compute_baseline(languages_test, digits, r))
+        print r
+        acc, mse, mae, binary_accuracy = compute_baseline(treebank, digits, r)
+        accs.append(acc)
+        mses.append(mse)
+        maes.append(mae)
+        bin_accs.append(binary_accuracy)
 
 
-    plt.plot(ranges, accuracies_train, label="Accuracy training set")
-    plt.plot(ranges, accuracies_test, label="Accuracy test set")
-    plt.legend()
+    print("start plotting")
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(221)
+    ax1.plot(ranges, bin_accs)
+    ax1.title.set_text("Binary accuracy compare")
+    ax2 = fig.add_subplot(222)
+    ax2.plot(ranges, bin_accs)
+    ax2.title.set_text("Binary accuracy scalar prediction")
+    ax3 = fig.add_subplot(223)
+    ax3.plot(ranges, mses)
+    ax3.title.set_text("Mean Squared Error")
+    ax4 = fig.add_subplot(224)
+    ax4.plot(ranges, maes)
+    ax4.title.set_text("Mean Absolute Error")
+    plt.xlabel("range")
     plt.show()
+    exit()
 
