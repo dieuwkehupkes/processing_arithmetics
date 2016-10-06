@@ -99,11 +99,6 @@ class Theta(dict):
       grad = gradient[key]
       if historicalGradient is not None:
         histgrad = historicalGradient[key]
-
-
-#        historical_grad[name] += np.square(grad[name])
-#       theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
-
         if type(self[key]) == np.ndarray:
           histgrad+= np.square(grad)
           self[key] -= alpha*np.divide(grad,np.sqrt(histgrad)+1e-6)#
@@ -113,6 +108,7 @@ class Theta(dict):
             self[key][word] -= alpha*np.divide(grad[word],np.sqrt(histgrad[word])+1e-6)
         else: raise NameError("Cannot update theta")
       else:
+        print 'noHistGrad'
         try: self[key] -=alpha*grad
         except:
           for word in grad: self[key][word] -=alpha*grad[word]

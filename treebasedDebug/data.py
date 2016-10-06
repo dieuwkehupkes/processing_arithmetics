@@ -39,9 +39,9 @@ def confusionS(matrix,labels):
   return s
 
 class CompareClassifyTB(TB):
-  def __init__(self, examples,noComparison=False):
+  def __init__(self, examples,comparison=False):
     self.labels = ['<','=','>']
-    self.noComp = noComparison
+    self.comparison = comparison
     self.examples = self.convertExamples(examples)
 
 
@@ -49,7 +49,7 @@ class CompareClassifyTB(TB):
     examples = []
 
     for left, right, label in items:
-      if self.noComp: classifier = cl.ClassifierNoComparison([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
+      if not self.comparison: classifier = cl.ClassifierNoComparison([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
       else: classifier = cl.Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
       examples.append((classifier,label))
     return examples
@@ -118,40 +118,40 @@ class ScalarPredictionTB(TB):
     return mse, accuracy, mspe
 
 
-def getTBs(digits, operators, predict = False, noComparison = False, split = 0.1):
-  languages_train = {'L1': 10000, 'L2': 10000, 'L4': 10000, 'L6': 10000}
-  languages_test = {'L3': 400, 'L5': 400, 'L7': 400}
+# def getTBs(digits, operators, predict = False, comparison = False, split = 0.1):
+#   languages_train = {'L1': 10000, 'L2': 10000, 'L4': 10000, 'L6': 10000}
+#   languages_test = {'L3': 400, 'L5': 400, 'L7': 400}
+#
+#   trainData = arithmetics.mathTreebank(languages_train, digits)
+#   testData = arithmetics.mathTreebank(languages_test, digits)
+#
+#   if not predict:
+#     items = trainData.examples[:]
+#     random.shuffle(items)
+#     htb = CompareClassifyTB(items[:int(split*len(items))],comparison=comparison)
+#     ttb = CompareClassifyTB(items[int(split * len(items)):], comparison=comparison)
+#     testtb = CompareClassifyTB(testData.examples, comparison=comparison)
+#     compareData={'train':ttb,'heldout':htb,'test':testtb}
+#
+#     htb = ScalarPredictionTB(items[:int(split * len(items))])
+#     ttb = ScalarPredictionTB(items[int(split * len(items)):])
+#     testtb = ScalarPredictionTB(testData.examples)
+#     predictData = {'train':ttb,'heldout':htb,'test':testtb}
+#
+#   return compareData, predictData
 
-  trainData = arithmetics.mathTreebank(languages_train, digits)
-  testData = arithmetics.mathTreebank(languages_test, digits)
-
-  if not predict:
-    items = trainData.examples[:]
-    random.shuffle(items)
-    htb = CompareClassifyTB(items[:int(split*len(items))],noComparison=noComparison)
-    ttb = CompareClassifyTB(items[int(split * len(items)):], noComparison=noComparison)
-    testtb = CompareClassifyTB(testData.examples, noComparison=noComparison)
-    compareData={'train':ttb,'heldout':htb,'test':testtb}
-
-    htb = ScalarPredictionTB(items[:int(split * len(items))])
-    ttb = ScalarPredictionTB(items[int(split * len(items)):])
-    testtb = ScalarPredictionTB(testData.examples)
-    predictData = {'train':ttb,'heldout':htb,'test':testtb}
-
-  return compareData, predictData
-
-def getComparisonTest(seed, noComparison):
+def getComparisonTest(seed, comparison):
   for name, mtb in arithmetics.test_treebank(seed):
-    yield name, CompareClassifyTB(mtb.pairedExamples, noComparison=noComparison)
+    yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
 
 
-def getComparisonTBs(seed, noComparison):
+def getComparisonTBs(seed, comparison):
   data = {}
   for kind in 'train','heldout':
     if kind == 'train': mtb = arithmetics.training_treebank(seed)
     elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
     print len(mtb.pairedExamples), len(mtb.examples)
-    data[kind] = CompareClassifyTB(mtb.pairedExamples, noComparison=noComparison)
+    data[kind] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
   return data
 
 
