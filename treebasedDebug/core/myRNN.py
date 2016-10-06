@@ -1,8 +1,5 @@
 from __future__ import division
 from NN import *
-import random
-import sys
-import numpy as np
 
 
 def this2RNN(nltkTree, activation):
@@ -19,7 +16,6 @@ def nodeLength(node):
   if isinstance(node,Leaf): return 1
   else: return sum([nodeLength(n) for n in node.inputs])
 def getLeaves(node):
-#  print node
   if isinstance(node,Leaf): return [node]
   else:
     leaves =[]
@@ -32,6 +28,7 @@ class RNN():
   def __init__(self, nltkTree, activation='tanh'):
     self.root =this2RNN(nltkTree, activation)
     self.length = len(nltkTree.leaves())
+
   def activate(self,theta):
     self.root.forward(theta, True, False)
     return self.root.a

@@ -1,24 +1,10 @@
 from __future__ import division
-import random
+from numpy import random as npRandom
+import random as random0
 import sys, os, pickle
 try: import cPickle as pickle
 except: import pickle
-
-
-def evaluate(theta, testData, sample=1):
-  performance = []
-  true = 0
-  n=0
-  examples = random.sample(testData,int(sample*len(testData)))
-  for (nw, target) in examples:
-    performance.append(nw.evaluate(theta, target, True))
-    try:
-      prediction = nw.predict(theta, activate = False, verbose = False)
-      if str(prediction) == str(target): true += 1
-      n+=1
-    except:  continue
-  return sum(performance)/len(performance), true/len(examples)
-
+from collections import defaultdict
 
 def storeTheta(theta, outFile):
   # secure storage: keep back-up of old version until writing is complete
@@ -29,16 +15,16 @@ def storeTheta(theta, outFile):
   except: True #file did not exist, don't bother
   print '\tWrote theta to file: ',outFile
 
-def alternate(optimizer, datasets, outDir, hyperParams, alt, n=5, names=None):
+def alternate(optimizer, datasets, outDir, hyperParams, alt, n=5, names=None,seed = 0):
+  npRandom.seed(seed)
+  random0.seed(seed)
   if names is not None: assert len(names)==len(alt)
   else: names=['']*len(alt)
   assert len(datasets) == len(alt)
   assert len(hyperParams) == len(alt)
   counters = [0]*len(alt)
-  #histGrad = theta.gradient()
-  outFile = os.path.join(outDir, 'initial' + '.theta.pik')
-  storeTheta(optimizer.theta, outFile)
-
+  storeTheta(optimizer.theta, os.path.join(outDir, 'initial' + '.theta.pik'))
+  evals = defaultdict(list)
 
   for phase, dataset in enumerate(datasets):
     print 'Evaluating',names[phase]
@@ -47,38 +33,44 @@ def alternate(optimizer, datasets, outDir, hyperParams, alt, n=5, names=None):
   for iteration in range(n):
     for phase, dataset in enumerate(datasets):
       print 'Training phase', names[phase]
-      plainTrain(optimizer, dataset['train'],dataset['heldout'], hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase])
+      newEval = plainTrain(optimizer, dataset['train'],dataset['heldout'], hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase])
+      [evals[name].extend(eval) for name, eval in newEval.items()]
+
+      counters[phase]+=alt[phase]
       outFile = os.path.join(outDir,'phase'+str(phase)+'startEpoch'+str(counters[phase])+'.theta.pik')
       storeTheta(optimizer.theta, outFile)
       print 'Evaluation phase', names[phase]
-      [tb.evaluate(optimizer.theta, name=kind) for kind, tb in dataset.iteritems()]
-      counters[phase]+=alt[phase]
+      [tb.evaluate(optimizer.theta, name=kind,verbose=1) for kind, tb in dataset.iteritems()]
 
+  return evals
 
 
 def plainTrain(optimizer, tTreebank, hTreebank, hyperParams, nEpochs, nStart = 0):
   print hyperParams
-  hData = hTreebank.getExamples()
-  tData = tTreebank.getExamples()
+
   batchsize = hyperParams['bSize']
+  evals=defaultdict(list)
+  tData = tTreebank.getExamples()
 
   for i in xrange(nStart, nStart+nEpochs):
+
     print '\tEpoch', i, '(' + str(len(tData)) + ' examples)'
-    random.shuffle(tData)  # randomly split the data into parts of batchsize
-    errors = []
+
+    npRandom.shuffle(tData)  # randomly split the data into parts of batchsize
     for batch in xrange((len(tData) + batchsize - 1) // batchsize):
-      #grads = theta.gradient()
       minibatch = tData[batch * batchsize:(batch + 1) * batchsize]
-      error,grads = trainBatch(optimizer.theta, minibatch, fixWords=False, fixWeights=False)
-      errors.append(error)
+      error,grads = trainBatch(optimizer.theta, minibatch, toFix=hyperParams['toFix'])
       if batch % 50 == 0:
         print '\t\tBatch', batch, ', average error:', error / len(minibatch), ', theta norm:', optimizer.theta.norm()
       optimizer.update(grads,len(minibatch)/len(tData))
-    loss, acc = evaluate(optimizer.theta,hData)
-    print '\tTraining loss:', sum(errors)/len(tData), 'heldout loss:',loss, 'heldout accuracy:',acc
 
+    evals['heldout'].append(hTreebank.evaluate(optimizer.theta,verbose = 0))
+    evals['train'].append(tTreebank.evaluate(optimizer.theta,verbose = 0))
+    for name, eval in evals.iteritems():
+      print '\t'+' '.join(([name+' '+metric+': '+str(value) for (metric, value) in eval[-1].items()]))
+  return evals
 
-def trainBatch(theta, examples, fixWords = False,fixWeights=False):
+def trainBatch(theta, examples, toFix):
   error = 0
   grads = theta.gradient()
   if len(examples)>0:
@@ -88,7 +80,7 @@ def trainBatch(theta, examples, fixWords = False,fixWeights=False):
         nw = nw[0]
       except:
         label = None
-      derror = nw.train(theta,grads,activate=True, target = label, fixWords=fixWords, fixWeights=fixWeights)
+      derror = nw.train(theta,grads,activate=True, target = label)
       error+= derror
-      if fixWords: grads[('word',)].erase()
+  grads.removeAll(toFix)
   return error, grads

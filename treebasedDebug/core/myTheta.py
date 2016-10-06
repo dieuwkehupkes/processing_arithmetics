@@ -6,7 +6,7 @@ from collections import Counter,Iterable
 #warnings.filterwarnings('error')
 class Theta(dict):
 
-  def __init__(self, style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN'],seed=0):
+  def __init__(self, style, dims, embeddings = None,  vocabulary = ['UNKNOWN'],seed=0):
     if dims is None:
       print 'No dimensions for initialization of theta'
       sys.exit()
@@ -24,15 +24,12 @@ class Theta(dict):
       else: self[('word',)][vocabulary[i]]=embeddings[i]
     print 'initialized Theta. Dims:', self.dims
 
-  def additiveComposition(self):
-    d= self.dims['inside']
+  def removeAll(self,toRemove=[]):
     for key in self.keys():
-      if key[0]=='composition':
-        arity = len(key[2].split(', '))
-        if key[-1]=='M': self[key]=np.concatenate([np.identity(d)]*arity,1)
-        if key[-1]=='B': self[key]=np.zeros_like(self[key])
+      if key[0] in toRemove: del self[key]
 
   def extend4Classify(self,nChildren, nClasses,dComparison = 0):
+    self.removeAll(['classify','comparison'])
     if dComparison < 0:
         self.newMatrix(('classify', 'M'), None, (nClasses, nChildren*self.dims['inside']))
         self.newMatrix(('classify', 'B'), None, (nClasses,))
@@ -45,31 +42,33 @@ class Theta(dict):
       self.newMatrix(('comparison','B'),None,(dComparison,))
       self.newMatrix(('classify','B'),None,(nClasses,))
 
-  def extend4Prediction(self):
-    self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
-    self.newMatrix(('predict', 'B'), None, (1,))
+  def extend4Prediction(self, dHidden = 0):
+    self.removeAll(['predict', 'predictH'])
+    if dHidden<0:
+      self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
+      self.newMatrix(('predict', 'B'), None, (1,))
+    else:
+      if dHidden == 0:
+        try: dHidden = self.dims['hidden']
+        except: dHidden = self.dims['inside']
+      self.newMatrix(('predict', 'M'), None, (1, dHidden))
+      self.newMatrix(('predict', 'B'), None, (1,))
+      self.newMatrix(('predictH', 'M'), None, (dHidden, self.dims['inside']))
+      self.newMatrix(('predictH', 'B'), None, (dHidden,))
 
   def installMatrices(self):
      # set local dimensionality variables
       din=self.dims['inside']
-      if self.style == 'IORNN':
-        dout=self.dims['outside']
 
       print '\tCreate composition matrices of all kinds'
-      for arity in xrange(1,self.dims['maxArity']+1):
+      try: minArity =self.dims['minArity']
+      except: minArity = 1
+      for arity in xrange(minArity,self.dims['maxArity']+1):
         lhs = '#X#'
         rhs = '('+', '.join(['#X#']*arity)+')'
         cat ='composition'
         self.newMatrix((cat,lhs,rhs,'I','M'),None,(din,arity*din))
         self.newMatrix((cat,lhs,rhs,'I','B'),None,(din,))
-        if self.style == 'RAE':
-          cat = 'reconstruction'
-          self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
-          self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
-        if self.style == 'IORNN':
-          for j in xrange(arity):
-            self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(dout,(arity-1)*din+dout))
-            self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(dout,))
 
   def reset(self, cats):
     for cat in cats:
@@ -246,6 +245,11 @@ class WordMatrix(dict):
     dict.__setitem__(self, self.default, dval)
     [dicItems.remove((k,v)) for (k,v) in dicItems if k==dkey]
     self.update(dicItems)
+
+  def extendVocabulary(self, wordlist):
+    for word in wordlist:
+      self.voc.append(word)
+      self[word] = self[self.default]
 
   def __setitem__(self, key,val):
     if self.default not in self: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None

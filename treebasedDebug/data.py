@@ -1,3 +1,4 @@
+from __future__ import division
 import random
 import core.classifier as cl
 import core.myRNN as myRNN
@@ -42,15 +43,14 @@ class CompareClassifyTB(TB):
   def __init__(self, examples,comparison=False):
     self.labels = ['<','=','>']
     self.comparison = comparison
-    self.examples = self.convertExamples(examples)
+    self.examples = self.convertExamples(examples, comparison)
 
 
-  def convertExamples(self,items):
+  def convertExamples(self,items, comparison):
     examples = []
 
     for left, right, label in items:
-      if not self.comparison: classifier = cl.ClassifierNoComparison([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
-      else: classifier = cl.Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
+      classifier = cl.Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, comparison = comparison)
       examples.append((classifier,label))
     return examples
 
@@ -58,6 +58,7 @@ class CompareClassifyTB(TB):
     if n == 0: n = len(self.examples)
     error = 0.0
     true = 0.0
+    diffs = []
     confusion = defaultdict(Counter)
     for nw, target in self.getExamples(n):
       error += nw.evaluate(theta, target)
@@ -66,13 +67,19 @@ class CompareClassifyTB(TB):
       if prediction == target:
         true += 1
       else:
-        if verbose == 2: print 'wrong prediction:', prediction, 'target:', target
+        string = str(nw)
+        results = eval(string.split(':')[1])
+        diffs.append(abs(results[0]-results[1]))
+        if verbose == 2:      print 'wrong prediction:', prediction, 'target:', target, string, results, 'difference:', abs(results[0]-results[1])
+
+
     accuracy = true / n
     loss = error / n
     if verbose == 1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
     if verbose == 1: print '\tLoss:', loss, 'Accuracy:', accuracy, 'Confusion:'
     if verbose == 1: print confusionS(confusion, self.labels)
-    return loss, accuracy
+    if verbose >0: print '\taverage absolute difference of missclassified examples:', sum(diffs)/len(diffs)
+    return {'loss (cross entropy)':loss,'accuracy':accuracy}
 
 
 class ScalarPredictionTB(TB):
@@ -81,15 +88,15 @@ class ScalarPredictionTB(TB):
   def convertExamples(self,items):
     examples = []
     for tree,label in items:
-      predictor = cl.Predictor(myRNN.RNN(tree).root)
+      predictor = cl.Predictor(myRNN.RNN(tree))
       examples.append((predictor,label))
     return examples
 
   def evaluate(self, theta, name='', n=0, verbose=1):
     if n == 0: n = len(self.examples)
     sse = 0.0
-    sspe = defaultdict(float)  # .0
-    lens = defaultdict(int)  # .0
+    sspe = defaultdict(float)
+    lens = defaultdict(int)
     true = 0.0
     for nw, target in self.getExamples(n):
 
@@ -100,7 +107,6 @@ class ScalarPredictionTB(TB):
       lens[length] += 1
       if target == pred: true += 1
       if verbose == 2:
-        length = (len(str(nw).split(' ')) + 3) / 4
         print 'length:', length, (
         'right' if target == pred else 'wrong'), 'prediction:', pred, 'target:', target, 'error:', nw.error(theta,
                                                                                                             target,
@@ -115,7 +121,7 @@ class ScalarPredictionTB(TB):
     if verbose == 1: print '\tLoss (MSE):', mse, 'Accuracy:', accuracy, 'MSPE:', mspe
     if verbose == 1: print '\tMSPE per length: ', [
       (length, (sspe[length] / lens[length] if lens[length] > 0 else 'undefined')) for length in sspe.keys()]
-    return mse, accuracy, mspe
+    return {'loss (mse)':mse,'accuracy': accuracy,'mspe':mspe}
 
 
 # def getTBs(digits, operators, predict = False, comparison = False, split = 0.1):
@@ -150,8 +156,19 @@ def getComparisonTBs(seed, comparison):
   for kind in 'train','heldout':
     if kind == 'train': mtb = arithmetics.training_treebank(seed)
     elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
-    print len(mtb.pairedExamples), len(mtb.examples)
     data[kind] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
   return data
 
 
+def getPredictionTest(seed, comparison):
+  for name, mtb in arithmetics.test_treebank(seed):
+    yield name, ScalarPredictionTB(mtb.examples)
+
+
+def getPredictionTBs(seed, comparison):
+  data = {}
+  for kind in 'train','heldout':
+    if kind == 'train': mtb = arithmetics.training_treebank(seed)
+    elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
+    data[kind] = ScalarPredictionTB(mtb.examples)
+  return data
