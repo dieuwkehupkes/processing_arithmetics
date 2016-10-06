@@ -91,19 +91,20 @@ def compute_baseline_noise(treebank, digit_noise, operator_noise):
 if __name__ == '__main__':
 
     # matplotlib.rcParams['xtick.labelsize'] = 8
-    languages_test = OrderedDict([('L9_left', 1500), ('L9_right', 1500), ('L1', 50), ('L2', 100), ('L3', 150), ('L4', 300), ('L5', 500), ('L6', 1000), ('L7', 1500), ('L8', 1500), ('L9', 1500)])
+    languages_test = OrderedDict([('L9_left', 1500), ('L9_right', 1500), ('L1', 1500), ('L2', 1500), ('L3', 150), ('L4', 1500), ('L5', 1500), ('L6', 1500), ('L7', 1500), ('L8', 1500), ('L9', 1500)])
 
     digits = np.arange(-10,11)
 
     languages = test_treebank(seed=5, languages=languages_test) 
-    operator_noise = 0.1
-    digit_noise = 0.5
+    operator_noise = 0.01
+    digit_noise = 1
+    r = 3
 
     accs, mses, maes, bin_accs = [], [], [], []
 
     for name, treebank in languages:
-        # acc, mse, mae, binary_accuracy = compute_baseline_noise(treebank, digit_noise=digit_noise, operator_noise=operator_noise)
-        acc, mse, mae, binary_accuracy = compute_baseline_range(treebank, random_range=3)
+        acc, mse, mae, binary_accuracy = compute_baseline_noise(treebank, digit_noise=digit_noise, operator_noise=operator_noise)
+        # acc, mse, mae, binary_accuracy = compute_baseline_range(treebank, random_range=r)
         accs.append(acc)
         mses.append(mse)
         maes.append(mae)
@@ -116,24 +117,30 @@ if __name__ == '__main__':
     width=0.1
 
     noise_pars = "Operator noise = %f, Digit noise = %f" % (operator_noise, digit_noise) 
+    # noise_pars = "standard deviation = %f" % r
 
     fig = plt.figure()
+    plt.suptitle(noise_pars)
     axes = {} 
     for nr in xrange(1,5):
         axes[nr] = fig.add_subplot(2,2,nr)
         axes[nr].set_xticks(ranges)
         axes[nr].set_xticklabels(xticks)
 
-    axes[1].title.set_text("Binary accuracy compare")
-    axes[2].title.set_text("Binary accuracy scalar prediction")
+    axes[1].title.set_text("Accuracy comparison")
+    axes[2].title.set_text("Accuracy scalar prediction")
     axes[2].set_ylim([0, 1])
-    axes[3].title.set_text("Mean Squared Error")
-    axes[4].title.set_text("Mean Absolute Error")
+    axes[3].title.set_text("mse scalar prediction")
+    axes[4].title.set_text("mae scalar prediction")
     
     axes[1].bar(ranges, accs, width=width, align='center')
     axes[2].bar(ranges, bin_accs, width=width, align='center')
     axes[3].bar(ranges, mses, width=width, align='center')
     axes[4].bar(ranges, maes, width=width, align='center')
+
+    for ax in axes:
+        axes[ax].get_children()[0].set_color('g')
+        axes[ax].get_children()[1].set_color('g')
 
     plt.show()
 
