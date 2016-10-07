@@ -215,7 +215,7 @@ class mathExpression(Tree):
                 item = '-'
         else:
             # item is digit
-            item = str(int(np.round(np.random.normal(loc=int(item), scale=digit_noise))))
+            item = str(np.random.normal(loc=int(item), scale=digit_noise))
 
         return item
 
@@ -223,7 +223,7 @@ class mathExpression(Tree):
 
         if len(self) > 1:
             children = [child.toString(format) for child in self]
-            if format=='infix': return '( ' + ' '.join(children) + ' )'
+            if format == 'infix': return '( ' + ' '.join(children) + ' )'
             elif format == 'prefix': return '( ' + ' '.join([children[1], children[0],children[2]]) + ' )'
             elif format == 'postfix': return '( ' + ' '.join([children[0],children[2],children[1]]) + ' )'
             else:
@@ -544,13 +544,39 @@ class mathExpression(Tree):
 
 
 if __name__ == '__main__':
+    import matplotlib.pylab as plt
     digits = np.arange(-5,5)
-    languages = {'L5':10}
+    languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
     m = mathTreebank(languages=languages, digits=digits)
-    for expression, answer in m.examples:
-        print(expression.toString())
-        print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-        raw_input('\n')
+    sae = {}
+    sse = {}
+    mae = []
+    mse = []
+    for name, m in test_treebank(seed=5, languages=languages):
+        sae[name] = 0
+        sse[name] = 0
+        for expression, answer in m.examples:
+            results_locally = np.array([expression.solveLocally(format="infix", return_sequences=True)[0]])
+            results_recursively = np.array([expression.solveRecursively(format="infix", return_sequences=True)[0]])
+
+            sae[name] += np.mean(np.absolute(results_locally-results_recursively))
+            sse[name] += np.mean(np.square(results_locally-results_recursively))
+
+        mse.append(sse[name]/len(m.examples))
+        mae.append(sae[name]/len(m.examples))
+
+    fig, ax = plt.subplots()
+    ax.plot(range(5), mse, label='mse')
+    ax.plot(range(5), mae, label='mae')
+    ax.set_xticklabels(languages.keys())
+    plt.legend()
+    plt.show()
+    exit()
+
+
+    print(expression.toString())
+    print(expression.toString(digit_noise=0.5, operator_noise=0.5))
+    raw_input('\n')
     exit()
     #     expression.get_targets()
     #     print(expression)
