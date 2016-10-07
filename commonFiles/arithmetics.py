@@ -548,7 +548,6 @@ if __name__ == '__main__':
     digits = np.arange(-5,5)
     languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
     m = mathTreebank(languages=languages, digits=digits)
-<<<<<<< HEAD
     sae = {}
     sse = {}
     mae = []
