@@ -6,7 +6,7 @@ import pickle
 import core.myTheta as myTheta
 import argparse
 import sys, os
-
+import matplotlib.pyplot as plt
 # imports
 from keras.models import Model
 from keras.layers import Dense, Input
@@ -17,17 +17,19 @@ from collections import defaultdict
 import sys
 import argparse
 
-def convert4Keras(thetaFile, seed=8):
+def convert4Keras(thetaFile, seed):
   print 'Converting nws into keras format'
   with open(thetaFile, 'rb') as f:
       theta = pickle.load(f)
   print 'initialized theta from file:', thetaFile
   allData = defaultdict(lambda: defaultdict(list))
-  for nw, target in data.getTBs(seed=seed, kind='RNN')['train'].getExamples():
+
+  for part in 'train','heldout':
+    for nw, target in data.getTBs(seed=seed, kind='RNN')['train'].getExamples():
       a = nw.activate(theta)
-      allData['X_train']['all'].append(a)
-      allData['Y_train']['all'].append(target)
-      allData['strings_train']['all'].append(str(nw))
+      allData['X_'+part]['all'].append(a)
+      allData['Y_'+part]['all'].append(target)
+      allData['strings_'+part]['all'].append(str(nw))
   for lan, tb in data.getTestTBs(seed=seed, kind='RNN'):
       for nw, target in tb.getExamples():
           a = nw.activate(theta)
@@ -57,9 +59,9 @@ def defineModel(hidden=None, loss='mse'):
     model.compile(loss=loss, optimizer='adam', metrics=['mean_squared_error','mean_absolute_error','mean_squared_prediction_error','binary_accuracy'])
     return model
 
-def trainModel(model,data, verbose = 2,n=50, batch_size=24):
+def trainModel(model,tdata, vdata, verbose = 2,n=50, batch_size=24):
 	# train the model, takes 10 percent out of the training data for validation
-    return model.fit({'input': np.array(data[0])}, {'output': np.array(data[1])}, validation_split=0.1, batch_size=batch_size, nb_epoch=n, shuffle=True, verbose = verbose)
+    return model.fit(x=np.array(tdata[0]),y= np.array(tdata[1]), validation_data=(np.array(vdata[0]),np.array(vdata[1])), batch_size=batch_size, nb_epoch=n, shuffle=True, verbose = verbose)
 
 def saveModel(model, name = 'something'):
 	model.save_weights(name+'_weights.h5',overwrite=True)
@@ -85,6 +87,17 @@ def printModel(model):
       try: print config['name'],config['activation']
       except: print ''
 
+def plotHistory(history,saveTo=None):
+    plt.plot(history.history['loss'], label='train')
+    plt.plot(history.history['val_loss'], label='heldout')
+    plt.legend()
+    #plt.xticks(xrange(len(history.history['loss'])))
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss (' + args['loss'] + ')')
+    if saveTo:
+        plt.savefig(saveTo)
+    else:
+      plt.show()
 
 def main(args):
 
@@ -94,9 +107,9 @@ def main(args):
   if not os.path.exists(destination):
       os.path.m
 
-  dataFile = os.path.join(destination, 'kerasData')
+  dataFile = os.path.join(destination, 'kerasData'+str(args['seed'])+'.pik')
   if not os.path.exists(dataFile):
-      data = convert4Keras(args['thetaFile'])
+      data = convert4Keras(args['thetaFile'],seed=args['seed'])
       with open(dataFile, 'wb') as f:
           pickle.dump(data, f)
   else:
@@ -111,7 +124,11 @@ def main(args):
   printModel(model)
 
   trainData = shuffleData((data['X_train']['all'],data['Y_train']['all'],data['strings_train']['all']))
-  trainModel(model,trainData,n=args['nEpochs'], batch_size=args['bSize'])
+  valData = shuffleData((data['X_heldout']['all'],data['Y_heldout']['all'],data['strings_heldout']['all']))
+  history = trainModel(model=model,tdata=trainData,vdata=valData, n=args['nEpochs'], batch_size=args['bSize'])
+
+  plotHistory(history, os.path.join(destination,exp+'convergence.png'))
+
 
   saveModel(model, os.path.join(destination,exp))
 
@@ -127,10 +144,11 @@ def main(args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train classifier')
  # data:
+
   parser.add_argument('-theta', '--thetaFile', type=str, help='File with pickled Theta', required=False)
   parser.add_argument('-exp','--experiment', type=str, help='Identifier of the experiment', required=True)
   parser.add_argument('-o','--out', type=str, help='Output name to store model', required=True)
-#  parser.add_argument('-s', '--seed', type=int, help='Random seed to be used', required=True)
+  parser.add_argument('-s', '--seed', type=int, help='Random seed to be used', required=True)
   parser.add_argument('-n','--nEpochs', type=int, help='Number of epochs to train', required=True)
   parser.add_argument('-b','--bSize', type=int, default = 24, help='Batch size for minibatch training', required=False)
   parser.add_argument('-dh','--dHidden', type=int, default=0,help='Size of hidden layer', required=False)
