@@ -2,5 +2,7 @@
 .idea/*
 *.swp
 /treebased/trainedModels/*
+/treebasedDebug/trainedModels/*
 /treebased/keras_model/kerasTrainedModels/*
+/treebasedDebug/keras_model/kerasTrainedModels/*
 /keras
