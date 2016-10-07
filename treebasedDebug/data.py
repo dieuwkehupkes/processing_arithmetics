@@ -102,7 +102,7 @@ class ScalarPredictionTB(TB):
 
       pred = nw.predict(theta, roundoff=True)
       sse += nw.evaluate(theta, target, activate=False, roundoff=False)
-      length = nw.length
+      length = int((nw.length + 1) / 2 ) # number of leaves = the number of digits + the number of operators, which is #digits-1
       sspe[length] += nw.error(theta, target, activate=False, roundoff=True)
       lens[length] += 1
       if target == pred: true += 1
