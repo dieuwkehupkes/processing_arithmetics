@@ -39,6 +39,10 @@ def confusionS(matrix,labels):
       s+='\n\t'
   return s
 
+class RNNTB(TB):
+  def __init__(self, examples):
+    self.examples = [(myRNN.RNN(me),target) for (me, target) in examples]
+
 class CompareClassifyTB(TB):
   def __init__(self, examples,comparison=False):
     self.labels = ['<','=','>']
@@ -146,29 +150,49 @@ class ScalarPredictionTB(TB):
 #
 #   return compareData, predictData
 
-def getComparisonTest(seed, comparison):
+
+def getTestTBs(seed, kind, comparison=False):
   for name, mtb in arithmetics.test_treebank(seed):
-    yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+    if kind =='comparison': yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+    elif kind=='prediction': yield name, ScalarPredictionTB(mtb.examples)
+    elif kind=='RNN': yield name, RNNTB(mtb.examples)
 
-
-def getComparisonTBs(seed, comparison):
+def getTBs(seed, kind, comparison=False):
   data = {}
-  for kind in 'train','heldout':
-    if kind == 'train': mtb = arithmetics.training_treebank(seed)
-    elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
-    data[kind] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+  for part in 'train', 'heldout':
+    if part == 'train':
+      mtb = arithmetics.training_treebank(seed)
+    elif part == 'heldout':
+      mtb = arithmetics.heldout_treebank(seed)
+    if kind == 'comparison': data[part] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+    elif kind == 'prediction': data[part] = ScalarPredictionTB(mtb.examples)
+    elif kind == 'RNN': data[part] =  RNNTB(mtb.examples)
   return data
-
-
-def getPredictionTest(seed, comparison):
-  for name, mtb in arithmetics.test_treebank(seed):
-    yield name, ScalarPredictionTB(mtb.examples)
-
-
-def getPredictionTBs(seed, comparison):
-  data = {}
-  for kind in 'train','heldout':
-    if kind == 'train': mtb = arithmetics.training_treebank(seed)
-    elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
-    data[kind] = ScalarPredictionTB(mtb.examples)
-  return data
+#
+#
+# def getComparisonTest(seed, comparison):
+#   for name, mtb in arithmetics.test_treebank(seed):
+#     yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+#
+#
+# def getComparisonTBs(seed, comparison):
+#   data = {}
+#   for kind in 'train','heldout':
+#     if kind == 'train': mtb = arithmetics.training_treebank(seed)
+#     elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
+#     data[kind] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+#   return data
+#
+#
+# def getPredictionTest(seed, comparison):
+#   for name, mtb in arithmetics.test_treebank(seed):
+#     yield name, ScalarPredictionTB(mtb.examples)
+#
+#
+# def getPredictionTBs(seed):
+#   data = {}
+#   for kind in 'train','heldout':
+#     if kind == 'train': mtb = arithmetics.training_treebank(seed)
+#     elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
+#     data[kind] = ScalarPredictionTB(mtb.examples)
+#   return data

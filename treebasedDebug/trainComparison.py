@@ -47,15 +47,17 @@ def main(args):
   theta = installTheta(args['pars'],seed=args['seed'],d=args['word'],comparison=args['comparison'])
 
   kind = args['kind']
+
   if kind =='c':
-    datasets = [data.getComparisonTBs(seed=args['seed'], comparison=args['comparison'])]
     hypers = [hyperParamsCompare]
     names = ['comparison']
   elif kind =='p':
-    datasets = [data.getPredictionTBs(seed=args['seed'], comparison=args['comparison'])]
     hypers = [hyperParamsPredict]
     names = ['prediction']
   else: sys.exit()
+
+  datasets = [data.getTBs(seed=args['seed'], kind = name, comparison=args['comparison']) for name in names]
+
   phases = [2]  # number of epochs for either phase
 
   opt = args['optimizer']
