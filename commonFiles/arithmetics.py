@@ -548,6 +548,7 @@ if __name__ == '__main__':
     digits = np.arange(-5,5)
     languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
     m = mathTreebank(languages=languages, digits=digits)
+<<<<<<< HEAD
     sae = {}
     sse = {}
     mae = []
@@ -578,16 +579,16 @@ if __name__ == '__main__':
     print(expression.toString(digit_noise=0.5, operator_noise=0.5))
     raw_input('\n')
     exit()
-    #     expression.get_targets()
-    #     print(expression)
-    #     for target in expression.targets:
-    #         print("\n%s: %s" % (target, expression.targets[target]))
+    # for expression, answer in m.examples:
+        # print(expression.toString())
+        # print(expression.toString(digit_noise=0.5, operator_noise=0.5))
+        # raw_input('\n')
 
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format='infix')
+            outcome = expression.solveLocally(format='prefix')
             if outcome != answer:
                 incorrect += 1
                 print(expression, answer, outcome)

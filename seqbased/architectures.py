@@ -381,7 +381,7 @@ class A1(Training):
     """
     def __init__(self):
         self.loss_function = 'mean_squared_error'
-        self.metrics = ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy']
+        self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -597,7 +597,7 @@ class Seq2Seq(Training):
     def __init__(self):
         # set loss function and metrics
         self.loss_function = 'mean_squared_error'
-        self.metrics = ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy']
+        self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -706,9 +706,9 @@ class Probing(Training):
 
         self.metrics = {
                 'grammatical': ['binary_accuracy'], 
-                'intermediate_locally': ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy'],
+                'intermediate_locally': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'subtracting': ['binary_accuracy'],
-                'intermediate_recursively': ['mean_squared_prediction_error', 'mean_squared_error', 'binary_accuracy'],
+                'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
 
         self.activations = {

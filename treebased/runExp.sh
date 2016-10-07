@@ -30,3 +30,16 @@ do
   fi
 done;
 
+
+
+declare -i cnt=0
+for dh in 0 2 6; 
+do   
+  for ah in tanh relu; 
+  do     
+    e=`printf "%03d" $cnt`;     
+    ((cnt++));
+    nohup python -u keras_train.py -exp $e -o trainedModels/$e -n 200 -dh $dh -ah $ah > $e-$dh-$ah.out &    
+  done; 
+done;
+

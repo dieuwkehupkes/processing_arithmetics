@@ -6,7 +6,7 @@ the network.
 import itertools as it
 import numpy as np
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pylab as plt
 import matplotlib.cm as cm
 from sklearn.decomposition import PCA
