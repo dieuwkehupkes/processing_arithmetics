@@ -1,5 +1,5 @@
 from __future__ import division
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 import data
 import pickle
@@ -74,10 +74,11 @@ def loadModel(model_name,model_weights):
 	return model
 
 def evaluate(model, data, name):
-  model_metrics = model.metrics_names
   results = model.evaluate(np.array(data[0]), np.array(data[1]))
+  model_metrics = model.metrics_names
   print('Evaluation on '+name+' data ('+str(len(data[0]))+' examples)')
   print('\t'.join(['%s: %f' % (i,j) for i, j in zip(model_metrics,  results)]))
+  return results
 
 def printModel(model):
   print(model.summary())
@@ -99,13 +100,25 @@ def plotHistory(history,saveTo=None):
     else:
       plt.show()
 
+def saveResults(results,metrics,filename):
+    identifiers = []
+    values = []
+    for dataset in sorted(results.keys()):
+        identifiers+=[dataset+'_'+metric for metric in metrics]
+        values+=results[dataset]
+    with open(filename,'w') as f:
+        f.write(','.join(identifiers)+'\n')
+        f.write(','.join([str(v) for v in values])+'\n')
+
+
 def main(args):
+  print args
 
   destination  = args['out']
   exp=args['experiment']
 
   if not os.path.exists(destination):
-      os.path.m
+      os.mkdir(destination)
 
   dataFile = os.path.join(destination, 'kerasData'+str(args['seed'])+'.pik')
   if not os.path.exists(dataFile):
@@ -132,12 +145,15 @@ def main(args):
 
   saveModel(model, os.path.join(destination,exp))
 
-  evaluate(model, trainData, 'train')
+  results = {}
+  for kind in ['train','heldout']:
+    results[kind]= evaluate(model, trainData, kind)
 
   for lan in sorted(data['X_test'].keys()):
      testData = (data['X_test'][lan],data['Y_test'][lan],data['strings_test'][lan])
-     evaluate(model, testData, 'test '+lan)
+     results['test_'+lan] = evaluate(model, testData, 'test '+lan)
 
+  saveResults(results, model.metrics_names,  os.path.join(destination,exp+'_results.csv'))
   saveModel(model, os.path.join(destination,exp))
 
 
