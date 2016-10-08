@@ -4,20 +4,19 @@ import sys
 sys.path.insert(0, '../commonFiles')
 from arithmetics import test_treebank
 from auxiliary_functions import max_length
-from architectures import A1, A4, Probing
+from architectures import A1, A4, Probing, Seq2Seq
 from collections import OrderedDict
 import numpy as np
 
 
-architecture = Probing
+architecture = Seq2Seq
 models = 'models_probe/GRU15_seed0probe_seed10_500.h5', 'models_probe/GRU15_seed0probe_seed20_500.h5', 'models_probe/GRU15_seed1probe_seed10_500.h5', 'models_probe/GRU15_seed1probe_seed20_500.h5'
-# models =  'models_run2/GRU15_seed1probe_seed10_1000.h5',  'models_run2/GRU15_seed2probe_seed10_1000.h5', 'models_run2/GRU15_seed1probe_seed10_1000.h5',
 # models = 'models_run2/GRU15postfix_seed0_1500.h5', 'models_run2/GRU15postfix_seed1_1500.h5',  'models_run2/GRU15postfix_seed2_1500.h5', 'models_run2/GRU15postfix_seed3_1500.h5'
-# models = 'models_run2/GRU10_seed0_1500.h5', 'models_run2/GRU10_seed1_1500.h5',  'models_run2/GRU10_seed2_1500.h5', 'models_run2/GRU10_seed3_1500.h5'
+models = 'best_models/GRU15_seed1_1500.h5', 'A1/GRU15_seed0_1500.h5'
+models = 'models/GRU_A1_1.h5', 'models/GRU_A1_2.h5'
 dmap = 'models/dmap'
 classifiers = ['intermediate_recursively', 'intermediate_locally', 'subtracting']
-classifiers = ['subtracting']
-# classifiers = None
+classifiers = None
 seed = 100
 format = 'infix'
 
