@@ -1,80 +1,95 @@
 import sys
-from keras.models import model_from_json, Model
+from keras.layers import Dense, TimeDistributed
+from keras.models import load_model, Model
 from architectures import Training, Probing
+import matplotlib.pylab as plt
 import numpy as np
 import pickle
 
 np.random.seed(0)
 
-model_architecture = sys.argv[1]
-model_weights = sys.argv[2]
+model = sys.argv[1]       # probe model
+model_probe = model[:-8]+'probe_seed10_500.h5'
+
 dmap = pickle.load(open('models/dmap', 'rb'))
 dmap['x'] = 0
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 
-test_languages = {'L5': 10}
+test_languages = {'L9': 15}
 digits = np.arange(-10,11)
 
-test_data = Training.generate_test_data(Probing, test_languages, dmap=dmap, digits=digits,
-        classifiers=['subtracting', 'intermediate_locally'], pad_to=57, test_separately=True)
+test_data = Training.generate_test_data(Probing, test_languages, dmap=dmap, digits=digits, 
+                                        classifiers=['subtracting', 'intermediate_locally', 'intermediate_recursively'],
+                                        pad_to=57, test_separately=True)
 
-model = model_from_json(open(model_architecture).read())
-model.load_weights(model_weights)
+model_probe = load_model(model_probe)
+model = load_model(model)
+original_weights = model.layers[-1].get_weights()
 
+original_prediction = TimeDistributed(Dense(1, weights=original_weights, activation='linear'), name='original_prediction')(model_probe.layers[4].output)
 
-# outputs = [model.layers[6].get_output_at(0), model.layers[4].get_output_at(0)]
-outputs = [model.layers[6].get_output_at(0), model.layers[4].get_output_at(0)]
+outputs = [model_probe.layers[5].get_output_at(0), model_probe.layers[6].get_output_at(0), model_probe.layers[7].get_output_at(0), original_prediction]
 
-new_model = Model(input=model.layers[0].get_input_at(0), output=outputs)
-new_model.compile(loss={'subtracting':'binary_crossentropy', 'intermediate_locally': 'mse'},
-        metrics={'subtracting': 'binary_accuracy', 'intermediate_locally': 'mse'}, optimizer='adam', sample_weight_mode='temporal')
+new_model = Model(input=model_probe.layers[0].get_input_at(0), output=outputs)
+new_model.compile(loss={'subtracting':'binary_crossentropy', 'intermediate_locally': 'mse', 'original_prediction': 'mse', 'intermediate_recursively': 'mse'},
+                  metrics={'subtracting': 'binary_accuracy', 'intermediate_locally': 'mse', 'original_prediction':'mse', 'intermediate_recursively':'mse'},
+                  optimizer='adam', sample_weight_mode='temporal')
 
 for name, X_test, Y_test in test_data:
     i = 0
-    sample_weights = {}
-    for key in Y_test:
-        sample_weight = np.zeros_like(X_test['input'])
-        sample_weight[X_test['input']!=0] = 1
-        sample_weights[key] = sample_weight
-
-    print '\t'.join(["%s: %f" % (name, outcome) for name, outcome in zip(new_model.metrics_names, new_model.test_on_batch(X_test, Y_test, sample_weight=sample_weights))])
     predictions = new_model.predict(X_test)
-    for s, y_sub, y_outc  in zip(X_test['input'], Y_test['subtracting'], Y_test['intermediate_locally']):
-        m = {'subtracting': y_sub, 'intermediate_locally': y_outc}
-        # print "accuracy for cur example:"
-        # print '\t'.join(["%s: %f" % (name, outcome) for name, outcome in zip(new_model.metrics_names[3:], new_model.evaluate(X_test, Y_test)[3:])])
+    print new_model.output_names
+    for s, y_sub, y_imm, y_recurs in zip(X_test['input'], Y_test['subtracting'], Y_test['intermediate_locally'], Y_test['intermediate_recursively']):
+
+        # targets
+        m = {'subtracting': y_sub, 'intermediate_locally': y_imm, 'intermediate_recursively': y_recurs}
+        
+        # non-zero indices
         nzi = s.nonzero()[0][0]
-        labels = [dmap_inverted[word] for word in s[nzi:]]
+
+        xticks = [dmap_inverted[word] for word in s[nzi:]]
+
+        # generate targets
         sub_target = [sub[0] for sub in y_sub[nzi:]]
-        sub_target_all = [sub[0] for sub in y_sub]
-        outcome_target = [sub[0] for sub in y_outc[nzi:]]
-        outcome_target_all = [sub[0] for sub in y_outc]
+        recursive_target = [sub[0] for sub in y_recurs[nzi:]]
+        imm_target = [sub[0] for sub in y_imm[nzi:]]
+
+        # model outcomes
         sub_model = [int(round(sub[0])) for sub in predictions[0][i][nzi:]]
-        sub_model_all = [int(round(sub[0])) for sub in predictions[0][i]]
-        outcome_model = [sub[0] for sub in predictions[1][i][nzi:]]
-        outcome_model_all = [sub[0] for sub in predictions[1][i]]
-        outcome_model_rounded = [int(round(sub[0])) for sub in predictions[1][i][nzi:]]
-        print '\nseq: ', '  '.join(labels)
+        imm_model = [sub[0] for sub in predictions[1][i][nzi:]]
+        imm_model_rounded = [int(round(sub[0])) for sub in predictions[1][i][nzi:]]
+        recursive_model = [sub[0] for sub in predictions[2][i][nzi:]]
+        recursive_model_rounded = [int(round(sub[0])) for sub in predictions[2][i][nzi:]]
+        original_pred = [sub[0] for sub in predictions[3][i][nzi:]]
+        original_pred_rounded = [int(round(sub[0])) for sub in predictions[3][i][nzi:]]
+        
+
+        print '\nseq: ', '  '.join(xticks)
         print 'sub target:\t\t', '  '.join([str(x) for x in sub_target])
         print 'sub model:\t\t', '  '.join([str(x) for x in sub_model])
-        # print 'sub target all:\t\t', '  '.join([str(x) for x in sub_target_all])
-        # print 'sub model all:\t\t', '  '.join([str(x) for x in sub_model_all])
-
         print np.array(sub_target) == np.array(sub_model)
 
-        # print 'model sub all:\t', '  '.join([str(x) for x in sub_model_all])
-        # print 'model outcome all:\t', '  '.join([str(x) for x in outcome_model])
+        # print '\noutc target:\t\t', '  '.join([str(x) for x in outcome_target])
+        # print 'outc model:\t\t', '  '.join([str(x) for x in outcome_model])
 
-        print '\n\n\n'
+        # plot results
+        fig = plt.figure()
 
-        
-        print '\noutc target:\t\t', '  '.join([str(x) for x in outcome_target])
-        print 'outc model:\t\t', '  '.join([str(x) for x in outcome_model_rounded])
-        # print np.mean(np.power(np.array(outcome_target_all)-np.array(outcome_model_all), 2))
-        # print np.mean(np.power(np.array(outcome_target)-np.array(outcome_model), 2))
-        #print 'model rounded:\t', '  '.join([str(x) for x in outcome_model_rounded])
-        # print 'model rounded all:\t', '  '.join([str(x) for x in outcome_model_all])
-        # print '\n model predictions:'
+        ranges = xrange(len(xticks))
+
+        ax = fig.add_subplot(111)
+
         i += 1
+        ax.plot(ranges, original_pred, label='model', linewidth=2, color='r')
+        ax.plot(ranges, imm_target, label='immStrat', color='g', ls='--')
+        ax.plot(ranges, recursive_target, label='recStrat', color='b', ls='--')
+
+        ax.plot(ranges, imm_model, label='immStrat model', color='g')
+        ax.plot(ranges, recursive_model, label='recStrat model', color='b')
+
+        ax.set_xticks(ranges)
+        ax.set_xticklabels(xticks)
+        ax.legend()
+        plt.show()
         raw_input()
 
