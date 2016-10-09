@@ -55,7 +55,8 @@ for name, X_test, Y_test in test_data:
         imm_target = [sub[0] for sub in y_imm[nzi:]]
 
         # model outcomes
-        sub_model = [int(round(sub[0])) for sub in predictions[0][i][nzi:]]
+        sub_model = [sub[0] for sub in predictions[0][i][nzi:]]
+        sub_model_rounded = [int(round(sub[0])) for sub in predictions[0][i][nzi:]]
         imm_model = [sub[0] for sub in predictions[1][i][nzi:]]
         imm_model_rounded = [int(round(sub[0])) for sub in predictions[1][i][nzi:]]
         recursive_model = [sub[0] for sub in predictions[2][i][nzi:]]
@@ -67,7 +68,7 @@ for name, X_test, Y_test in test_data:
         print '\nseq: ', '  '.join(xticks)
         print 'sub target:\t\t', '  '.join([str(x) for x in sub_target])
         print 'sub model:\t\t', '  '.join([str(x) for x in sub_model])
-        print np.array(sub_target) == np.array(sub_model)
+        print np.array(sub_target) == np.array(sub_model_rounded)
 
         # print '\noutc target:\t\t', '  '.join([str(x) for x in outcome_target])
         # print 'outc model:\t\t', '  '.join([str(x) for x in outcome_model])
@@ -77,12 +78,20 @@ for name, X_test, Y_test in test_data:
 
         ranges = xrange(len(xticks))
 
-        ax = fig.add_subplot(111)
+        ax = fig.add_subplot(211)
+        ax.plot(ranges, sub_target, label='subtraction target', color='g', ls='--')
+        ax.plot(ranges, sub_model, label='subtraction model', color='g', linewidth=2)
+        ax.axhline(0.5, color='black')
+        ax.set_xticks(ranges)
+        ax.set_xticklabels(xticks)
+        ax.set_ylim([-0.1, 1.1])
+        ax.legend()
 
-        i += 1
+        ax = fig.add_subplot(212)
+
         ax.plot(ranges, original_pred, label='model', linewidth=2, color='r')
-        ax.plot(ranges, imm_target, label='immStrat', color='g', ls='--')
-        ax.plot(ranges, recursive_target, label='recStrat', color='b', ls='--')
+        ax.plot(ranges, imm_target, label='immStrat target', color='g', ls='--')
+        ax.plot(ranges, recursive_target, label='recStrat target', color='b', ls='--')
 
         ax.plot(ranges, imm_model, label='immStrat model', color='g')
         ax.plot(ranges, recursive_model, label='recStrat model', color='b')
