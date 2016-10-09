@@ -30,11 +30,11 @@ class Theta(dict):
 
   def extend4Classify(self,nChildren, nClasses,dComparison = 0):
     self.removeAll(['classify','comparison'])
-    if dComparison < 0:
+    if dComparison == 0:
         self.newMatrix(('classify', 'M'), None, (nClasses, nChildren*self.dims['inside']))
         self.newMatrix(('classify', 'B'), None, (nClasses,))
     else:
-      if dComparison == 0:
+      if dComparison == -1:
         try: dComparison = self.dims['comparison']
         except: dComparison = (nChildren+1)*self.dims['inside']
       self.newMatrix(('comparison','M'),None,(dComparison,nChildren*self.dims['inside']))
