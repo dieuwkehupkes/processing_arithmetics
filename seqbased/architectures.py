@@ -654,7 +654,7 @@ class Seq2Seq(Training):
             expression.get_targets()
             input_seq = [dmap[i] for i in expression.toString(format).split()]
             X.append(input_seq)
-            Y.append(expression.targets['intermediate_recursively'])
+            Y.append(expression.targets['intermediate_locally'])
 
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
@@ -714,7 +714,7 @@ class Probing(Training):
         self.activations = {
                 'grammatical':'sigmoid',
                 'intermediate_locally': 'linear',
-                'subtracting': 'tanh',
+                'subtracting': 'sigmoid',
                 'intermediate_recursively':'linear',
                 'top_stack': 'linear'}
 
