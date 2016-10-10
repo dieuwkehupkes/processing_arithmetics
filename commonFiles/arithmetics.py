@@ -10,7 +10,7 @@ from collections import defaultdict, OrderedDict
 
 languages_train = {'L1':3000, 'L2': 3000, 'L4':3000, 'L5':3000, 'L7':3000}
 languages_heldout = {'L3':500, 'L6':800, 'L8':800}
-languages_test = OrderedDict([('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000), ('L9_left', 15000)])
+languages_test = OrderedDict([('L9_left', 15000), ('L9_right', 15000), ('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000)])
 ds = np.arange(-10,11)
 ops = ['+','-']
 
@@ -109,6 +109,11 @@ class mathTreebank():
 	np.random.shuffle(examples2)
 	self.pairedExamples=[(ex1[0],ex2[0],('<' if ex1[1]<ex2[1] else ('>' if ex1[1]>ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
 
+    def add_example_from_string(example):
+        """
+        Add a tree to the treebank from its string representation.
+        """
+
 
     def write_to_file(self, filename):
         """
@@ -175,11 +180,38 @@ class mathExpression(Tree):
             self.maxDepth = max([child.maxDepth for child in children])+1
         self.length = length
 
+    @classmethod
+    def fromstring(self, string_repr):
+        """
+        Generate arithmetic expression from string.
+        """
+        list_repr = string_repr.split()
+        nltk_list = []
+        for symbol in list_repr:
+            if symbol in ['+', '-']:
+                nltk_list.append('(')
+                nltk_list.append('operator')
+                nltk_list.append(symbol)
+                nltk_list.append(')')
+            elif symbol == '(':
+                nltk_list.append(symbol)
+                nltk_list.append('dummy')
+            elif symbol == ')':
+                nltk_list.append(symbol)
+            else:
+                nltk_list.append('(')
+                nltk_list.append('digit')
+                nltk_list.append(symbol)
+                nltk_list.append(')')
+
+        nltk_str = ' '.join(nltk_list)
+
+        return Tree.fromstring(nltk_str)
 
     def property(self, propname):
-        if propname=='length': return self.length
+        if propname == 'length': return self.length
         elif propname == 'maxDepth': return self.maxDepth
-        elif propname == 'accumDepth': return self.length-1 #number of left brackets, len(re.findall('\(',str(self)))
+        elif propname == 'accumDepth': return self.length-1  #number of left brackets, len(re.findall('\(',str(self)))
         else: raise KeyError(propname+' is not a valid property of mathExpression')
 
     def solve(self):
@@ -215,7 +247,7 @@ class mathExpression(Tree):
                 item = '-'
         else:
             # item is digit
-            item = str(int(np.round(np.random.normal(loc=int(item), scale=digit_noise))))
+            item = str(np.random.normal(loc=int(item), scale=digit_noise))
 
         return item
 
@@ -223,7 +255,7 @@ class mathExpression(Tree):
 
         if len(self) > 1:
             children = [child.toString(format) for child in self]
-            if format=='infix': return '( ' + ' '.join(children) + ' )'
+            if format == 'infix': return '( ' + ' '.join(children) + ' )'
             elif format == 'prefix': return '( ' + ' '.join([children[1], children[0],children[2]]) + ' )'
             elif format == 'postfix': return '( ' + ' '.join([children[0],children[2],children[1]]) + ' )'
             else:
@@ -247,13 +279,13 @@ class mathExpression(Tree):
 
         symbols = self.iterate(format)
 
-        if format=="infix":
+        if format == "infix":
             return self.recursively_infix(symbols=symbols, return_sequences=return_sequences)
 
-        elif format=="prefix":
+        elif format == "prefix":
             return self.recursively_prefix(symbols=symbols, return_sequences=return_sequences)
 
-        elif format=="postfix":
+        elif format == "postfix":
             return self.recursively_postfix(symbols=symbols, return_sequences=return_sequences)
         
         else:
@@ -317,7 +349,6 @@ class mathExpression(Tree):
                 op = {'+':operator.add, '-':operator.sub}[symbol]
                 operator_stack.append(op)
                 number_stack.append(cur)
-                stack.append(cur)
             elif symbol == '(':
                 pass
             elif symbol == ')':
@@ -326,14 +357,9 @@ class mathExpression(Tree):
                 cur = op(prev, cur)
             else:
                 # is digit
+                digit = int(symbol)
                 operator_stack.append(cur)
                 cur = digit
-
-            # store
-            if stack == []:
-                stack_list.append([(-12345, -12345)])     # empty stack representation
-            else:
-                stack_list.append(copy.copy(stack))
 
             if return_sequences:
                 return intermediate_results, stack_list
@@ -544,24 +570,58 @@ class mathExpression(Tree):
 
 
 if __name__ == '__main__':
-    digits = np.arange(-5,5)
-    languages = {'L5':10}
-    m = mathTreebank(languages=languages, digits=digits)
-    for expression, answer in m.examples:
-        print(expression.toString())
-        print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-        raw_input('\n')
+
+
+    s = '(  (  (  (  -10  -  -7  )  -  (  -7  -  -3  )  )  +  8  )  -  (  (  2  -  (  -9  -  -4  )  )  +  4  )  )'
+    e = mathExpression.fromstring(s)
+    print(e)
     exit()
-    #     expression.get_targets()
-    #     print(expression)
-    #     for target in expression.targets:
-    #         print("\n%s: %s" % (target, expression.targets[target]))
+
+
+    import matplotlib.pylab as plt
+    digits = np.arange(-5,5)
+    languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
+    m = mathTreebank(languages=languages, digits=digits)
+    sae = {}
+    sse = {}
+    mae = []
+    mse = []
+    for name, m in test_treebank(seed=5, languages=languages):
+        sae[name] = 0
+        sse[name] = 0
+        for expression, answer in m.examples:
+            results_locally = np.array([expression.solveLocally(format="infix", return_sequences=True)[0]])
+            results_recursively = np.array([expression.solveRecursively(format="infix", return_sequences=True)[0]])
+
+            sae[name] += np.mean(np.absolute(results_locally-results_recursively))
+            sse[name] += np.mean(np.square(results_locally-results_recursively))
+
+        mse.append(sse[name]/len(m.examples))
+        mae.append(sae[name]/len(m.examples))
+
+    fig, ax = plt.subplots()
+    ax.plot(range(5), mse, label='mse')
+    ax.plot(range(5), mae, label='mae')
+    ax.set_xticklabels(languages.keys())
+    plt.legend()
+    plt.show()
+    exit()
+
+
+    print(expression.toString())
+    print(expression.toString(digit_noise=0.5, operator_noise=0.5))
+    raw_input('\n')
+    exit()
+    # for expression, answer in m.examples:
+        # print(expression.toString())
+        # print(expression.toString(digit_noise=0.5, operator_noise=0.5))
+        # raw_input('\n')
 
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format='infix')
+            outcome = expression.solveLocally(format='prefix')
             if outcome != answer:
                 incorrect += 1
                 print(expression, answer, outcome)

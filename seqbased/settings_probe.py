@@ -2,16 +2,19 @@ import numpy as np
 from auxiliary_functions import max_length
 from arithmetics import training_treebank, test_treebank, heldout_treebank
 
-model = 'models_run2/GRU15_seed3_1500.h5' 
+
+model_seed = 2
+model = 'models_run2/GRU15postfix_seed'+str(model_seed)+'_1500.h5' 
 dmap = 'models/dmap'
 save_every = False
 
-seed                = 10
+seed                = 20
 seed_test           = 100
-classifiers         = ['grammatical', 'intermediate_locally', 'intermediate_recursively', 'subtracting']
-nb_epochs           = 1000
+classifiers         = ['intermediate_recursively']
+nb_epochs           = 500
 
-filename = model[:-2]+'_probe_seed'+str(seed)+'.h5'
+filename = 'models_probe/GRU15postfix_seed'+str(model_seed)+'probe_seed'+str(seed)+'_'
+raw_input(filename)
 
 optimizer           = 'adam'
 dropout_recurrent   = 0.0
@@ -19,7 +22,7 @@ batch_size          = 24
 verbosity           = 2
 
 validation_split    = 0.1
-format              = 'infix'
+format              = 'postfix'
 
 digits              = np.arange(-10,11)
 
