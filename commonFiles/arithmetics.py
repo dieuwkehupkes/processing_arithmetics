@@ -89,7 +89,7 @@ class mathTreebank():
         self.operators = self.operators.union(set(operators))
         while len(examples) < n:
             l = random.choice(lengths)
-            tree = mathExpression(l, operators, digits, branching=branching)
+            tree = mathExpression.generateME(l, operators, digits, branching=branching)
             answer = tree.solve()
             if answer is None:
                 continue
@@ -157,14 +157,12 @@ class indexedTreebank(mathTreebank):
         return self.getExamplesProperty(property)[value]
 
 class mathExpression(Tree):
-    def __init__(self, length, operators, digits, branching=None):
+    @classmethod
+    def generateME(cls,length, operators, digits, branching=None):
+        print('generateME', length, operators, digits, branching)
         if length < 1: print('whatup?')
         elif length == 1:
-            try:
-                Tree.__init__(self,'digit',[random.choice(digits)])
-            except:
-                Tree.__init__(self, 'operator', [random.choice(operators)])
-            self.maxDepth = 0
+            this = cls(random.choice(digits),[])
         else:
             if branching == 'left':
                 left, right = length-1, 1
@@ -173,15 +171,29 @@ class mathExpression(Tree):
             else:
                 left = random.randint(1, length)
                 right = length - left
-            children = [mathExpression(l,operators, digits, branching) for l in [left,right]]
-            operator = random.choice(operators)
-            children.insert(1, mathExpression(1, [operator], []))
-            Tree.__init__(self,operator,children)
-            self.maxDepth = max([child.maxDepth for child in children])+1
-        self.length = length
+            children = [cls.generateME(length=l,operators=operators, digits=digits, branching=branching) for l in [left,right]]
+            children.insert(1,cls(np.random.choice(operators), []))
+            this = cls('dummy', children)
+        return this
+
+
+    def __init__(self, label, children):
+        if True: #len(children)>1:
+            Tree.__init__(self, label, children)
+            if len(children)>1:
+                self.maxDepth = max([child.maxDepth for child in children]) + 1
+                self.length = sum([child.length for child in children])
+            else:
+                self.maxDepth = 0
+                self.length = 1
+
+        else:
+            Tree.__init__(self, '',)
+            self.maxDepth = 0
+            self.length = 1
 
     @classmethod
-    def fromstring(self, string_repr):
+    def fromstring(cls, string_repr):
         """
         Generate arithmetic expression from string.
         """
@@ -189,24 +201,33 @@ class mathExpression(Tree):
         nltk_list = []
         for symbol in list_repr:
             if symbol in ['+', '-']:
-                nltk_list.append('(')
-                nltk_list.append('operator')
+                #nltk_list.append('(')
+                #nltk_list.append('operator')
                 nltk_list.append(symbol)
-                nltk_list.append(')')
+                #nltk_list.append(')')
             elif symbol == '(':
                 nltk_list.append(symbol)
                 nltk_list.append('dummy')
             elif symbol == ')':
                 nltk_list.append(symbol)
             else:
-                nltk_list.append('(')
-                nltk_list.append('digit')
+                #nltk_list.append('(')
+                #nltk_list.append('digit')
                 nltk_list.append(symbol)
-                nltk_list.append(')')
+                #nltk_list.append(')')
 
         nltk_str = ' '.join(nltk_list)
 
-        return Tree.fromstring(nltk_str)
+        tree = Tree.fromstring(nltk_str)
+        return cls.fromTree(tree)
+
+    @classmethod
+    def fromTree(cls, tree):
+        print('fromTree',tree)
+        if type(tree) is Tree:
+            children = [cls.fromTree(c) for c in tree]
+            return cls(tree.label(), children)
+        else: return cls(tree,[])
 
     def property(self, propname):
         if propname == 'length': return self.length
@@ -220,57 +241,35 @@ class mathExpression(Tree):
         """
         return eval(self.__str__())
 
+
     def toString(self, format='infix', digit_noise=None, operator_noise=None):
         """
         :param numbers noise: standard deviation of digit noise
         :param operator_noise: change of changing operator
         """
-        string_repr = self.make_string(format=format)
-        if digit_noise or operator_noise:
-            symbol_list = string_repr.split()
-            symbols = [self.add_noise(symbol, digit_noise, operator_noise) for symbol in symbol_list]
-            string_repr = ' '.join(symbols)
-
-        return string_repr
-            
-    def add_noise(self, item, digit_noise, operator_noise):
-        """
-        Add noise to item
-        """
-        if item in ['(', ')']:
-            pass
-        elif item == '+':
-            if np.random.uniform() < operator_noise:
-                item = '-'
-        elif item == '-':
-            if np.random.uniform() < operator_noise:
-                item = '-'
+        operators = ['+','-']
+        if self.label() =='dummy':
+            childrenStr = [c.toString(format,digit_noise,operator_noise) for c in self]
+            if format == 'infix': return '( '+' '.join([childrenStr[0],childrenStr[1]]+childrenStr[2:])+' )'
+            elif format == 'prefix': return '( '+' '.join([childrenStr[1],childrenStr[0]]+ childrenStr[2:])+' )'
+            elif format == 'postfix': return '( '+' '.join([childrenStr[0]]+childrenStr[2:]+ [childrenStr[1]])+' )'
+            else: raise ValueError("%s Unexisting format" % format)
         else:
-            # item is digit
-            item = str(np.random.normal(loc=int(item), scale=digit_noise))
-
-        return item
-
-    def make_string(self, format='infix'):
-
-        if len(self) > 1:
-            children = [child.toString(format) for child in self]
-            if format == 'infix': return '( ' + ' '.join(children) + ' )'
-            elif format == 'prefix': return '( ' + ' '.join([children[1], children[0],children[2]]) + ' )'
-            elif format == 'postfix': return '( ' + ' '.join([children[0],children[2],children[1]]) + ' )'
+            if self.label() in operators:
+                if operator_noise:
+                    del operators[operators.index(self.label())]
+                    return (self.label() if np.random.uniform() < operator_noise else np.random.choice(operators))
+                else: return self.label()
             else:
-                raise ValueError("%s Unexisting format" % format)
-        else: return str(self[0])
+                if digit_noise>0:
+                    return str(np.random.normal(loc=int(self.label()), scale=digit_noise))
+                else: return str(self.label())
 
     def __str__(self):
         """
         Return string representation of tree.
         """
-        if len(self) > 1:
-            return '( '+' '.join([str(child) for child in self])+' )'
-        else:
-            return str(self[0])
-
+        return self.toString()
 
     def solveRecursively(self, format='infix', return_sequences=False):
         """
