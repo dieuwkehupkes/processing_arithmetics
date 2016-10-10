@@ -159,7 +159,6 @@ class indexedTreebank(mathTreebank):
 class mathExpression(Tree):
     @classmethod
     def generateME(cls,length, operators, digits, branching=None):
-        print('generateME', length, operators, digits, branching)
         if length < 1: print('whatup?')
         elif length == 1:
             this = cls(random.choice(digits),[])
@@ -200,21 +199,9 @@ class mathExpression(Tree):
         list_repr = string_repr.split()
         nltk_list = []
         for symbol in list_repr:
-            if symbol in ['+', '-']:
-                #nltk_list.append('(')
-                #nltk_list.append('operator')
-                nltk_list.append(symbol)
-                #nltk_list.append(')')
-            elif symbol == '(':
-                nltk_list.append(symbol)
+            nltk_list.append(symbol)
+            if symbol == '(':
                 nltk_list.append('dummy')
-            elif symbol == ')':
-                nltk_list.append(symbol)
-            else:
-                #nltk_list.append('(')
-                #nltk_list.append('digit')
-                nltk_list.append(symbol)
-                #nltk_list.append(')')
 
         nltk_str = ' '.join(nltk_list)
 
