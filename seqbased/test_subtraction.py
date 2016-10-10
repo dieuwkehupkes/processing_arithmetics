@@ -6,7 +6,9 @@ import matplotlib.pylab as plt
 import numpy as np
 import pickle
 
-np.random.seed(0)
+seed = 0
+
+# np.random.seed(0)
 
 model = sys.argv[1]       # probe model
 model_probe = model[:-8]+'probe_seed10_500.h5'
@@ -15,12 +17,15 @@ dmap = pickle.load(open('models/dmap', 'rb'))
 dmap['x'] = 0
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 
-test_languages = {'L9': 15}
-digits = np.arange(-10,11)
+test_languages = {'L9+': 15}
+digits = np.arange(1,11)
 
 test_data = Training.generate_test_data(Probing, test_languages, dmap=dmap, digits=digits, 
                                         classifiers=['subtracting', 'intermediate_locally', 'intermediate_recursively'],
                                         pad_to=57, test_separately=True)
+
+expr = '(  (  (  (  -10  -  -7  )  -  (  -7  -  -3  )  )  +  8  )  -  (  (  2  -  (  -9  -  -4  )  )  +  4  )  )'
+
 
 model_probe = load_model(model_probe)
 model = load_model(model)
@@ -74,31 +79,33 @@ for name, X_test, Y_test in test_data:
         # print 'outc model:\t\t', '  '.join([str(x) for x in outcome_model])
 
         # plot results
-        fig = plt.figure()
+        # fig = plt.figure()
 
         ranges = xrange(len(xticks))
 
-        ax = fig.add_subplot(211)
-        ax.plot(ranges, sub_target, label='subtraction target', color='g', ls='--')
-        ax.plot(ranges, sub_model, label='subtraction model', color='g', linewidth=2)
-        ax.axhline(0.5, color='black')
-        ax.set_xticks(ranges)
-        ax.set_xticklabels(xticks)
-        ax.set_ylim([-0.1, 1.1])
-        ax.legend()
+        fig, (ax1, ax2) = plt.subplots(2, 1, gridspec_kw = {'height_ratios':[1, 3]})
+        ax1.plot(ranges, sub_target, label='subtraction target', color='g', ls='--')
+        ax1.plot(ranges, sub_model, label='subtraction model', color='g', linewidth=2)
+        ax1.axhline(0.5, color='black')
+        ax1.set_xticks(ranges)
+        ax1.set_xticklabels(xticks)
+        ax1.set_ylim([-0.1, 1.1])
+        ax1.legend(bbox_to_anchor=(.35, 1.85))
 
-        ax = fig.add_subplot(212)
+        # ax = fig.add_subplot(2, 1, gridspec_kw = {'width_ratios':[2, 1]})
 
-        ax.plot(ranges, original_pred, label='model', linewidth=2, color='r')
-        ax.plot(ranges, imm_target, label='immStrat target', color='g', ls='--')
-        ax.plot(ranges, recursive_target, label='recStrat target', color='b', ls='--')
+        ax2.plot(ranges, original_pred, label='model', linewidth=2, color='r')
+        ax2.plot(ranges, imm_target, label='immStrat target', color='g', ls='--')
+        # ax2.plot(ranges, recursive_target, label='recStrat target', color='b', ls='--')
 
-        ax.plot(ranges, imm_model, label='immStrat model', color='g')
-        ax.plot(ranges, recursive_model, label='recStrat model', color='b')
+        ax2.plot(ranges, imm_model, label='immStrat model', color='g')
+        # ax2.plot(ranges, recursive_model, label='recStrat model', color='b')
 
-        ax.set_xticks(ranges)
-        ax.set_xticklabels(xticks)
-        ax.legend()
+        ax2.set_xticks(ranges)
+        ax2.set_xticklabels(xticks)
+        ax2.legend(bbox_to_anchor=(.7, 2.0))
+        plt.subplots_adjust(left=0.06, bottom=0.05, right=0.97, top=0.75)
         plt.show()
-        raw_input()
+
+        i+= 1
 
