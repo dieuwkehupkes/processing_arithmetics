@@ -16,10 +16,10 @@ def installTheta(thetaFile, seed, d, comparison):
     with open(thetaFile, 'rb') as f:
       theta = pickle.load(f)
     print 'initialized theta from file:', thetaFile
-    if not comparison and ('comparison','M') in theta.keys():
-      theta.extend4Classify(2, 3, -1)
-    if comparison and ('comparison', 'M') not in theta.keys():
-      theta.extend4Classify(2, 3, 3 * d)
+
+    theta.extend4Classify(2, 3, comparison)
+
+
 
     if '+' not in theta[('word',)].voc:
       theta[('word',)].extendVocabulary(['+','-'])
@@ -31,8 +31,7 @@ def installTheta(thetaFile, seed, d, comparison):
     dims = {'inside': d, 'outside': d, 'word': d, 'minArity': 3, 'maxArity': 3}
     voc = ['UNKNOWN'] + [str(w) for w in data.arithmetics.ds] + data.arithmetics.ops
     theta = myTheta.Theta('RNN', dims, embeddings=None, vocabulary=voc, seed = seed)
-    if not comparison: theta.extend4Classify(2,3,-1)
-    else: theta.extend4Classify(2,3,3*d)
+    theta.extend4Classify(2,3,comparison)
   theta.extend4Prediction(-1)
   return theta
 
@@ -108,7 +107,7 @@ if __name__ == "__main__":
   parser.add_argument('-o','--outDir', type=str, help='Output dir to store pickled theta', required=True)
   parser.add_argument('-p','--pars', type=str, default='', help='File with pickled theta', required=False)
   # network hyperparameters:
-  parser.add_argument('-c','--comparison', type=mybool, default=False, help='Whether a hidden (comparison) layer is used', required=False)
+  parser.add_argument('-c','--comparison', type=int, default=0, help='Dimensionality of comparison layer (0 is no layer)', required=False)
   parser.add_argument('-dwrd','--word', type=int, default = 2, help='Dimensionality of leaves (word nodes)', required=False)
   # training hyperparameters:
   parser.add_argument('-opt', '--optimizer', type=str, choices=['sgd', 'adagrad', 'adam'], help='Activation of hidden layer', required=False)
