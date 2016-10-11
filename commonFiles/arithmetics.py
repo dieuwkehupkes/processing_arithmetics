@@ -159,7 +159,6 @@ class indexedTreebank(mathTreebank):
 class mathExpression(Tree):
     @classmethod
     def generateME(cls,length, operators, digits, branching=None):
-        print('generateME', length, operators, digits, branching)
         if length < 1: print('whatup?')
         elif length == 1:
             this = cls(random.choice(digits),[])
@@ -223,7 +222,6 @@ class mathExpression(Tree):
 
     @classmethod
     def fromTree(cls, tree):
-        print('fromTree',tree)
         if type(tree) is Tree:
             children = [cls.fromTree(c) for c in tree]
             return cls(tree.label(), children)

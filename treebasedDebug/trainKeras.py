@@ -30,7 +30,7 @@ def convert4Keras(thetaFile, seed):
       allData['X_'+part]['all'].append(a)
       allData['Y_'+part]['all'].append(target)
       allData['strings_'+part]['all'].append(str(nw))
-  for lan, tb in data.getTestTBs(seed=seed, kind='RNN'):
+  for lan, tb in data.getTestTBs(seed=100, kind='RNN'): #always test on the same data
       for nw, target in tb.getExamples():
           a = nw.activate(theta)
           allData['X_test'][lan].append(a)
