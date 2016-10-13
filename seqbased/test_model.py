@@ -92,9 +92,13 @@ if __name__ == '__main__':
         for language in results[model]['loss']:
             per_language[language].append(results[model]['loss'][language])
 
-    print('means:')
-    for language in per_language:
-        print(language, '\t\t', np.mean(per_language[language]))
+    for model in settings.models:
+        print('\n', model, '\n')
+        for language in ['L9R', 'L9L', 'L3', 'L6', 'L8', 'L9']:
+            print("(", language, ",", results[model]['mean_squared_error'][language], ')')
 
-    pickle.dump(results, open('results_dicts.pickle', 'wb'))
+
+
+
+    # pickle.dump(results, open('results_dicts.pickle', 'wb'))
 
