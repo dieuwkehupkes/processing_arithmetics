@@ -2,7 +2,6 @@ from __future__ import print_function
 import numpy as np
 import operator
 from nltk import Tree
-#import random
 from numpy import random as random
 import copy
 import re
@@ -105,14 +104,17 @@ class mathTreebank():
         """
         self.examples += self.generateExamples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths)
-	examples2=self.examples[:]
-	np.random.shuffle(examples2)
-	self.pairedExamples=[(ex1[0],ex2[0],('<' if ex1[1]<ex2[1] else ('>' if ex1[1]>ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
+        examples2 = self.examples[:]
+        np.random.shuffle(examples2)
+        self.pairedExamples = [(ex1[0],ex2[0],('<' if ex1[1] < ex2[1] else ('>' if ex1[1] > ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
 
-    def add_example_from_string(example):
+    def add_example_from_string(self, example):
         """
         Add a tree to the treebank from its string representation.
         """
+        tree = mathExpression.fromstring(example)
+        ans = tree.solve()
+        self.examples.append((tree, ans))
 
 
     def write_to_file(self, filename):
@@ -129,22 +131,22 @@ class mathTreebank():
 
 class indexedTreebank(mathTreebank):
     def __init__(self, languages={}, digits=[]):
-        self.index={'length':defaultdict(list),'maxDepth':defaultdict(list),'accumDepth':defaultdict(list)}
+        self.index = {'length':defaultdict(list),'maxDepth':defaultdict(list),'accumDepth':defaultdict(list)}
         mathTreebank.__init__(self,languages,digits)
         self.examples = tuple(self.examples)
         self.updateIndex()
 
     def updateIndex(self,fromPoint = 0,keys=[]):
         for i, (tree, label) in enumerate(self.examples[fromPoint:]):
-            for key in (self.index.keys() if keys ==[] else keys):
-              value = tree.property(key)
-              if i+fromPoint not in self.index[key][value]:
-                  self.index[key][value].append(i+fromPoint)
+            for key in (self.index.keys() if keys == [] else keys):
+                value = tree.property(key)
+                if i+fromPoint not in self.index[key][value]:
+                    self.index[key][value].append(i+fromPoint)
 
     def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
                      n=1000, lengths=range(1, 6)):
         fromPoint = len(self.examples)
-        self.examples+=tuple(self.generateExamples(operators=operators, digits=digits, branching=branching,
+        self.examples += tuple(self.generateExamples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths))
         self.updateIndex(fromPoint)
 
@@ -179,7 +181,7 @@ class mathExpression(Tree):
     def __init__(self, label, children):
         if True: #len(children)>1:
             Tree.__init__(self, label, children)
-            if len(children)>1:
+            if len(children) > 1:
                 self.maxDepth = max([child.maxDepth for child in children]) + 1
                 self.length = sum([child.length for child in children])
             else:
@@ -210,7 +212,6 @@ class mathExpression(Tree):
 
     @classmethod
     def fromTree(cls, tree):
-        print('fromTree',tree)
         if type(tree) is Tree:
             children = [cls.fromTree(c) for c in tree]
             return cls(tree.label(), children)
@@ -235,11 +236,11 @@ class mathExpression(Tree):
         :param operator_noise: change of changing operator
         """
         operators = ['+','-']
-        if self.label() =='dummy':
+        if self.label() == 'dummy':
             childrenStr = [c.toString(format,digit_noise,operator_noise) for c in self]
             if format == 'infix': return '( '+' '.join([childrenStr[0],childrenStr[1]]+childrenStr[2:])+' )'
-            elif format == 'prefix': return '( '+' '.join([childrenStr[1],childrenStr[0]]+ childrenStr[2:])+' )'
-            elif format == 'postfix': return '( '+' '.join([childrenStr[0]]+childrenStr[2:]+ [childrenStr[1]])+' )'
+            elif format == 'prefix': return '( '+' '.join([childrenStr[1],childrenStr[0]] + childrenStr[2:])+' )'
+            elif format == 'postfix': return '( '+' '.join([childrenStr[0]]+childrenStr[2:] + [childrenStr[1]])+' )'
             else: raise ValueError("%s Unexisting format" % format)
         else:
             if self.label() in operators:
@@ -248,7 +249,7 @@ class mathExpression(Tree):
                     return (self.label() if np.random.uniform() < operator_noise else np.random.choice(operators))
                 else: return self.label()
             else:
-                if digit_noise>0:
+                if digit_noise > 0:
                     return str(np.random.normal(loc=int(self.label()), scale=digit_noise))
                 else: return str(self.label())
 

@@ -2,32 +2,40 @@ from __future__ import division
 from NN import *
 
 
-def this2RNN(nltkTree, activation):
-  if nltkTree.height()>2:
-    lhs = nltkTree.label()
-    rhs = '('+ ', '.join([child.label() for child in nltkTree])+')'
-    children = [this2RNN(t, activation) for t in nltkTree]
-    rnn = Node(children, [], ('composition',lhs,rhs,'I'), activation)
-  else:
-    rnn = Leaf([],('word',), key=nltkTree[0],nonlinearity='identity')
-  return rnn
-
-def nodeLength(node):
-  if isinstance(node,Leaf): return 1
-  else: return sum([nodeLength(n) for n in node.inputs])
-def getLeaves(node):
-  if isinstance(node,Leaf): return [node]
-  else:
-    leaves =[]
-    for n in node.inputs:
-      leaves.extend(getLeaves(n))
-    return leaves
-
 
 class RNN():
-  def __init__(self, nltkTree, activation='tanh'):
-    self.root =this2RNN(nltkTree, activation)
-    self.length = len(nltkTree.leaves())
+
+  @classmethod
+  def fromME(cls,me, activation):
+    if me.label()=='dummy':
+      lhs = me.label()
+      rhs = '(' + ', '.join([child.label() for child in me]) + ')'
+      children = [cls.fromME(c, activation) for c in me]
+      return Node(children, [], ('composition', lhs, rhs, 'I'), activation)
+    else:
+      return Leaf([], ('word',), key=me.label(), nonlinearity='identity')
+
+
+  @classmethod
+  def nodeLength(cls, node):
+    if isinstance(node, Leaf):
+      return 1
+    else:
+      return sum([cls.nodeLength(n) for n in node.inputs])
+
+  @classmethod
+  def getLeaves(cls,node):
+    if isinstance(node, Leaf):
+      return [node]
+    else:
+      leaves = []
+      for n in node.inputs:
+        leaves.extend(cls.getLeaves(n))
+      return leaves
+
+  def __init__(self,me, activation='tanh'):
+    self.root = self.fromME (me, activation)
+    self.length = me.length
 
   def activate(self,theta):
     self.root.forward(theta, True, False)
@@ -40,7 +48,7 @@ class RNN():
       return self.length
 
   def leaves(self):
-    return getLeaves(self.root)
+    return self.getLeaves(self.root)
 
   def maxArity(self,node=None):
     if node is None: node = self
