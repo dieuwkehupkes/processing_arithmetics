@@ -29,7 +29,7 @@ def test_model(architecture, model, dmap, optimizer, loss, metrics, digits, test
     metrics = compiled_model.metrics_names
     test_results = dict([(metric, OrderedDict()) for metric in metrics])
     for name, X_test, Y_test in test_data:
-        if crop_to_length == True:
+        if crop_to_length is True:
             length = re.compile('[0-9]+')
             n = int(length.search(name).group())
             maxlen = 4*n-3 
@@ -91,10 +91,4 @@ if __name__ == '__main__':
     for model in settings.models:
         for language in results[model]['loss']:
             per_language[language].append(results[model]['loss'][language])
-
-    print('means:')
-    for language in per_language:
-        print(language, '\t\t', np.mean(per_language[language]))
-
-    pickle.dump(results, open('results_dicts.pickle', 'wb'))
 
