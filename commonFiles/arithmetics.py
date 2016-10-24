@@ -289,6 +289,8 @@ class mathExpression(Tree):
         # return arrays
         stack_list = []
         intermediate_results = []
+        operators = []
+
 
         for symbol in symbols:
             if symbol == '(':
@@ -316,11 +318,12 @@ class mathExpression(Tree):
                 stack_list.append(copy.copy(stack))
 
             intermediate_results.append(cur)
+            operators.append[{operator.add:True, operator.sub: False}]
 
         assert len(stack) == 0, "expression not grammatical"
 
         if return_sequences:
-            return intermediate_results, stack_list
+            return intermediate_results, stack_list, operators
 
         return cur
 
