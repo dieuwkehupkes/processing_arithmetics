@@ -330,7 +330,6 @@ class mathExpression(Tree):
     def recursively_prefix(self, symbols, return_sequences=False):
         operator_stack = []
         number_stack = []
-        op = None
         cur = 0
         intermediate_results, stack_list, operator_list = [], [], []
 
@@ -338,17 +337,16 @@ class mathExpression(Tree):
             if symbol in ['+', '-']:
                 op = {'+':operator.add, '-':operator.sub}[symbol]
                 operator_stack.append(op)
-                number_stack.append(cur)
             elif symbol == '(':
                 pass
             elif symbol == ')':
-                op = operator_stack.pop
-                prev = number_stack.pop
+                op = operator_stack.pop()
+                prev = number_stack.pop()
                 cur = op(prev, cur)
             else:
                 # is digit
                 digit = int(symbol)
-                operator_stack.append(cur)
+                number_stack.append(cur)
                 cur = digit
 
             intermediate_results.append(cur)
@@ -611,8 +609,8 @@ def test_solve_recursively(format, digits, operators):
             outcome = expression.solveRecursively(format=format)
             if outcome != answer:
                 incorrect += 1
-                # print(expression, answer, outcome)
-                # raw_input()
+                print(expression.toString(format), answer, outcome)
+                raw_input()
 
         print("percentage incorrect for length %i: %f" % (length, incorrect/50))
 
@@ -621,5 +619,5 @@ def test_solve_recursively(format, digits, operators):
 if __name__ == '__main__':
     digits = np.arange(-10,10)
     ops = ['+', '-']
-    test_solve_recursively(format='infix', digits=digits, operators=ops)
+    test_solve_recursively(format='prefix', digits=digits, operators=ops)
 
