@@ -318,7 +318,7 @@ class mathExpression(Tree):
                 stack_list.append(copy.copy(stack))
 
             intermediate_results.append(cur)
-            operators.append[{operator.add:True, operator.sub: False}]
+            operators.append[{operator.add:True, operator.sub: False}[op]]
 
         assert len(stack) == 0, "expression not grammatical"
 
@@ -332,7 +332,7 @@ class mathExpression(Tree):
         number_stack = []
         op = None
         cur = 0
-        intermediate_results, stack_list = [], []
+        intermediate_results, stack_list, operator_list = [], [], []
 
         for symbol in symbols:
             if symbol in ['+', '-']:
@@ -351,10 +351,11 @@ class mathExpression(Tree):
                 operator_stack.append(cur)
                 cur = digit
 
-            if return_sequences:
-                return intermediate_results, stack_list
-
             intermediate_results.append(cur)
+            operator_list.append[{operator.add:True, operator.sub: False}[op]]
+
+        if return_sequences:
+            return intermediate_results, stack_list, operator_list
 
         return cur
 
