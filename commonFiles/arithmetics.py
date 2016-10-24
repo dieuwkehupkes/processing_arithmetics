@@ -318,7 +318,7 @@ class mathExpression(Tree):
                 stack_list.append(copy.copy(stack))
 
             intermediate_results.append(cur)
-            operators.append[{operator.add:True, operator.sub: False}[op]]
+            operators.append({operator.add:True, operator.sub: False}[op])
 
         assert len(stack) == 0, "expression not grammatical"
 
@@ -352,7 +352,7 @@ class mathExpression(Tree):
                 cur = digit
 
             intermediate_results.append(cur)
-            operator_list.append[{operator.add:True, operator.sub: False}[op]]
+            # operator_list.append[{operator.add:True, operator.sub: False}[op]]
 
         if return_sequences:
             return intermediate_results, stack_list, operator_list
@@ -363,8 +363,8 @@ class mathExpression(Tree):
 
         stack = []
         cur = 0
-        stack_list = []
-        intermediate_results = []
+        stack_list, intermediate_results, operator_list = [], [], []
+        op = None
 
         for symbol in symbols:
             if symbol in ['+', '-']:
@@ -386,7 +386,7 @@ class mathExpression(Tree):
             intermediate_results.append(cur)
 
         if return_sequences:
-            return intermediate_results, stack_list
+            return intermediate_results, stack_list, operator_list
 
         return cur
                 
@@ -559,16 +559,7 @@ class mathExpression(Tree):
         for symbol in self.toString(format=format).split():
             yield symbol
 
-
-if __name__ == '__main__':
-
-
-    s = '(  (  (  (  -10  -  -7  )  -  (  -7  -  -3  )  )  +  8  )  -  (  (  2  -  (  -9  -  -4  )  )  +  4  )  )'
-    e = mathExpression.fromstring(s)
-    print(e)
-    exit()
-
-
+def make_noise_plots():
     import matplotlib.pylab as plt
     digits = np.arange(-5,5)
     languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
@@ -596,26 +587,39 @@ if __name__ == '__main__':
     ax.set_xticklabels(languages.keys())
     plt.legend()
     plt.show()
-    exit()
 
-
-    print(expression.toString())
-    print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-    raw_input('\n')
-    exit()
-    # for expression, answer in m.examples:
-        # print(expression.toString())
-        # print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-        # raw_input('\n')
-
+def test_solve_locally(format, digits, operators):
+    m = mathTreebank()
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format='prefix')
+            outcome = expression.solveLocally(format=format)
             if outcome != answer:
                 incorrect += 1
-                print(expression, answer, outcome)
-                raw_input()
+                # print(expression, answer, outcome)
+                # raw_input()
 
         print("percentage incorrect for length %i: %f" % (length, incorrect/50))
+
+def test_solve_recursively(format, digits, operators):
+    m = mathTreebank()
+    for length in np.arange(3,10):
+        examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
+        incorrect = 0.0
+        for expression, answer in examples:
+            outcome = expression.solveRecursively(format=format)
+            if outcome != answer:
+                incorrect += 1
+                # print(expression, answer, outcome)
+                # raw_input()
+
+        print("percentage incorrect for length %i: %f" % (length, incorrect/50))
+
+
+
+if __name__ == '__main__':
+    digits = np.arange(-10,10)
+    ops = ['+', '-']
+    test_solve_recursively(format='infix', digits=digits, operators=ops)
+
