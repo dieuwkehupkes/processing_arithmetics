@@ -112,10 +112,10 @@ class ScalarPredictionTB(TB):
       if target == pred: true += 1
       if verbose == 2:
         print 'length:', length, (
-        'right' if target == pred else 'wrong'), 'prediction:', pred, 'target:', target, 'error:', nw.error(theta,
-                                                                                                            target,
-                                                                                                            activate=False,
-                                                                                                            roundoff=True), '(' + str(
+          'right' if target == pred else 'wrong'), 'prediction:', pred, 'target:', target, 'error:', nw.error(theta,
+                                                                                                              target,
+                                                                                                              activate=False,
+                                                                                                              roundoff=True), '(' + str(
           nw.error(theta, target, activate=False, roundoff=False)) + ')'
 
     mse = sse / n
@@ -126,29 +126,6 @@ class ScalarPredictionTB(TB):
     if verbose == 1: print '\tMSPE per length: ', [
       (length, (sspe[length] / lens[length] if lens[length] > 0 else 'undefined')) for length in sspe.keys()]
     return {'loss (mse)':mse,'accuracy': accuracy,'mspe':mspe}
-
-
-# def getTBs(digits, operators, predict = False, comparison = False, split = 0.1):
-#   languages_train = {'L1': 10000, 'L2': 10000, 'L4': 10000, 'L6': 10000}
-#   languages_test = {'L3': 400, 'L5': 400, 'L7': 400}
-#
-#   trainData = arithmetics.mathTreebank(languages_train, digits)
-#   testData = arithmetics.mathTreebank(languages_test, digits)
-#
-#   if not predict:
-#     items = trainData.examples[:]
-#     random.shuffle(items)
-#     htb = CompareClassifyTB(items[:int(split*len(items))],comparison=comparison)
-#     ttb = CompareClassifyTB(items[int(split * len(items)):], comparison=comparison)
-#     testtb = CompareClassifyTB(testData.examples, comparison=comparison)
-#     compareData={'train':ttb,'heldout':htb,'test':testtb}
-#
-#     htb = ScalarPredictionTB(items[:int(split * len(items))])
-#     ttb = ScalarPredictionTB(items[int(split * len(items)):])
-#     testtb = ScalarPredictionTB(testData.examples)
-#     predictData = {'train':ttb,'heldout':htb,'test':testtb}
-#
-#   return compareData, predictData
 
 
 def getTestTBs(seed, kind, comparison=False):
@@ -168,31 +145,3 @@ def getTBs(seed, kind, comparison=False):
     elif kind == 'prediction': data[part] = ScalarPredictionTB(mtb.examples)
     elif kind == 'RNN': data[part] =  RNNTB(mtb.examples)
   return data
-#
-#
-# def getComparisonTest(seed, comparison):
-#   for name, mtb in arithmetics.test_treebank(seed):
-#     yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
-#
-#
-# def getComparisonTBs(seed, comparison):
-#   data = {}
-#   for kind in 'train','heldout':
-#     if kind == 'train': mtb = arithmetics.training_treebank(seed)
-#     elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
-#     data[kind] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
-#   return data
-#
-#
-# def getPredictionTest(seed, comparison):
-#   for name, mtb in arithmetics.test_treebank(seed):
-#     yield name, ScalarPredictionTB(mtb.examples)
-#
-#
-# def getPredictionTBs(seed):
-#   data = {}
-#   for kind in 'train','heldout':
-#     if kind == 'train': mtb = arithmetics.training_treebank(seed)
-#     elif kind == 'heldout': mtb = arithmetics.heldout_treebank(seed)
-#     data[kind] = ScalarPredictionTB(mtb.examples)
-#   return data
