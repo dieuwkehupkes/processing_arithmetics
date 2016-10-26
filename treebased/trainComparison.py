@@ -17,7 +17,7 @@ def installTheta(thetaFile, seed, d, comparison):
       theta = pickle.load(f)
     print 'initialized theta from file:', thetaFile
 
-    theta.extend4Classify(2, 3, comparison)
+#    theta.extend4Classify(2, 3, comparison)
 
 
 

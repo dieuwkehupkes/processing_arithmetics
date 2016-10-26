@@ -163,7 +163,7 @@ def getTBs(seed, kind, comparison=False):
     if part == 'train':
       mtb = arithmetics.training_treebank(seed)
     elif part == 'heldout':
-      mtb = arithmetics.heldout_treebank(seed)
+      mtb = arithmetics.heldout_treebank(seed, languages = {'L9_left': 15000,'L9_right': 15000,'L1': 50,'L2': 500,'L3':1500,'L4': 3000,'L5': 5000,'L6': 10000,'L7': 15000,'L8': 15000,'L9': 15000})
     if kind == 'comparison': data[part] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
     elif kind == 'prediction': data[part] = ScalarPredictionTB(mtb.examples)
     elif kind == 'RNN': data[part] =  RNNTB(mtb.examples)
