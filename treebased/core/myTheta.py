@@ -1,38 +1,42 @@
 from __future__ import division
 import numpy as np
 import sys
-import warnings
-from collections import Counter, Iterable
 
+'''
+ Theta is an object that can hold the parameters of a complex neural network.
+ A similar object 'Gradient' can be used to hold gradient values.
+ The word embeddings are stored in a special object; WordMatrix
+ All objects allow for pickling
+'''
 
-# warnings.filterwarnings('error')
 class Theta(dict):
-    def __init__(self, style, dims, embeddings=None, vocabulary=['UNKNOWN'], seed=0):
+    def __init__(self, dims, embeddings=None, vocabulary=['UNKNOWN'], seed=0):
         if dims is None:
             print 'No dimensions for initialization of theta'
             sys.exit()
         np.random.seed(seed)
         self.dims = dims
-        self.style = style
-        self.installMatrices()
+        self.compositionMatrices()
 
+        #vocabulary = None, default = ('UNKNOWN', 0), dicItems = {}):
+        # Install word embeddings as a WordMatrix object
         if embeddings is None:
             default = ('UNKNOWN', np.random.random_sample(self.dims['word']) * .2 - .1)
+            self[('word',)] = WordMatrix(vocabulary, default =  default, dicItems=[(word, np.random.random_sample(self.dims['word']) * .2 - .1) for word in vocabulary])
         else:
-            default = ('UNKNOWN', embeddings[vocabulary.index('UNKNOWN')])
-        self[('word',)] = WordMatrix(vocabulary, default, {})
-        for i in range(len(vocabulary)):
-            if embeddings is None:
-                self[('word',)][vocabulary[i]] = np.random.random_sample(self.dims['word']) * .2 - .1
-            else:
-                self[('word',)][vocabulary[i]] = embeddings[i]
+            self[('word',)] = embeddings
+
         print 'initialized Theta. Dims:', self.dims
 
+
     def removeAll(self, toRemove=[]):
+        # Remove all matrices and biases that belong to the categories in toRemove
         for key in self.keys():
             if key[0] in toRemove: del self[key]
 
+
     def extend4Classify(self, nChildren, nClasses, dComparison=0):
+        # Add (or replace) all matices involved in classification
         self.removeAll(['classify', 'comparison'])
         if dComparison == 0:
             self.newMatrix(('classify', 'M'), None, (nClasses, nChildren * self.dims['inside']))
@@ -49,6 +53,7 @@ class Theta(dict):
             self.newMatrix(('classify', 'B'), None, (nClasses,))
 
     def extend4Prediction(self, dHidden=0):
+        # Add (or replace) all matices involved in prediction
         self.removeAll(['predict', 'predictH'])
         if dHidden < 0:
             self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
@@ -64,10 +69,8 @@ class Theta(dict):
             self.newMatrix(('predictH', 'M'), None, (dHidden, self.dims['inside']))
             self.newMatrix(('predictH', 'B'), None, (dHidden,))
 
-    def installMatrices(self):
-        # set local dimensionality variables
-        din = self.dims['inside']
-
+    def compositionMatrices(self):
+        din = self.dims['inside'] # local dimensionality variable
         print '\tCreate composition matrices of all kinds'
         try:
             minArity = self.dims['minArity']
@@ -90,44 +93,14 @@ class Theta(dict):
                 size = self[cat].shape
                 self[cat] = np.random.random_sample(size) * .2 - .1
 
-    def newMatrix(self, name, M=None, size=(0, 0)):
-        if name in self:
+    def newMatrix(self, name, M=None, size=(0, 0), replace = False):
+        if not replace and name in self:
             return
 
         if M is not None:
             self[name] = np.copy(M)
         else:
             self[name] = np.random.random_sample(size) * .2 - .1
-
-    def regularize(self, alphaDsize, lambdaL2):
-        if lambdaL2 == 0: return
-        for name in self.keys():
-            if name[-1] == 'M':
-                self[name] = (1 - alphaDsize * lambdaL2) * self[name]
-            else:
-                continue
-
-    def add2Theta(self, gradient, alpha, historicalGradient=None):
-        for key in gradient.keys():
-            grad = gradient[key]
-            if historicalGradient is not None:
-                histgrad = historicalGradient[key]
-                if type(self[key]) == np.ndarray:
-                    histgrad += np.square(grad)
-                    self[key] -= alpha * np.divide(grad, np.sqrt(histgrad) + 1e-6)  #
-                elif type(self[key]) == WordMatrix:
-                    for word in grad:
-                        histgrad[word] += np.square(grad[word])
-                        self[key][word] -= alpha * np.divide(grad[word], np.sqrt(histgrad[word]) + 1e-6)
-                else:
-                    raise NameError("Cannot update theta")
-            else:
-                print 'noHistGrad'
-                try:
-                    self[key] -= alpha * grad
-                except:
-                    for word in grad: self[key][word] -= alpha * grad[word]
-                #      print self[('word',)]['UNKNOWN']
 
     def norm(self):
         names = [name for name in self.keys() if name[-1] == 'M']
@@ -146,7 +119,7 @@ class Theta(dict):
         return Gradient(molds, wordM)
 
     def __missing__(self, key):
-        for fakeKey in generalizeKey(key):
+        for fakeKey in generalizeKey(key): # find a more general version of key that is in theta (used with grammar rule specialized parameter)
             if fakeKey in self.keys():
                 return self[fakeKey]
                 break
@@ -154,42 +127,39 @@ class Theta(dict):
             raise KeyError(str(key) + ' not in theta (missing).')
 
     def __iadd__(self, other):
+        scalar = isinstance(other, int)
         for key in self:
             if isinstance(self[key], np.ndarray):
-                try:
-                    self[key] = self[key] + other[key]
-                except:
+                if scalar:
                     self[key] = self[key] + other
+                else:
+                    self[key] = self[key] + other[key]
             elif isinstance(self[key], dict):
-                for word in other[key]:
-                    try:
-                        self[key][word] = self[key][word] + other[key][word]
-                    except:
+                for word in self[key]:
+                    if scalar:
                         self[key][word] = self[key][word] + other
+                    else:
+                        self[key][word] = self[key][word] + other[key][word]
             else:
                 print 'Inplace addition of theta failed:', key, 'of type', str(type(self[key]))
                 sys.exit()
         return self
 
     def __add__(self, other):
-        if isinstance(other, dict):
-            th = True
-        elif isinstance(other, int):
-            th = False
+        scalar = isinstance(other, int)
 
         newT = self.gradient()
         for key in self:
             if isinstance(self[key], np.ndarray):
-                if th:
-                    newT[key] = self[key] + other[key]
-                else:
+                if scalar:
                     newT[key] = self[key] + other
+                else:
+                    newT[key] = self[key] + other[key]
             elif isinstance(self[key], dict):
-                for word in other[key]:
-                    if th:
-                        newT[key][word] = self[key][word] + other[key][word]
-                    else:
+                for word in self[key]:
+                    if scalar:
                         newT[key][word] = self[key][word] + other
+                    else: newT[key][word] = self[key][word] + other[key][word]
             else:
                 print 'Inplace addition of theta failed:', key, 'of type', str(type(self[key]))
                 sys.exit()
@@ -269,7 +239,7 @@ class Gradient(Theta):
 
 
 class WordMatrix(dict):
-    def __init__(self, vocabulary=None, default=('UNKNOWN', 0), dicItems={}):
+    def __init__(self, vocabulary=None, default=('UNKNOWN', 0), dicItems=[]):
         self.voc = vocabulary
         dkey, dval = default
         if dkey not in self.voc: raise AttributeError("'default' must be in the vocabulary")
@@ -284,11 +254,9 @@ class WordMatrix(dict):
             self[word] = self[self.default]
 
     def __setitem__(self, key, val):
-        if self.default not in self: raise KeyError("Default not yet in the vocabulary: " + self.default)  # return None
+        if self.default not in self: raise KeyError("Default not yet in the vocabulary: " + self.default)
         if key in self.voc:
-            #      if key=='UNKNOWN': print '\tkey is \"UNKNOWN\"!'
             dict.__setitem__(self, key, val)
-        # except: sys.exit()
         else:
             dict.__setitem__(self, self.default, val)
 
@@ -300,13 +268,11 @@ class WordMatrix(dict):
                 del self[key]
 
     def __missing__(self, key):
-        # print 'WM missing:', key, type(key)
-        if key == self.default: raise KeyError("Default not yet in the vocabulary: " + self.default)  # return None
+        if key == self.default: raise KeyError("Default not yet in the vocabulary: " + self.default)
         if key in self.voc:
             self[key] = np.zeros_like(self[self.default])
             return self[key]
         else:
-            #      print 'WM missing:', key
             return self[self.default]
 
     def __reduce__(self):

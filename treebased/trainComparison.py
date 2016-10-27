@@ -9,7 +9,7 @@ import core.trainingRoutines as tr
 from core import Optimizer
 import argparse
 import sys, os
-import core.gradient_check as check
+#import core.gradient_check as check
 
 ''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
 def installTheta(thetaFile, seed, d, comparison):
@@ -29,7 +29,7 @@ def installTheta(thetaFile, seed, d, comparison):
         print 'initializing theta from scratch'
         dims = {'inside': d, 'outside': d, 'word': d, 'minArity': 3, 'maxArity': 3}
         voc = ['UNKNOWN'] + [str(w) for w in data.arithmetics.ds] + data.arithmetics.ops
-        theta = myTheta.Theta('RNN', dims, embeddings=None, vocabulary=voc, seed = seed)
+        theta = myTheta.Theta(dims=dims, embeddings=None, vocabulary=voc, seed = seed)
         theta.extend4Classify(2,3,comparison)
     theta.extend4Prediction(-1)
     return theta
@@ -50,12 +50,17 @@ def main(args):
     if opt =='adagrad': optimizer = Optimizer.Adagrad(theta,lr = args['learningRate'])
     elif opt =='adam': optimizer = Optimizer.Adam(theta,lr = args['learningRate'])
     elif opt =='sgd': optimizer = Optimizer.SGD(theta,lr = args['learningRate'])
+    else: raise RuntimeError("No valid optimizer chosen")
 
     '''
     Training in phases: train for a phase on a certain task, then perform a complete evaluation
     Phases can be used to alternate tasks to train on, possibly fixing some of the model parameters
     NB: this feature is not really used in the current experiments
     '''
+    q = 10
+    if q>args['nEpochs']:
+        q = args['nEpochs']//2
+
     kind = args['kind']
     if kind =='c':
         hypers = [hyperParamsCompare]
@@ -68,7 +73,7 @@ def main(args):
     elif kind =='a':
         hypers = [hyperParamsPredict, hyperParamsCompare]
         names = ['prediction', 'comparison']
-        phases = [int(0.5*q),int(0.5*q)]
+        phases = [q//2,q//2]
     else: sys.exit()
 
     # generate training and evaluation data for the tasks to be trained on
@@ -104,9 +109,9 @@ if __name__ == "__main__":
     parser.add_argument('-c','--comparison', type=int, default=0, help='Dimensionality of comparison layer (0 is no layer)', required=False)
     parser.add_argument('-dwrd','--word', type=int, default = 2, help='Dimensionality of leaves (word nodes)', required=False)
     # training hyperparameters:
-    parser.add_argument('-opt', '--optimizer', type=str, choices=['sgd', 'adagrad', 'adam'], help='Activation of hidden layer', required=False)
+    parser.add_argument('-opt', '--optimizer', type=str, choices=['sgd', 'adagrad', 'adam'], help='Optimization scheme', required=True)
     parser.add_argument('-s', '--seed', type=int, help='Random seed to be used', required=True)
-    parser.add_argument('-n','--nEpochs', type=int, help='Maximal number of epochs to train per phase', required=True)
+    parser.add_argument('-n','--nEpochs', type=int, help='Maximal number of epochs to train', required=True)
     parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
     parser.add_argument('-l','--lambda', type=float, help='Regularization parameter lambdaL2', required=True)
     parser.add_argument('-lr','--learningRate', type=float, help='Learning rate parameter', required=True)

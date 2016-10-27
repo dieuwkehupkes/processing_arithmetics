@@ -1,7 +1,8 @@
 from __future__ import division
 import random
-import core.classifier as cl
-import core.myRNN as myRNN
+#import core.classifier as cl
+import core.NN as NN
+#import core.myRNN as myRNN
 import sys
 
 sys.path.insert(0, '../commonFiles')
@@ -43,7 +44,7 @@ def confusionS(matrix, labels):
 
 class RNNTB(TB):
     def __init__(self, examples):
-        self.examples = [(myRNN.RNN(me), target) for (me, target) in examples]
+        self.examples = [(NN.RNN(me), target) for (me, target) in examples]
 
 
 class CompareClassifyTB(TB):
@@ -56,7 +57,7 @@ class CompareClassifyTB(TB):
         examples = []
 
         for left, right, label in items:
-            classifier = cl.Classifier([myRNN.RNN(left).root, myRNN.RNN(right).root], self.labels,
+            classifier = NN.Classifier(children=[NN.RNN(left).root, NN.RNN(right).root], labels=self.labels,
                                        comparison=comparison)
             examples.append((classifier, label))
         return examples
@@ -69,7 +70,7 @@ class CompareClassifyTB(TB):
         confusion = defaultdict(Counter)
         for nw, target in self.getExamples(n):
             error += nw.evaluate(theta, target)
-            prediction = nw.predict(theta, None, False, False)
+            prediction = nw.predict(theta=theta, activate = False)
             confusion[target][prediction] += 1
             if prediction == target:
                 true += 1
@@ -96,7 +97,7 @@ class ScalarPredictionTB(TB):
     def convertExamples(self, items):
         examples = []
         for tree, label in items:
-            predictor = cl.Predictor(myRNN.RNN(tree))
+            predictor = NN.Predictor(NN.RNN(tree))
             examples.append((predictor, label))
         return examples
 
@@ -151,9 +152,12 @@ def getTBs(seed, kind, comparison=False):
             mtb = arithmetics.training_treebank(seed)
         elif part == 'heldout':
             mtb = arithmetics.heldout_treebank(seed,
-                                               languages={'L9_left': 15000, 'L9_right': 15000, 'L1': 50, 'L2': 500,
-                                                          'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000,
-                                                          'L8': 15000, 'L9': 15000})
+                                               languages={'L9_left': 500, 'L9_right': 500, 'L1': 5, 'L2': 50,
+                                                          'L3': 150, 'L4': 200, 'L5': 300, 'L6': 400, 'L7': 500,
+                                                          'L8': 500, 'L9': 500})
+                                               #languages={'L9_left': 15000, 'L9_right': 15000, 'L1': 50, 'L2': 500,
+                                               #           'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000,
+                                               #           'L8': 15000, 'L9': 15000})
         if kind == 'comparison':
             data[part] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
         elif kind == 'prediction':
