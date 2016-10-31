@@ -4,7 +4,7 @@ import argparse
 import pickle
 from generate_training_data import generate_dmap
 from keras.models import load_model
-from auxiliary_functions import generate_embeddings_matrix, print_sum
+from auxiliary_functions import print_sum
 from architectures import Training
 from arithmetics import mathTreebank
 import re
