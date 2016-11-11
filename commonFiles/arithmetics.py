@@ -431,12 +431,13 @@ class mathExpression(Tree):
                 bracket_stack.append(subtracting)
 
             elif symbol == ')':
-                bracket_stack.pop(-1)
-                try:
-                    subtracting = bracket_stack[-1]
-                except IndexError:
-                    # end of sequence
-                    pass
+                subtracting = bracket_stack.pop(-1)
+#                 bracket_stack.pop(-1)
+#                 try:
+#                     subtracting = bracket_stack[-1]
+#                 except IndexError:
+#                     # end of sequence
+#                     pass
 
             elif symbol == '+':
                 pass
@@ -589,7 +590,7 @@ def make_noise_plots():
 def test_solve_locally(format, digits, operators):
     m = mathTreebank()
     for length in np.arange(3,10):
-        examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
+        examples = m.generateExamples(operators=ops, digits=digits, n=500, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
             outcome = expression.solveLocally(format=format)
@@ -619,5 +620,5 @@ def test_solve_recursively(format, digits, operators):
 if __name__ == '__main__':
     digits = np.arange(-10,10)
     ops = ['+', '-']
-    test_solve_recursively(format='prefix', digits=digits, operators=ops)
+    test_solve_locally(format='infix', digits=digits, operators=ops)
 
