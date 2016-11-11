@@ -432,7 +432,7 @@ class mathExpression(Tree):
 
             elif symbol == ')':
                 subtracting = bracket_stack.pop(-1)
-#                 bracket_stack.pop(-1)
+#                 bracket_stack.pop(-1)         git 
 #                 try:
 #                     subtracting = bracket_stack[-1]
 #                 except IndexError:
