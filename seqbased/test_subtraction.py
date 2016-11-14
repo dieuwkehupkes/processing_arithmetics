@@ -1,7 +1,9 @@
 import sys
+sys.path.insert(0, '../commonFiles') 
 from keras.layers import Dense, TimeDistributed
 from keras.models import load_model, Model
 from architectures import Training, Probing
+from arithmetics import mathTreebank
 import matplotlib.pylab as plt
 import numpy as np
 import pickle
@@ -17,19 +19,49 @@ dmap = pickle.load(open('models/dmap', 'rb'))
 dmap['x'] = 0
 dmap_inverted = dict([(item[1],item[0]) for item in dmap.items()])
 
-test_languages = {'L9+': 15}
-digits = np.arange(1,11)
+test_languages = {'L9_right': 5}
+digits = np.arange(-10,11)
 
-test_data = Training.generate_test_data(Probing, test_languages, dmap=dmap, digits=digits, 
+expr = '( ( ( -9 + 0 ) + ( 6 + ( -8 - 7 ) ) ) + ( ( -3 + -1 ) - ( 6 - -2 ) ) )'
+treebank = mathTreebank()
+treebank.add_example_from_string(expr)
+
+test_data = Training.generate_test_data(Probing, treebank, dmap=dmap, digits=digits, 
                                         classifiers=['subtracting', 'intermediate_locally', 'intermediate_recursively'],
                                         pad_to=57, test_separately=True)
 
-expr = '(  (  (  (  -10  -  -7  )  -  (  -7  -  -3  )  )  +  8  )  -  (  (  2  -  (  -9  -  -4  )  )  +  4  )  )'
 
 
 model_probe = load_model(model_probe)
 model = load_model(model)
 original_weights = model.layers[-1].get_weights()
+# print "original weights:",  original_weights
+
+# plot embeddings
+# weights = model_probe.layers[2].get_weights()[0]
+# xmin, ymin = 1.1 * weights.min(axis=0)
+# xmax, ymax = 1.1 * weights.max(axis=0)
+# for i in xrange(1, len(weights)):
+#     xy = tuple(weights[i])
+#     x, y = xy
+#     plt.plot(x, y, 'o')
+#     plt.annotate(dmap_inverted[i], xy=xy)
+#     plt.xlim([xmin, xmax])
+#     plt.ylim([ymin, ymax])
+#     plt.axhline(0)
+#     plt.axvline(0)
+# plt.show()
+# exit()
+# 
+# 
+# GRU_gewichten = model_probe.layers[3].get_weights()
+# names = ['Input to update', 'Hidden to update', 'Update gate bias', 'Input to reset', 'Hidden to reset', 'bias reset', 'Input to hidden', 'Hidden to hidden (= recurrent weights)', 'Bias hidden']
+# 
+# for i in [0, 1, 3, 4, 6, 7]:
+#     print names[i], ':\n'
+#     plt.matshow(GRU_gewichten[i], cmap='bwr')
+#     plt.show()
+
 
 original_prediction = TimeDistributed(Dense(1, weights=original_weights, activation='linear'), name='original_prediction')(model_probe.layers[4].output)
 
@@ -92,14 +124,12 @@ for name, X_test, Y_test in test_data:
         ax1.set_ylim([-0.1, 1.1])
         ax1.legend(bbox_to_anchor=(.35, 1.85))
 
-        # ax = fig.add_subplot(2, 1, gridspec_kw = {'width_ratios':[2, 1]})
-
         ax2.plot(ranges, original_pred, label='model', linewidth=2, color='r')
         ax2.plot(ranges, imm_target, label='immStrat target', color='g', ls='--')
-        # ax2.plot(ranges, recursive_target, label='recStrat target', color='b', ls='--')
+        ax2.plot(ranges, recursive_target, label='recStrat target', color='b', ls='--')
 
         ax2.plot(ranges, imm_model, label='immStrat model', color='g')
-        # ax2.plot(ranges, recursive_model, label='recStrat model', color='b')
+        ax2.plot(ranges, recursive_model, label='recStrat model', color='b')
 
         ax2.set_xticks(ranges)
         ax2.set_xticklabels(xticks)
