@@ -521,7 +521,7 @@ class mathExpression(Tree):
         of the equation would need.
         """
         intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
-        intermediate_recursively, stack_recursively = self.solveRecursively(return_sequences=True, format=format)
+        intermediate_recursively, stack_recursively, subtracting_recursively = self.solveRecursively(return_sequences=True, format=format)
 
         self.targets = {}
 
