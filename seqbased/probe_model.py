@@ -10,7 +10,6 @@ from keras.models import load_model
 import argparse
 import re
 import pickle
-from auxiliary_functions import generate_embeddings_matrix, print_sum, save_model
 from architectures import Probing, A1, Training
 
 

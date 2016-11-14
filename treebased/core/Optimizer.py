@@ -11,7 +11,7 @@ class Optimizer():
         return self.theta.gradient()
 
 ## regularization
-## TODO: check if this is correct (mostly the 'amount')
+## TODO: check if this is correct (mostly the 'amount' of regularization)
     def regularize(self, portion, tofix = []):
         if self.lambdaL2 ==0: return
         for name in self.theta.keys():
@@ -41,14 +41,13 @@ class SGD(Optimizer):
 
 
 class Adagrad(Optimizer):
-    def __init__(self, theta, lr=0.01, epsilon = 1e-8):
-        Optimizer.__init__(self,theta,lr=lr)
+    def __init__(self, theta, lr=0.01, lambdaL2 = 0, epsilon = 1e-8):
+        Optimizer.__init__(self,theta,lr=lr, lambdaL2=lambdaL2)
         self.histgrad = self.theta.gradient()
         self.epsilon = epsilon
 
     def update(self, grads, portion, tofix=[]):
-        lr = self.lr #portion * self.lr
-        #print self.lr, portion, lr
+        lr = self.lr
         self.regularize(portion*lr, tofix)
 
         for key, grad in grads.iteritems():
@@ -77,7 +76,6 @@ class Adam(Optimizer):
 
     def update(self, grads, portion, tofix=[]):
         self.t +=1
-        #lr = portion * self.lr
         self.regularize(portion*self.lr, tofix)
 
         factor = (1- self.beta_2**self.t)**0.5/(1-self.beta_1**self.t)

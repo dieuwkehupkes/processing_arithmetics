@@ -289,6 +289,8 @@ class mathExpression(Tree):
         # return arrays
         stack_list = []
         intermediate_results = []
+        operators = []
+
 
         for symbol in symbols:
             if symbol == '(':
@@ -316,42 +318,42 @@ class mathExpression(Tree):
                 stack_list.append(copy.copy(stack))
 
             intermediate_results.append(cur)
+            operators.append({operator.add:True, operator.sub: False}[op])
 
         assert len(stack) == 0, "expression not grammatical"
 
         if return_sequences:
-            return intermediate_results, stack_list
+            return intermediate_results, stack_list, operators
 
         return cur
 
     def recursively_prefix(self, symbols, return_sequences=False):
         operator_stack = []
         number_stack = []
-        op = None
         cur = 0
-        intermediate_results, stack_list = [], []
+        intermediate_results, stack_list, operator_list = [], [], []
 
         for symbol in symbols:
             if symbol in ['+', '-']:
                 op = {'+':operator.add, '-':operator.sub}[symbol]
                 operator_stack.append(op)
-                number_stack.append(cur)
             elif symbol == '(':
                 pass
             elif symbol == ')':
-                op = operator_stack.pop
-                prev = number_stack.pop
+                op = operator_stack.pop()
+                prev = number_stack.pop()
                 cur = op(prev, cur)
             else:
                 # is digit
                 digit = int(symbol)
-                operator_stack.append(cur)
+                number_stack.append(cur)
                 cur = digit
 
-            if return_sequences:
-                return intermediate_results, stack_list
-
             intermediate_results.append(cur)
+            # operator_list.append[{operator.add:True, operator.sub: False}[op]]
+
+        if return_sequences:
+            return intermediate_results, stack_list, operator_list
 
         return cur
 
@@ -359,8 +361,8 @@ class mathExpression(Tree):
 
         stack = []
         cur = 0
-        stack_list = []
-        intermediate_results = []
+        stack_list, intermediate_results, operator_list = [], [], []
+        op = None
 
         for symbol in symbols:
             if symbol in ['+', '-']:
@@ -382,7 +384,7 @@ class mathExpression(Tree):
             intermediate_results.append(cur)
 
         if return_sequences:
-            return intermediate_results, stack_list
+            return intermediate_results, stack_list, operator_list
 
         return cur
                 
@@ -429,12 +431,13 @@ class mathExpression(Tree):
                 bracket_stack.append(subtracting)
 
             elif symbol == ')':
-                bracket_stack.pop(-1)
-                try:
-                    subtracting = bracket_stack[-1]
-                except IndexError:
-                    # end of sequence
-                    pass
+                subtracting = bracket_stack.pop(-1)
+#                 bracket_stack.pop(-1)         git 
+#                 try:
+#                     subtracting = bracket_stack[-1]
+#                 except IndexError:
+#                     # end of sequence
+#                     pass
 
             elif symbol == '+':
                 pass
@@ -555,16 +558,7 @@ class mathExpression(Tree):
         for symbol in self.toString(format=format).split():
             yield symbol
 
-
-if __name__ == '__main__':
-
-
-    s = '(  (  (  (  -10  -  -7  )  -  (  -7  -  -3  )  )  +  8  )  -  (  (  2  -  (  -9  -  -4  )  )  +  4  )  )'
-    e = mathExpression.fromstring(s)
-    print(e)
-    exit()
-
-
+def make_noise_plots():
     import matplotlib.pylab as plt
     digits = np.arange(-5,5)
     languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
@@ -592,26 +586,39 @@ if __name__ == '__main__':
     ax.set_xticklabels(languages.keys())
     plt.legend()
     plt.show()
-    exit()
 
+def test_solve_locally(format, digits, operators):
+    m = mathTreebank()
+    for length in np.arange(3,10):
+        examples = m.generateExamples(operators=ops, digits=digits, n=500, lengths=[length])
+        incorrect = 0.0
+        for expression, answer in examples:
+            outcome = expression.solveLocally(format=format)
+            if outcome != answer:
+                incorrect += 1
+                # print(expression, answer, outcome)
+                # raw_input()
 
-    print(expression.toString())
-    print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-    raw_input('\n')
-    exit()
-    # for expression, answer in m.examples:
-        # print(expression.toString())
-        # print(expression.toString(digit_noise=0.5, operator_noise=0.5))
-        # raw_input('\n')
+        print("percentage incorrect for length %i: %f" % (length, incorrect/50))
 
+def test_solve_recursively(format, digits, operators):
+    m = mathTreebank()
     for length in np.arange(3,10):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format='prefix')
+            outcome = expression.solveRecursively(format=format)
             if outcome != answer:
                 incorrect += 1
-                print(expression, answer, outcome)
+                print(expression.toString(format), answer, outcome)
                 raw_input()
 
         print("percentage incorrect for length %i: %f" % (length, incorrect/50))
+
+
+
+if __name__ == '__main__':
+    digits = np.arange(-10,10)
+    ops = ['+', '-']
+    test_solve_locally(format='infix', digits=digits, operators=ops)
+

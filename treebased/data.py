@@ -1,172 +1,167 @@
-from numpy import random as random
-import core.classifier as cl
-import core.myRNN as myRNN
+from __future__ import division
+import random
+#import core.classifier as cl
+import core.NN as NN
+#import core.myRNN as myRNN
 import sys
+
 sys.path.insert(0, '../commonFiles')
 import arithmetics
 from collections import defaultdict, Counter
-import re
 
-digits = [str(d) for d in arithmetics.ds]
-operators = arithmetics.ops
 
 class TB():
-  def __init__(self, examples):
-    self.examples = examples
+    def __init__(self, examples):
+        self.examples = examples
 
-  def getExamples(self, n=0):
-    if n == 0: n = len(self.examples)
-    random.shuffle(self.examples)
-    return self.examples[:n]
+    def getExamples(self, n=0):
+        if n == 0: n = len(self.examples)
+        random.shuffle(self.examples)
+        return self.examples[:n]
 
 
-def confusionS(matrix,labels):
-  if len(labels)<15:
-    s = '\t'
-    for label in labels:
-      s+='\t'+label
-    s+='\n\t'
-    for t in labels:
-      s+= t
-      for p in labels:
-        s+= '\t'+str(matrix[t][p])
-      s+='\n\t'
+def confusionS(matrix, labels):
+    if len(labels) < 15:
+        s = '\t'
+        for label in labels:
+            s += '\t' + label
+        s += '\n\t'
+        for t in labels:
+            s += t
+            for p in labels:
+                s += '\t' + str(matrix[t][p])
+            s += '\n\t'
 
-  else: #compacter representations
-    s = 'target: (prediction,times)\n\t'
-    for t,ps in matrix.items():
-      s+=str(t)+':'
-      for p, v in ps.items():
-        s+= ' ('+p+','+str(matrix[t][p])+')'
-      s+='\n\t'
-  return s
+    else:  # compacter representations
+        s = 'target: (prediction,times)\n\t'
+        for t, ps in matrix.items():
+            s += str(t) + ':'
+            for p, v in ps.items():
+                s += ' (' + p + ',' + str(matrix[t][p]) + ')'
+            s += '\n\t'
+    return s
+
+
+class RNNTB(TB):
+    def __init__(self, examples):
+        self.examples = [(NN.RNN(me), target) for (me, target) in examples]
+
 
 class CompareClassifyTB(TB):
-  def __init__(self, examples,noComparison=False):
-    self.labels = ['<','=','>']
-    self.noComp = noComparison
-    self.examples = self.convertExamples(examples)
+    def __init__(self, examples, comparison=False):
+        self.labels = ['<', '=', '>']
+        self.comparison = comparison
+        self.examples = self.convertExamples(examples, comparison)
 
+    def convertExamples(self, items, comparison):
+        examples = []
 
-  def convertExamples(self,items):
-    examples = []
-    x = iter(items)
-    while True:
-      try:
-        left, la = x.next()
-        right, ra = x.next()
-      except: break#return examples
-      if la < ra: label = '<'
-      elif la > ra: label = '>'
-      else: label = '='
-      classifier = cl.Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, noComparison=self.noComp)
-      examples.append((classifier,label))
-    return examples
+        for left, right, label in items:
+            classifier = NN.Classifier(children=[NN.RNN(left).root, NN.RNN(right).root], labels=self.labels,
+                                       comparison=comparison)
+            examples.append((classifier, label))
+        return examples
 
-  def evaluate(self, theta, name='', n=0, verbose=1):
-      if n == 0: n = len(self.examples)
-      error = 0.0
-      true = 0.0
-      confusion = defaultdict(Counter)
-      for nw, target in self.getExamples(n):
-        error += nw.evaluate(theta, target)
-        prediction = nw.predict(theta, False, False)
-        confusion[target][prediction] += 1
-        if prediction == target: true += 1
-        else:
-          if verbose==2: print 'wrong prediction:', prediction,'target:',target
-      accuracy = true / n
-      loss = error / n
-      if verbose ==1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
-      if verbose == 1: print '\tLoss:', loss, 'Accuracy:', accuracy, 'Confusion:'
-      if verbose == 1: print confusionS(confusion, self.labels)
-      return loss, accuracy
+    def evaluate(self, theta, name='', n=0, verbose=1):
+        if n == 0: n = len(self.examples)
+        error = 0.0
+        true = 0.0
+        diffs = []
+        confusion = defaultdict(Counter)
+        for nw, target in self.getExamples(n):
+            error += nw.evaluate(theta, target)
+            prediction = nw.predict(theta=theta, activate = False)
+            confusion[target][prediction] += 1
+            if prediction == target:
+                true += 1
+            else:
+                string = str(nw)
+                results = eval(string.split(':')[1])
+                diffs.append(abs(results[0] - results[1]))
+                if verbose == 2:      print 'wrong prediction:', prediction, 'target:', target, string, results, 'difference:', abs(
+                    results[0] - results[1])
+
+        accuracy = true / n
+        loss = error / n
+        if verbose == 1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
+        if verbose == 1: print '\tLoss:', loss, 'Accuracy:', accuracy, 'Confusion:'
+        if verbose == 1: print confusionS(confusion, self.labels)
+        if verbose > 0: print '\taverage absolute difference of missclassified examples:', sum(diffs) / len(diffs)
+        return {'loss (cross entropy)': loss, 'accuracy': accuracy}
+
 
 class ScalarPredictionTB(TB):
-  def __init__(self, examples, hiddenLayer = False):
-    self.examples = self.convertExamples(examples, hiddenLayer)
-  def convertExamples(self,items, hiddenLayer):
-    examples = []
-    for tree,label in items:
-      predictor = cl.Predictor(myRNN.RNN(tree).root, hiddenLayer=hiddenLayer)
-      examples.append((predictor,label))
-    return examples
+    def __init__(self, examples):
+        self.examples = self.convertExamples(examples)
 
-  def evaluate(self, theta, name='', n=0, verbose = 1):
-    if n == 0: n = len(self.examples)
-    sse = 0.0
-    sspe = defaultdict(float)#.0
-    lens = defaultdict(int)  # .0
-    true = 0.0
-    for nw, target in self.getExamples(n):
+    def convertExamples(self, items):
+        examples = []
+        for tree, label in items:
+            predictor = NN.Predictor(NN.RNN(tree))
+            examples.append((predictor, label))
+        return examples
 
-      pred = nw.predict(theta,roundoff=True)
-      sse += nw.evaluate(theta, target, activate=False, roundoff = False)
-      length = nw.length
-      sspe[length] += nw.error(theta, target, activate=False, roundoff = True)
-      lens[length]+=1
-      if target==pred: true +=1
-      if verbose==2:
-        length = (len(str(nw).split(' '))+3)/4
-        print 'length:',length,('right' if target==pred else 'wrong'), 'prediction:' , pred, 'target:', target, 'error:', nw.error(theta, target, activate=False, roundoff = True),'('+str(nw.error(theta, target, activate=False, roundoff = False))+')'
+    def evaluate(self, theta, name='', n=0, verbose=1):
+        if n == 0: n = len(self.examples)
+        sse = 0.0
+        sspe = defaultdict(float)
+        lens = defaultdict(int)
+        true = 0.0
+        for nw, target in self.getExamples(n):
 
-    mse=sse/n
-    accuracy = true / n
-    mspe = sum(sspe.values()) / n
-    if verbose == 1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
-    if verbose == 1: print '\tLoss (MSE):', mse, 'Accuracy:', accuracy, 'MSPE:', mspe
-    if verbose == 1: print '\tMSPE per length: ', [(length,(sspe[length]/lens[length] if lens[length]>0 else 'undefined')) for length in sspe.keys()]
-    return mse, accuracy, mspe
+            pred = nw.predict(theta, roundoff=True)
+            sse += nw.evaluate(theta, target, activate=False, roundoff=False)
+            length = int((
+                         nw.length + 1) / 2)  # number of leaves = the number of digits + the number of operators, which is #digits-1
+            sspe[length] += nw.error(theta, target, activate=False, roundoff=True)
+            lens[length] += 1
+            if target == pred: true += 1
+            if verbose == 2:
+                print 'length:', length, (
+                    'right' if target == pred else 'wrong'), 'prediction:', pred, 'target:', target, 'error:', nw.error(
+                    theta,
+                    target,
+                    activate=False,
+                    roundoff=True), '(' + str(
+                    nw.error(theta, target, activate=False, roundoff=False)) + ')'
 
-def getTestTBs(seed,noComparison, predictH,subset = 0):
-  random.seed(seed)
-  for lan, mathtb in arithmetics.test_treebank(seed):
-    items = mathtb.examples
-    if subset > 0: items = items[:subset]
-    yield lan, CompareClassifyTB(items, noComparison=noComparison), ScalarPredictionTB(items, hiddenLayer=predictH)
+        mse = sse / n
+        accuracy = true / n
+        mspe = sum(sspe.values()) / n
+        if verbose == 1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
+        if verbose == 1: print '\tLoss (MSE):', mse, 'Accuracy:', accuracy, 'MSPE:', mspe
+        if verbose == 1: print '\tMSPE per length: ', [
+            (length, (sspe[length] / lens[length] if lens[length] > 0 else 'undefined')) for length in sspe.keys()]
+        return {'loss (mse)': mse, 'accuracy': accuracy, 'mspe': mspe}
 
-def getTBs(seed, noComparison, predictH, sets=['train','heldout'], subset = 0):
-  random.seed(seed)
-  predictData={}
-  compareData={}
-  for name in sets:
-    if name=='train': mathtb = arithmetics.training_treebank(seed)
-    elif name =='heldout': mathtb = arithmetics.heldout_treebank(seed)
-    items = mathtb.examples
-    if subset > 0: items = items[:subset]
-    predictData[name] = ScalarPredictionTB(items, hiddenLayer=predictH)
-    compareData[name] = CompareClassifyTB(items, noComparison=noComparison)
 
-  return compareData, predictData
-#
-# def makeFile(digits, theta, directory):
-#   languages = [{'L1': 3000, 'L2': 3000, 'L4': 3000, 'L6': 3000}, {'L3': 400, 'L5': 400, 'L7': 400}]
-#   #print 'Training languages:', str(languages_train)
-#   #print 'Testing languages:', str(languages_test)
-#   import pickle, numpy as np
-#
-#   train = True
-#   for i in range(2):
-#     tb = arithmetics.mathTreebank(languages[i], digits)
-#     inputs = []
-#     outputs = []
-#     strings = []
-#     for me, answer in tb.examples:
-#       nw = myRNN.RNN(me)
-#       nw.activate(theta)
-#       strings.append(str(me))
-#       inputs.append(nw.root.a)
-#       outputs.append(answer)
-#
-#     for data, name in [(inputs,'X_'),(outputs,'Y_'),(strings,'strings_')]:
-#       with open(directory + '/' +name + ('train' if train else 'test') + '.pkl', 'wb') as f:
-#         pickle.dump(np.array(data),f)
-#
-#     with open(directory + '/' + ('train' if train else 'test') + 'Data.txt', 'w') as f:
-#           f.write('inputs='+str(inputs)+'\n')
-#           f.write('outputs=' + str(outputs)+'\n')
-#           f.write('strings='+str(strings)+'\n')
-#     train = False
-#
-#
-#
+def getTestTBs(seed, kind, comparison=False):
+    for name, mtb in arithmetics.test_treebank(seed):
+        if kind == 'comparison':
+            yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+        elif kind == 'prediction':
+            yield name, ScalarPredictionTB(mtb.examples)
+        elif kind == 'RNN':
+            yield name, RNNTB(mtb.examples)
+
+
+def getTBs(seed, kind, comparison=False):
+    data = {}
+    for part in 'train', 'heldout':
+        if part == 'train':
+            mtb = arithmetics.training_treebank(seed)
+        elif part == 'heldout':
+            mtb = arithmetics.heldout_treebank(seed,
+                                               languages={'L9_left': 500, 'L9_right': 500, 'L1': 5, 'L2': 50,
+                                                          'L3': 150, 'L4': 200, 'L5': 300, 'L6': 400, 'L7': 500,
+                                                          'L8': 500, 'L9': 500})
+                                               #languages={'L9_left': 15000, 'L9_right': 15000, 'L1': 50, 'L2': 500,
+                                               #           'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000,
+                                               #           'L8': 15000, 'L9': 15000})
+        if kind == 'comparison':
+            data[part] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
+        elif kind == 'prediction':
+            data[part] = ScalarPredictionTB(mtb.examples)
+        elif kind == 'RNN':
+            data[part] = RNNTB(mtb.examples)
+    return data
