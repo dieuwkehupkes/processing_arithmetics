@@ -15,9 +15,9 @@ def colorscale(n, color=None):
         return plt.get_cmap('spring', n)
 
 
-def scatterAndAnnotate(ax, point, color, label, size=12, txtcolor='black', pos=None):
+def scatterAndAnnotate(ax, point, color, label, size=12, txtcolor='black', pos=None, alpha = 1):
     if len(point) > 2: print 'Only plotting first two dims'
-    sc = ax.scatter(float(point[0]), float(point[1]), color=color, s=25, zorder=5)
+    sc = ax.scatter(float(point[0]), float(point[1]), color=color, s=25, zorder=5, alpha = alpha)
 
     xy = [float(point[0]), float(point[1])]
     ha = 'left'
@@ -60,14 +60,15 @@ def drawArrow(ax, fr, to, label, style='solid', color='black', head=0.05, txtsiz
 
     dx = to[0] - fr[0]
     dy = to[1] - fr[1]
-    #  try:
-    #    rotation = int(round(np.rad2deg(np.arctan(dy / dx))))
-    #  except:
-    rotation = 1
-    # print rotation
     ar = ax.arrow(fr[0], fr[1], dx, dy, width=0.0001, ls=style, head_width=head, color=color, length_includes_head=True,
                   label=label, zorder=0, alpha=alpha)
-    an = ax.text(fr[0] + .2 * dx, fr[1] + .2 * dy, label, color=txtcolor, ha="center", va="center", rotation=rotation,
+
+    
+    try: rotation = int(round(np.rad2deg(np.arctan(dy / dx))))
+    except: rotation = 1
+    anLoc = (fr[0]+rotation*0.2*dx, fr[1]+rotation*0.2*dy+0.1)
+
+    an = ax.text(anLoc[0], anLoc[1], label, color=txtcolor, ha="center", va="center", rotation=1,
                  size=txtsize, zorder=1)  # ,bbox=dict(facecolor='white', edgecolor='none', fill=True, alpha=0.8))
     return [ar, an]
 
@@ -133,6 +134,9 @@ def improveTicks(ax, scale=1):
     ax.spines['top'].set_color('none')
     ax.xaxis.tick_bottom()
 
+
+def equalAspects(ax):
+    ax.axis('equal')
 
 def show(ax, improve=True):
     if improve: improveTicks(ax)

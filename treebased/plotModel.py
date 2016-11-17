@@ -109,6 +109,7 @@ def plotForSubtree(ax, nw, theta, n=0):
 
 def plotForSubtree2(nw, theta, n=0):
     fig, ax = pt.newFig()
+    pt.equalAspects(ax)
     M = theta[('composition', '#X#', '(#X#, #X#, #X#)', 'I', 'M')]
     mbits = np.split(M, 3, axis=1)
     B = theta[('composition', '#X#', '(#X#, #X#, #X#)', 'I', 'B')]
@@ -126,11 +127,15 @@ def plotForSubtree2(nw, theta, n=0):
     now = np.array([0, 0])
     for i, proj in enumerate(projs + [B]):
         nnow = now + proj
-        pt.scatterAndAnnotate(ax, nnow, projColors[i], '')
-        pt.drawArrow(ax, now, nnow, label=names[i] + ('' if names[i] == 'bias' else '\''), color=projColors[i],
+        pt.scatterAndAnnotate(ax, nnow, projColors[i], '', alpha=0)
+        if i == 0: postfix = 'L'
+        elif i == 1: postfix = 'M'
+        elif i == 2: postfix = 'R'
+        else: postfix = ''
+        pt.drawArrow(ax, now, nnow, label=names[i] + postfix, color=projColors[i],
                      alpha=0.6, head=0.1)
         now = nnow
-
+    pt.scatterAndAnnotate(ax, nnow, projColors[i], '')
     # print nw.a-myActivation.activate(now,'tanh')[0], 'should be (close to) zero'
     # pt.scatterAndAnnotate(ax, now , 'black', 'sum')
     pt.scatterAndAnnotate(ax, nw.a, eC, str(nw), pos='bot')
@@ -138,6 +143,7 @@ def plotForSubtree2(nw, theta, n=0):
 
     pt.putOrigin(ax)
     pt.minimalTicks(ax)
+
 
     if outDir:
         pt.saveFigure(ax, False, outDir, 'example' + str(n) + 'All')
@@ -152,7 +158,7 @@ def plotAnExample(theta):
     ans = me.solve()
     print str(me), ans
 
-    nw = data.myRNN.RNN(me)
+    nw = data.NN.RNN(me)
     nw.activate(theta)
 
     # plotForSubtree(ax, nw.root.inputs[2], theta,0)
