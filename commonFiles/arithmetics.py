@@ -259,6 +259,21 @@ class mathExpression(Tree):
         """
         return self.toString()
 
+    def statesPrint(self):
+        seqR=self.solveRecursively('infix',True)
+        seqL=self.solveLocally('infix',True)
+        print('\\newcommand{\\chars}{\phantom{0},'+','.join(['{'+x+'}' if x in ['(',')'] else x for x in str(self).split() ])+'}')
+        print('\\newcommand{\\recresults}{0,'+','.join([str(x) for x in seqR[0]])+'}')
+        print('\\newcommand{\\incresults}{0,'+','.join([str(x) for x in seqL[0]])+'}')
+        print('\\newcommand{\\recmodes}{+,'+','.join(['-' if x else '+' for x in seqR[2]])+'}')
+        print('\\newcommand{\\incmodes}{+,'+','.join(['-' if x else '+' for x in seqL[2]])+'}')
+        print('\\newcommand{\\incstackM}{{},'+','.join(['{'+','.join(['-' if x else '+' for x in stack])+'}' for stack in seqL[1]])+'}')
+        trans = {operator.add:'+', operator.sub:'-'}
+        print('\\newcommand{\\recstackM}{{},'+','.join(['{'+','.join([trans[x[0]] for x in stack])+'}' for stack in seqR[1]])+'}')
+        print('\\newcommand{\\recstackN}{{},'+','.join(['{'+','.join([str(x[1]) for x in stack])+'}' for stack in seqR[1]])+'}')
+
+
+
     def solveRecursively(self, format='infix', return_sequences=False):
         """
         Solve expression recursively.
@@ -313,7 +328,7 @@ class mathExpression(Tree):
             # store state
 
             if stack == []:
-                stack_list.append([(-12345, -12345)])     # empty stack representation
+                stack_list.append([])     # empty stack representation
             else:
                 stack_list.append(copy.copy(stack))
 
@@ -446,8 +461,8 @@ class mathExpression(Tree):
                 subtracting = not subtracting
 
             intermediate_results.append(result)
-            brackets.append(bracket_stack)
-            subtracting_list.append({True: [1], False:[0]}[subtracting])
+            brackets.append(bracket_stack[:])
+            subtracting_list.append(subtracting)
 
         if return_sequences:
             return intermediate_results, brackets, subtracting_list
