@@ -145,11 +145,11 @@ class Training(object):
         if test_separately:
             test_data = []
             for name, N in languages.items():
-                X, Y = architecture.generate_training_data({name: N}, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
+                X, Y = architecture.generate_training_data(architecture=architecture, data={name: N}, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = architecture.generate_training_data(languages=languages, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
+            X, Y = architecture.generate_training_data(architecture=architecture, data=languages, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
             name = ', '.join(languages.keys())
             test_data = [(name, X, Y)]
 
