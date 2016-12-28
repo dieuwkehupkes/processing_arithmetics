@@ -549,7 +549,7 @@ class mathExpression(Tree):
         self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
         # subtracting
-        self.targets['subtracting'] = subtracting
+        self.targets['subtracting'] = [[val] for val in subtracting]
 
         # intermediate outcomes recursive computation
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
