@@ -59,6 +59,12 @@ def _test_architecture_methods(architecture, extra_classifiers=None):
     os.remove('temp1.h5')
 
     # test generate test data
+    languages = {'L1':10, 'L2':15, 'L3':20}
+    test_data = Training.generate_test_data(A, languages=languages, dmap=dmap, digits=np.arange(-10, 11), pad_to=40, classifiers=extra_classifiers, test_separately=True)
+
+    # test model testing
+    for name, X, Y in test_data:
+        A.model.evaluate(X, Y)
 
     # TODO test get model info?
 
