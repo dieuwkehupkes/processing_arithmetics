@@ -1,2 +1,0 @@
-arithmetic_language/L2.pickle filter=lfs diff=lfs merge=lfs -text
-arithmetic_language/L3.pickle filter=lfs diff=lfs merge=lfs -text
