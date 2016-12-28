@@ -1,5 +1,5 @@
 import sys 
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 import argparse
 import pickle
 from generate_training_data import generate_dmap

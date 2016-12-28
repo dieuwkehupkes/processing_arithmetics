@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 from test_model import test_model
 from architectures import A1, A4, Probing
 from collections import OrderedDict

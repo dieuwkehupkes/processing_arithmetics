@@ -1,6 +1,5 @@
 import numpy as np
 import sys
-sys.path.insert(0, '../commonFiles') 
 from arithmetics import mathTreebank, test_treebank
 from collections import OrderedDict
 import random

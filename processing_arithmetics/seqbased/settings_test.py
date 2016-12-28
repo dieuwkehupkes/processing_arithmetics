@@ -1,7 +1,7 @@
 # imports
 from keras.layers import SimpleRNN, GRU, LSTM
 import sys
-sys.path.insert(0, '../commonFiles')
+sys.path.insert(0, '../arithmetics')
 from arithmetics import test_treebank
 from auxiliary_functions import max_length
 from architectures import A1, A4, Probing, Seq2Seq

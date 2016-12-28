@@ -1,11 +1,9 @@
 from __future__ import division
 import random
-#import core.classifier as cl
 import core.NN as NN
-#import core.myRNN as myRNN
 import sys
 
-sys.path.insert(0, '../commonFiles')
+sys.path.insert(0, '../arithmetics')
 import arithmetics
 from collections import defaultdict, Counter
 

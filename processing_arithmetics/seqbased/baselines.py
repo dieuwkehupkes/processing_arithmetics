@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 from arithmetics import mathTreebank
 import random
 import matplotlib.pyplot as plt

@@ -3,7 +3,7 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import sys
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 from arithmetics import mathTreebank
 from TrainingHistory import TrainingHistory
 from DrawWeights import DrawWeights

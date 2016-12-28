@@ -1,6 +1,6 @@
 from __future__ import print_function
 import sys 
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 import keras.preprocessing.sequence
 from keras.models import Model, load_model
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense

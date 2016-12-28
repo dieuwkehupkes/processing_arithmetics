@@ -1,5 +1,5 @@
 import sys 
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 from keras.models import Model, model_from_json
 from keras.layers import Embedding, Input, GRU, LSTM, SimpleRNN, Dense
 from analyser import visualise_hidden_layer, plot_gate_values, visualise_paths

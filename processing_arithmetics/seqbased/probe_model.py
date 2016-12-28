@@ -4,7 +4,7 @@
 # different features from these representation
 
 import sys 
-sys.path.insert(0, '../commonFiles') 
+sys.path.insert(0, '../arithmetics') 
 from train_model import generate_training_data, generate_test_data
 from keras.models import load_model
 import argparse
