@@ -2,6 +2,7 @@ from keras.models import Model, load_model
 from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
+import os
 import sys
 sys.path.insert(0, '../arithmetics') 
 from arithmetics import mathTreebank
@@ -75,12 +76,9 @@ class Training(object):
         self.model = None
         self.classifiers = extra_classifiers
 
-
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
 
-    def _build(self, W_embeddings, W_recurrent, W_classifier):
-        raise NotImplementedError()
 
     def add_pretrained_model(self, model, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None, input_length=None):
         """
@@ -116,6 +114,24 @@ class Training(object):
         # run build function
         self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, extra_classifiers=classifiers)
         return
+
+    @staticmethod
+    def generate_training_data(architecture, data, dmap, digits=np.arange(-10, 11), pad_to=None, format='infix', classifiers=None):
+        """
+        Generate training data
+        """
+        if isinstance(data, dict):
+            data = mathTreebank(data, digits=digits)
+            random.shuffle(data.examples)
+
+        return architecture.data_from_treebank(treebank=data, dmap=dmap, pad_to=pad_to,
+                                       classifiers=classifiers, format=format)
+
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        raise NotImplementedError("Should be implemented in subclass")
+
+
 
     @staticmethod
     def generate_test_data(architecture, languages, dmap, digits, pad_to=None, test_separately=True, classifiers=None, format='infix'):
@@ -188,8 +204,6 @@ class Training(object):
 
         return sample_weights
 
-
-
     def model_summary(self):
         print(self.model.summary())
 
@@ -250,7 +264,7 @@ class Training(object):
         Save model to file
         """
         # check if filename exists
-        exists = os.path.exists(filename+'.json')
+        exists = os.path.exists(filename+'.h5')
         while exists:
             overwrite = raw_input("Filename exists, overwrite? (y/n)")
             if overwrite == 'y':
@@ -259,9 +273,7 @@ class Training(object):
             filename = raw_input("Provide filename (without extension)")
               
         # save file
-        model_json = self.model.to_json()
-        open(filename+'.json', 'w').write(model_json)
-        self.model.save_weights(filename+'_weights.h5')
+        self.model.save(filename)
 
     def plot_loss(self, save_to_file=False):
         """
@@ -354,13 +366,6 @@ class Training(object):
 
         return callbacks
 
-    def _build(self, W_embeddings, W_recurrent, W_classifier):
-        raise NotImplementedError("Should be implemented in subclass")
-
-    @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
-        raise NotImplementedError("Should be implemented in subclass")
-
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         raise NotImplementedError("Should be implemented in subclass")
@@ -372,7 +377,6 @@ class Training(object):
     @staticmethod
     def get_recurrent_layer_id():
         raise NotImplementedError("Should be implemented in subclass")
-
 
 
 class A1(Training):
@@ -418,31 +422,13 @@ class A1(Training):
                            metrics=self.metrics)
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
-        """
-        Take a dictionary that maps languages to number of sentences and
-         return numpy arrays with training data.
-        :param languages:       dictionary mapping languages (str name) to numbers
-        :param pad_to:          length to pad training data to
-        :return:                tuple, input, output, number of digits, number of operators
-                                map from input symbols to integers
-        """
-        # generate treebank with examples
-        treebank = mathTreebank(languages, digits=digits)
-        random.shuffle(treebank.examples)
-
-        data = A1.data_from_treebank(treebank, dmap, pad_to=pad_to, format=format)
-
-        return data
-
-    @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
         Generate test data from a mathTreebank object.
         """
         X, Y = [], []
         for expression, answer in treebank.examples:
-            str_expression = expression.toString(format).split()
+            # str_expression = expression.toString(format).split()
             input_seq = [dmap[i] for i in expression.toString(format).split()]
             answer = answer
             X.append(input_seq)
@@ -528,24 +514,6 @@ class A4(Training):
                            metrics=self.metrics)
 
     @staticmethod
-    def generate_training_data(languages, dmap, digits, pad_to=None, format='infix', classifiers=None):
-        """
-        Take a dictionary that maps languages to number of sentences and
-         return numpy arrays with training data.
-        :param languages:       dictionary mapping languages (str name) to numbers
-        :param pad_to:          length to pad training data to
-        :return:                tuple, input, output, number of digits, number of operators
-                                map from input symbols to integers
-        """
-        # generate treebank with examples
-        treebank = mathTreebank(languages, digits=digits)
-
-        X_padded, Y = A4.data_from_treebank(treebank, dmap=dmap, pad_to=pad_to, classifiers=None, format=format)
-
-
-        return X_padded, Y
-
-    @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
         Generate data from mathTreebank object.
@@ -623,23 +591,13 @@ class Seq2Seq(Training):
 
         mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
 
-        W_classifier = W_classifier['output']
+        if W_classifier != None:
+            W_classifier = W_classifier['output']
         output = TimeDistributed(Dense(1, activation='linear'), name='output')(mask)
 
         self.model = Model(input=input_layer, output=output)
 
         self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
-
-    @staticmethod
-    def generate_training_data(languages, dmap, digits, classifiers=None, pad_to=None, format='infix'):
-
-        # generate and shuffle examples
-        treebank = mathTreebank(languages, digits=digits)
-        random.shuffle(treebank.examples)
-
-        X, Y = Seq2Seq.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=None, format=format)
-
-        return X, Y
 
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to, classifiers=None, format='infix'):
@@ -781,17 +739,6 @@ class Probing(Training):
         self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
-
-    @staticmethod
-    def generate_training_data(languages, dmap, digits, classifiers, pad_to=None, format='infix'):
-
-        # generate and shuffle examples
-        treebank = mathTreebank(languages, digits=digits)
-        random.shuffle(treebank.examples)
-
-        X, Y = Probing.data_from_treebank(treebank, dmap, pad_to=pad_to, classifiers=classifiers, format=format)
-
-        return X, Y
 
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to, classifiers, format='infix'):
