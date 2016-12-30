@@ -1,127 +1,149 @@
 import sys 
 sys.path.insert(0, '../arithmetics') 
 import argparse
+from keras.layers import SimpleRNN, GRU, LSTM
 import pickle
-from generate_training_data import generate_dmap
+import numpy as np
 from keras.models import load_model
-from auxiliary_functions import print_sum
-from architectures import Training
-from arithmetics import mathTreebank
+from architectures import Training, A1, A4, Probing, Seq2Seq
+from arithmetics import mathTreebank, training_treebank, test_treebank, heldout_treebank
 import re
 
+# Train a model with the default train/test and validation set
 
-def train(architecture, languages_train, languages_val, validation_split, dmap, digits, format, classifiers, maxlen, pretrained_model, copy_weights, recurrent_layer, train_classifier, train_embeddings, train_recurrent, mask_zero, optimizer, dropout_recurrent, input_dim, input_size, size_hidden, batch_size, nb_epochs, verbose, sample_weights, save_every, filename):
+###################################################
+# Helper functions for argument parsing
+
+def get_architecture(architecture):
+    arch_dict = {'A1':A1, 'A4':A4, 'DiagnosticClassifier':Probing, 'DC':Probing, 'Seq2Seq':Seq2Seq}
+    return arch_dict[architecture]
+
+def get_hidden_layer(hl_name):
+    hl_dict = {'SimpleRNN': SimpleRNN, 'SRN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}
+    return hl_dict[hl_name]
+
+def max_length(N):
     """
-    Generate model and train.
+    Compute length of arithmetic expression
+    with N numeric leaves
+    :param N: number of numeric leaves of expression
     """
-    training = architecture()
-
-    training_data = architecture.generate_training_data(architecture=training, data=languages_train, dmap=dmap, digits=digits, format=format, classifiers=classifiers, pad_to=maxlen)
-
-    if languages_val:
-        validation_data = architecture.generate_training_data(architecture=training, data=languages_val, dmap=dmap, digits=digits, format=format, classifiers=classifiers, pad_to=maxlen)
-    else:
-        validation_data = None
-
-    training = add_model(architecture=training, pretrained_model=pretrained_model, copy_weights=copy_weights, recurrent_layer=recurrent_layer, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, mask_zero=mask_zero, optimizer=optimizer, dropout_recurrent=dropout_recurrent, input_dim=input_dim, input_size=input_size, input_length=maxlen, size_hidden=size_hidden, classifiers=classifiers, sample_weights=sample_weights)
-
-    training.train(training_data=training_data, validation_data=validation_data,
-                   validation_split=validation_split, batch_size=batch_size,
-                   epochs=nb_epochs, verbosity=verbose, filename=filename,
-                   sample_weight=sample_weights, save_every=save_every)
-
-    training.print_accuracies()
-
-    # hist = training.trainings_history
-
-    # history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
-    # pickle.dump(history, open(filename + '.history', 'wb'))
-
-    return training
+    l = 4*N-3
+    return l
 
 
-def add_model(architecture, pretrained_model, copy_weights, recurrent_layer, train_classifier, train_embeddings, train_recurrent, mask_zero, optimizer, dropout_recurrent, input_dim, input_size, input_length, size_hidden, classifiers, sample_weights):
-    """
-    Generate the trainings architecture and
-    model to be trained.
-    """
+###################################################
+# Get arguments
 
-    if pretrained_model:
-        model = load_model(pretrained_model)
-        architecture.add_pretrained_model(model=model, 
-                                      dmap=dmap, copy_weights=copy_weights,
-                                      train_classifier=train_classifier,
-                                      train_embeddings=train_embeddings,
-                                      train_recurrent=train_recurrent,
-                                      mask_zero=mask_zero,
-                                      optimizer=optimizer,
-                                      dropout_recurrent=dropout_recurrent)
+parser = argparse.ArgumentParser()
 
-    else:
-        architecture.generate_model(recurrent_layer, input_dim=input_dim, input_size=input_size,
-                                input_length=input_length, size_hidden=size_hidden,
-                                dmap=dmap,
-                                W_embeddings=None,
-                                train_classifier=train_classifier, 
-                                train_embeddings=train_embeddings,
-                                train_recurrent=train_recurrent,
-                                mask_zero=mask_zero,
-                                optimizer=optimizer, dropout_recurrent=dropout_recurrent,
-                                extra_classifiers=classifiers)
+# positional arguments
+parser.add_argument("architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[A1, A4, Probing, Seq2Seq])
+parser.add_argument("hidden", type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
+parser.add_argument("nb_epochs", type=int, help="Number of epochs")
+parser.add_argument("save_to", help="Save trained model to filename")
 
-    return architecture
+# optional arguments
+parser.add_argument("-size_hidden", type=int, help="Size of the hidden layer", default=15)
+parser.add_argument("--seed", type=int, help="Set random seed", default=0)
+parser.add_argument("--format", type=str, help="Set formatting of arithmetic expressions", choices=['infix', 'postfix', 'prefix'], default="infix")
+parser.add_argument("--seed_test", type=int, help="Set random seed for testset", default=100)
 
-def test_model(training, languages_test, dmap, digits, maxlen, test_separately, classifiers, format=format):
+parser.add_argument("--optimizer", help="Set optimizer for training", choices=['adam', 'adagrad', 'adamax', 'adadelta', 'rmsprop', 'sgd'], default='adam')
+parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
+parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
+parser.add_argument("--val_split", help="Set validation split", default=0.1)
 
-    test_data = training.generate_test_data(architecture=training, languages=languages_test,
-                                   dmap=dmap, digits=digits, pad_to=maxlen,
-                                   test_separately=test_separately,
-                                   classifiers=classifiers, format=format)
+parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=25)
 
-    for name, X, Y in test_data:
-        acc = training.model.evaluate(X, Y)
-        print "Accuracy for for test set %s:" % name,
-        print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+# pretrained model argument
+parser.add_argument("-m", "--model", type=str, help="Add pretrained model")
+parser.add_argument("-fix_embeddings", action="store_true", help="Fix embedding weights during training")
+parser.add_argument("-fix_classifier_weights", action="store_true", help="Fix classifier weights during training")
+parser.add_argument("-fix_recurrent_weights", action="store_true", help="Fix recurrent weights during training")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("settings", help="Provide file with settings for model running", default="settings_train")
-    # add arguments to override settings file?
+# TODO verbosity?
+args = parser.parse_args()
 
-    args = parser.parse_args()
-
-    # import parameters
-    import_string = args.settings
-    py = re.compile('\.py$')
-    if py.search(import_string):
-        # take of .py
-        import_string = import_string[:-3]
-
-    settings = __import__(import_string)
-
-    # print model summary
-    print_sum(settings)
-    
-    dmap = pickle.load(open('best_models/dmap', 'rb'))
-    input_dim = len(dmap)+1
-
-    training = train(architecture=settings.architecture, languages_train=settings.languages_train,
-          languages_val=settings.languages_val, validation_split=settings.validation_split,
-          dmap=dmap, digits=settings.digits, format=settings.format, maxlen=settings.maxlen,
-          classifiers=settings.classifiers, pretrained_model=settings.pretrained_model,
-          copy_weights=settings.copy_weights, recurrent_layer=settings.recurrent_layer,
-          train_classifier=settings.train_classifier, train_embeddings=settings.train_embeddings,
-          train_recurrent=settings.train_recurrent, mask_zero=settings.mask_zero,
-          optimizer=settings.optimizer, dropout_recurrent=settings.dropout_recurrent,
-          input_dim=input_dim, input_size=settings.input_size, sample_weights=settings.sample_weights,
-          size_hidden=settings.size_hidden, save_every=settings.save_every, filename=settings.filename,
-          batch_size = settings.batch_size, nb_epochs=settings.nb_epoch, verbose=settings.verbose)
+languages_train             = training_treebank(seed=args.seed)
+languages_val              = heldout_treebank(seed=args.seed)
+languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
+digits = np.arange(-10, 11)
+dmap = pickle.load(open('best_models/dmap', 'rb'))      # TODO change this!
+input_dim = len(dmap)+1
+input_size = 2
 
 
-    if settings.languages_test:
-        test_model(training=training, languages_test=settings.languages_test, dmap=dmap,
-                   digits=settings.digits, maxlen=settings.maxlen,
-                   test_separately=settings.test_separately,
-                   classifiers=settings.classifiers, format=settings.format)
+#################################################################
+# Train model
 
+training = args.architecture()
+training_data = args.architecture.generate_training_data(architecture=training, data=languages_train, dmap=dmap, format=args.format, pad_to=args.maxlen) 
+validation_data = args.architecture.generate_training_data(architecture=training, data=languages_val, dmap=dmap, format=args.format, pad_to=args.maxlen) 
+
+# Add pretrained model if this is given in arguments
+if args.model:
+    model = load_model(args.model)
+    training.add_pretrained_model(model=model, 
+         dmap=dmap, copy_weights = None,           #TODO change this too!
+         fix_classifier_weights=args.fix_classifier_weights,
+         fix_embeddings=args.fix_embeddings,
+         fix_recurrent_weights=args.fix_recurrent_weights,
+         optimizer=args.optimizer,
+         dropout_recurrent=args.dropout)
+
+else:
+    training.generate_model(args.hidden, input_dim=input_dim, 
+        input_size=input_size, input_length=args.maxlen, 
+        size_hidden=args.size_hidden, dmap=dmap,
+        fix_classifier_weights=args.fix_classifier_weights, 
+        fix_embeddings=args.fix_embeddings,
+        fix_recurrent_weights=args.fix_recurrent_weights,
+        optimizer=args.optimizer,
+        dropout_recurrent=args.dropout)
+
+
+# train model
+training.train(training_data=training_data, validation_data=validation_data,
+        validation_split=args.val_split, batch_size=args.batch_size,
+        epochs=args.nb_epochs, verbosity=1, filename=args.save_to,
+        save_every=False)
+
+training.print_accuracies
+     
+hist = training.trainings_history
+history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+pickle.dump(history, open(args.save_to + '.history', 'wb'))
+
+
+######################################################################################
+# Test model
+
+exit()
+
+# TODO fix this, make the treebanks with generate data oid
+# then implement this in architecures ipv here
+for name, X, Y in languages_test:
+    acc = training.model.evaluate(X, Y)
+    print "Accuracy for for test set %s:" % name,
+    print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+
+
+# TODO still use this somewhere?
+def print_sum(settings):
+    # print summary of training session
+    print('Model summary:')
+    print('Recurrent layer: %s' % str(settings.recurrent_layer))
+    print('Size hidden layer: %i' % settings.size_hidden)
+    print('Initialisation embeddings: %s' % settings.encoding)
+    print('Size embeddings: %i' % settings.input_size)
+    print('Batch size: %i' % settings.batch_size)
+    print('Number of epochs: %i' % settings.nb_epoch)
+    print('Optimizer: %s' % settings.optimizer)
+    print('Trained on:')
+    try:
+        for language, nr in settings.languages_train.items():
+            print('%i sentences from %s' % (nr, language))
+    except AttributeError:
+        print('Unknown')

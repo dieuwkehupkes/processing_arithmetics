@@ -34,8 +34,8 @@ class Training(object):
     def generate_model(self, recurrent_layer, input_dim, input_size, input_length,
                        size_hidden, dmap,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
-                       train_classifier=True, train_embeddings=True, 
-                       train_recurrent=True,
+                       fix_classifier_weights=False, fix_embeddings=False, 
+                       fix_recurrent_weights=False,
                        mask_zero=True, dropout_recurrent=0.0,
                        optimizer='adam',
                        extra_classifiers=None):
@@ -66,9 +66,9 @@ class Training(object):
         self.input_length = input_length
         self.size_hidden = size_hidden
         self.dmap = dmap
-        self.train_classifier = train_classifier
-        self.train_embeddings = train_embeddings
-        self.train_recurrent = train_recurrent
+        self.train_classifier = not fix_classifier_weights
+        self.train_embeddings = not fix_embeddings
+        self.train_recurrent = not fix_recurrent_weights
         self.mask_zero = mask_zero
         self.dropout_recurrent = dropout_recurrent
         self.optimizer = optimizer
@@ -80,7 +80,7 @@ class Training(object):
         self._build(W_embeddings, W_recurrent, W_classifier)
 
 
-    def add_pretrained_model(self, model, dmap, copy_weights=['recurrent','embeddings','classifier'], train_classifier=True, train_embeddings=True, train_recurrent=True, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None, input_length=None):
+    def add_pretrained_model(self, model, dmap, copy_weights=['recurrent','embeddings','classifier'], fix_classifier_weights=False, fix_embeddings=False, fix_recurrent_weights=False, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None, input_length=None):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
@@ -112,7 +112,7 @@ class Training(object):
         input_length = input_length if input_length else model_info['input_length']
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, train_classifier=train_classifier, train_embeddings=train_embeddings, train_recurrent=train_recurrent, extra_classifiers=classifiers)
+        self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, extra_classifiers=classifiers)
         return
 
     @staticmethod
@@ -441,6 +441,7 @@ class A1(Training):
                                trainable=self.train_embeddings,
                                mask_zero=self.mask_zero,
                                name='embeddings')(input_layer)
+
 
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
