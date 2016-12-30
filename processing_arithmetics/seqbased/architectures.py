@@ -137,12 +137,26 @@ class Training(object):
     def generate_test_data(architecture, languages, dmap, digits, pad_to=None, test_separately=True, classifiers=None, format='infix'):
         """
         Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
-        :param languages:       dictionary mapping language names to numbers
+        :param languages:       can be either:
+                                    - a dictionary mapping language names to numbers
+                                    - a list with (name, treebank) tuples
+                                    - a mathTreebank object
         :param pad_to:          desired length of test sentences
         :return:                dictionary mapping classifier names to targets
+        UNTESTED
         """
 
-        if test_separately:
+        if isinstance(languages, list):
+            test_data = []
+            for name, treebank in languages:
+                X_test, Y_test = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
+                test_data.append((name, X_test, Y_test))
+
+        elif isinstance(languages, mathTreebank):
+            X_test, Y_test = architecture.data_from_treebank(languages, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
+            test_data = [('test treebank', X_test, Y_test)]
+
+        elif test_separately:
             test_data = []
             for name, N in languages.items():
                 X, Y = architecture.generate_training_data(architecture=architecture, data={name: N}, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
@@ -175,7 +189,33 @@ class Training(object):
                        nb_epoch=epochs, sample_weight=sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
-        self.trainings_history = callbacks[0]            # set trainings_history as attribute
+        hist = callbacks[0]
+
+        self.trainings_history = hist                    # set trainings history as attribute
+
+    def print_accuracies(self, history=None):
+        """
+        Print accuracies for training en test sets in readable fashion.
+        UNTESTED
+        """
+        if history:
+            hist = history
+
+        elif not self.trainings_history:
+            print("Model not trained yet")
+            return
+
+        else:
+            hist = self.trainings_history
+
+        print "Accuracy for for training set %s:\t" % \
+              '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
+        print "Accuracy for for validation set %s:\t" % \
+              '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+
+    def test(architecture, testsets, dmap, metrics, test_separately):
+        # TODO implement this!
+        pass
 
     def get_sample_weights(self, training_data, sample_weight):
         """

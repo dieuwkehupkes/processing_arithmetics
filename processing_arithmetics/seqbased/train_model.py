@@ -16,10 +16,10 @@ def train(architecture, languages_train, languages_val, validation_split, dmap, 
     """
     training = architecture()
 
-    training_data = generate_training_data(architecture=training, languages=languages_train, dmap=dmap, digits=digits, format=format, classifiers=classifiers, maxlen=maxlen)
+    training_data = architecture.generate_training_data(architecture=training, data=languages_train, dmap=dmap, digits=digits, format=format, classifiers=classifiers, pad_to=maxlen)
 
     if languages_val:
-        validation_data = generate_training_data(architecture=training, languages=languages_val, dmap=dmap, digits=digits, format=format, classifiers=classifiers, maxlen=maxlen)
+        validation_data = architecture.generate_training_data(architecture=training, data=languages_val, dmap=dmap, digits=digits, format=format, classifiers=classifiers, pad_to=maxlen)
     else:
         validation_data = None
 
@@ -30,58 +30,14 @@ def train(architecture, languages_train, languages_val, validation_split, dmap, 
                    epochs=nb_epochs, verbosity=verbose, filename=filename,
                    sample_weight=sample_weights, save_every=save_every)
 
-    hist = training.trainings_history
+    training.print_accuracies()
 
-    print "Accuracy for for training set %s:\t" % \
-          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_train.items()])
-    print "Accuracy for for validation set %s:\t" % \
-          '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
+    # hist = training.trainings_history
 
-    history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
-    pickle.dump(history, open(filename + '.history', 'wb'))
+    # history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+    # pickle.dump(history, open(filename + '.history', 'wb'))
 
     return training
-
-
-def generate_training_data(architecture, languages, dmap, digits, format, classifiers, maxlen):
-    """
-    Generate training/validation data.
-    """
-    if isinstance(languages, dict):
-        X, Y = architecture.generate_training_data(languages=languages, dmap=dmap,
-                                               digits=digits, format=format,
-                                               classifiers=classifiers,
-                                               pad_to=maxlen)
-    elif isinstance(languages, mathTreebank):
-        X, Y = architecture.data_from_treebank(treebank=languages, dmap=dmap, pad_to=maxlen,
-                                           classifiers=classifiers, format=format)
-
-    return X, Y
-
-
-def generate_test_data(architecture, languages, dmap, digits, maxlen, test_separately, classifiers, format):
-    """
-    Generate test data
-    """
-
-    if isinstance(languages, dict):
-        test_data = Training.generate_test_data(architecture=architecture, 
-                                                    languages=languages, dmap=dmap,
-                                                    digits=digits, pad_to=maxlen,
-                                                    test_separately=test_separately,
-                                                    classifiers=classifiers, format=format)
-
-    elif isinstance(languages, mathTreebank):
-        X_test, Y_test = architecture.data_from_treebank(languages, dmap=dmap, pad_to=maxlen, classifiers=classifiers, format=format)
-        test_data = [('test treebank', X_test, Y_test)]
-
-    elif isinstance(languages, list):
-        test_data = []
-        for name, treebank in languages:
-            X_test, Y_test = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=maxlen, classifiers=classifiers, format=format)
-            test_data.append((name, X_test, Y_test))
-
-    return test_data
 
 
 def add_model(architecture, pretrained_model, copy_weights, recurrent_layer, train_classifier, train_embeddings, train_recurrent, mask_zero, optimizer, dropout_recurrent, input_dim, input_size, input_length, size_hidden, classifiers, sample_weights):
@@ -117,10 +73,10 @@ def add_model(architecture, pretrained_model, copy_weights, recurrent_layer, tra
 
 def test_model(training, languages_test, dmap, digits, maxlen, test_separately, classifiers, format=format):
 
-    test_data = generate_test_data(architecture=training, languages=languages_test,
-                                       dmap=dmap, digits=digits, maxlen=maxlen,
-                                       test_separately=test_separately,
-                                       classifiers=classifiers, format=format)
+    test_data = training.generate_test_data(architecture=training, languages=languages_test,
+                                   dmap=dmap, digits=digits, pad_to=maxlen,
+                                   test_separately=test_separately,
+                                   classifiers=classifiers, format=format)
 
     for name, X, Y in test_data:
         acc = training.model.evaluate(X, Y)
@@ -147,7 +103,7 @@ if __name__ == '__main__':
     # print model summary
     print_sum(settings)
     
-    dmap = pickle.load(open('models/dmap', 'rb'))
+    dmap = pickle.load(open('best_models/dmap', 'rb'))
     input_dim = len(dmap)+1
 
     training = train(architecture=settings.architecture, languages_train=settings.languages_train,
