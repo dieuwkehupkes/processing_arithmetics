@@ -1,9 +1,7 @@
 import pytest
 import numpy as np
-import sys
-sys.path.insert(0, '../arithmetics') 
-from arithmetics import mathTreebank
-from architectures import A1, A4, Probing, Seq2Seq, Training
+from processing_arithmetics.arithmetics import MathTreebank
+from processing_arithmetics.seqbased.architectures import A1, A4, Probing, Seq2Seq, Training
 from keras.layers import GRU
 import pickle
 import os
@@ -27,7 +25,7 @@ def _test_architecture_methods(architecture, extra_classifiers=None):
 
     # generate architecture, load dmap
     A = architecture()
-    dmap = pickle.load(open('best_models/dmap','r'))
+    dmap = pickle.load(open('seqbased/best_models/dmap','r'))
 
     # test build model
     A.generate_model(recurrent_layer=GRU, input_dim=len(dmap)+1, input_length=40,
@@ -49,7 +47,7 @@ def _test_architecture_methods(architecture, extra_classifiers=None):
     training_data = Training.generate_training_data(architecture, {'L1':5, 'L3l':10, 'L4r':10}, dmap=dmap, pad_to=40, classifiers=extra_classifiers)
 
     # test generate training data from math treebank?
-    m = mathTreebank({'L1':5, 'L3l':10, 'L4r':10}, digits=np.arange(-10, 11))
+    m = MathTreebank({'L1':5, 'L3l':10, 'L4r':10}, digits=np.arange(-10, 11))
     validation_data = Training.generate_training_data(architecture, m, dmap=dmap, pad_to=40, classifiers=extra_classifiers)
     # TODO implement this
 
@@ -60,7 +58,7 @@ def _test_architecture_methods(architecture, extra_classifiers=None):
 
     # test generate test data
     languages = {'L1':10, 'L2':15, 'L3':20}
-    test_data = Training.generate_test_data(A, languages=languages, dmap=dmap, digits=np.arange(-10, 11), pad_to=40, classifiers=extra_classifiers, test_separately=True)
+    test_data = Training.generate_test_data(A, data=languages, dmap=dmap, digits=np.arange(-10, 11), pad_to=40, classifiers=extra_classifiers, test_separately=True)
 
     # test model testing
     for name, X, Y in test_data:
