@@ -36,8 +36,7 @@ class Training(object):
                        fix_classifier_weights=False, fix_embeddings=False, 
                        fix_recurrent_weights=False,
                        mask_zero=True, dropout_recurrent=0.0,
-                       optimizer='adam',
-                       extra_classifiers=None):
+                       optimizer='adam', **kwargs):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -70,13 +69,15 @@ class Training(object):
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
-        self.classifiers = extra_classifiers
+        print kwargs
+        if 'classifiers' in kwargs:
+            self.classifiers = kwargs['classifiers']
 
         # build model
         self._build(W_embeddings, W_recurrent, W_classifier)
 
 
-    def add_pretrained_model(self, model, copy_weights=['recurrent','embeddings','classifier'], fix_classifier_weights=False, fix_embeddings=False, fix_recurrent_weights=False, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', classifiers=None, input_length=None):
+    def add_pretrained_model(self, model, copy_weights=['recurrent','embeddings','classifier'], fix_classifier_weights=False, fix_embeddings=False, fix_recurrent_weights=False, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', **kwargs):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
@@ -108,10 +109,10 @@ class Training(object):
             W_classifier = model_info['classifiers']
 
 
-        input_length = input_length if input_length else model_info['input_length']
+        input_length = kwargs.get('input_length', model_info['input_length'])
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, extra_classifiers=classifiers)
+        self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, **kwargs)
         return
 
     @staticmethod
@@ -131,7 +132,7 @@ class Training(object):
 
         return dmap
 
-    def generate_training_data(self, data, digits=np.arange(-10, 11), pad_to=None, format='infix', classifiers=None):
+    def generate_training_data(self, data, digits=np.arange(-10, 11), pad_to=None, format='infix', **kwargs):
         """
         Generate training data
         """
@@ -143,13 +144,13 @@ class Training(object):
             random.shuffle(data.examples)
 
         return self.data_from_treebank(treebank=data, pad_to=pad_to,
-                                       classifiers=classifiers, format=format)
+                                       format=format, **kwargs)
 
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         raise NotImplementedError("Should be implemented in subclass")
 
-    def generate_test_data(self, data, digits, pad_to=None, test_separately=True, classifiers=None, format='infix'):
+    def generate_test_data(self, data, digits, pad_to=None, test_separately=True, format='infix', **kwargs):
         """
         Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
         :param languages:       can be either:
@@ -164,21 +165,21 @@ class Training(object):
         if isinstance(data, list):
             test_data = []
             for name, treebank in data:
-                X_test, Y_test = self.data_from_treebank(treebank, pad_to=pad_to, classifiers=classifiers, format=format)
+                X_test, Y_test = self.data_from_treebank(treebank, pad_to=pad_to, format=format, **kwargs)
                 test_data.append((name, X_test, Y_test))
 
         elif isinstance(data, MathTreebank):
-            X_test, Y_test = self.data_from_treebank(data, pad_to=pad_to, classifiers=classifiers, format=format)
+            X_test, Y_test = self.data_from_treebank(data, pad_to=pad_to, format=format, **kwargs)
             test_data = [('test treebank', X_test, Y_test)]
 
         elif test_separately:
             test_data = []
             for name, N in data.items():
-                X, Y = self.generate_training_data(data={name: N}, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
+                X, Y = self.generate_training_data(data={name: N}, digits=digits, pad_to=pad_to, format=format, **kwargs)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = self.generate_training_data(data=data, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
+            X, Y = self.generate_training_data(data=data, digits=digits, pad_to=pad_to, format=format, **kwargs)
             name = ', '.join(data.keys())
             test_data = [(name, X, Y)]
 
@@ -432,7 +433,7 @@ class Training(object):
 
         return callbacks
 
-    def data_from_treebank(self, treebank, pad_to=None, classifiers=None, format='infix'):
+    def data_from_treebank(self, treebank, pad_to=None, format='infix', **kwargs):
         raise NotImplementedError("Should be implemented in subclass")
 
     @staticmethod
@@ -491,7 +492,7 @@ class ScalarPrediction(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-    def data_from_treebank(self, treebank, pad_to=None, classifiers=None, format='infix'):
+    def data_from_treebank(self, treebank, pad_to=None, format='infix'):
         """
         Generate test data from a MathTreebank object.
         """
@@ -586,7 +587,7 @@ class ComparisonTraining(Training):
         self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
                            metrics=self.metrics)
 
-    def data_from_treebank(self, treebank, pad_to=None, classifiers=None, format='infix'):
+    def data_from_treebank(self, treebank, pad_to=None, format='infix'):
         """
         Generate data from MathTreebank object.
         """
@@ -675,7 +676,7 @@ class Seq2Seq(Training):
 
         self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
-    def data_from_treebank(self, treebank, pad_to, classifiers=None, format='infix'):
+    def data_from_treebank(self, treebank, pad_to, format='infix'):
         """
         Generate test data from a MathTreebank object.
         """
