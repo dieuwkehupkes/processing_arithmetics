@@ -260,8 +260,8 @@ class mathExpression(Tree):
         return self.toString()
 
     def statesPrint(self):
-        seqR=self.solveRecursively('infix',True)
-        seqL=self.solveLocally('infix',True)
+        seqR=self.solve_recursively('infix',True)
+        seqL=self.solve_locally('infix',True)
         print('\\newcommand{\\chars}{\phantom{0},'+','.join(['{'+x+'}' if x in ['(',')'] else x for x in str(self).split() ])+'}')
         print('\\newcommand{\\recresults}{0,'+','.join([str(x) for x in seqR[0]])+'}')
         print('\\newcommand{\\incresults}{0,'+','.join([str(x) for x in seqL[0]])+'}')
@@ -274,7 +274,7 @@ class mathExpression(Tree):
 
 
 
-    def solveRecursively(self, format='infix', return_sequences=False):
+    def solve_recursively(self, format='infix', return_sequences=False):
         """
         Solve expression recursively.
         """
@@ -404,7 +404,7 @@ class mathExpression(Tree):
         return cur
                 
 
-    def solveLocally(self, format='infix', return_sequences=False):
+    def solve_locally(self, format='infix', return_sequences=False):
         """
         Input a syntactically correct bracketet
         expression, solve by counting brackets
@@ -535,8 +535,8 @@ class mathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
-        intermediate_recursively, stack_recursively, subtracting_recursively = self.solveRecursively(return_sequences=True, format=format)
+        intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
+        intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
 
         self.targets = {}
 
@@ -586,8 +586,8 @@ def make_noise_plots():
         sae[name] = 0
         sse[name] = 0
         for expression, answer in m.examples:
-            results_locally = np.array([expression.solveLocally(format="infix", return_sequences=True)[0]])
-            results_recursively = np.array([expression.solveRecursively(format="infix", return_sequences=True)[0]])
+            results_locally = np.array([expression.solve_locally(format="infix", return_sequences=True)[0]])
+            results_recursively = np.array([expression.solve_recursively(format="infix", return_sequences=True)[0]])
 
             sae[name] += np.mean(np.absolute(results_locally-results_recursively))
             sse[name] += np.mean(np.square(results_locally-results_recursively))
@@ -608,7 +608,7 @@ def test_solve_locally(format, digits, operators):
         examples = m.generateExamples(operators=ops, digits=digits, n=500, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveLocally(format=format)
+            outcome = expression.solve_locally(format=format)
             if outcome != answer:
                 incorrect += 1
                 # print(expression, answer, outcome)
@@ -622,7 +622,7 @@ def test_solve_recursively(format, digits, operators):
         examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solveRecursively(format=format)
+            outcome = expression.solve_recursively(format=format)
             if outcome != answer:
                 incorrect += 1
                 print(expression.toString(format), answer, outcome)
