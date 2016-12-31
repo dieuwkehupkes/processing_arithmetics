@@ -1,156 +1,11 @@
 from __future__ import print_function
 import numpy as np
 import operator
-from nltk import Tree
-from numpy import random as random
+import copy
 import re
 from collections import defaultdict, OrderedDict
-
-languages_train = {'L1':3000, 'L2': 3000, 'L4':3000, 'L5':3000, 'L7':3000}
-languages_heldout = {'L3':500, 'L6':800, 'L8':800}
-languages_test = OrderedDict([('L9_left', 15000), ('L9_right', 15000), ('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000)])
-ds = np.arange(-10,11)
-ops = ['+','-']
-
-def training_treebank(seed, languages=languages_train, digits=ds):
-    np.random.seed(seed)
-    m = MathTreebank(languages, digits=digits)
-    return m
-
-
-def heldout_treebank(seed, languages=languages_heldout, digits=ds):
-    np.random.seed(seed)
-    m = MathTreebank(languages, digits=digits)
-    return m
-
-def test_treebank(seed, languages=languages_test, digits=ds):
-    np.random.seed(seed)
-    for name, N in languages.items():
-        yield name, MathTreebank(languages={name: N}, digits=digits)
-
-def parse_language(language_str):
-    """
-    Give in a string for a language, return
-    a tuple with arguments to generate examples.
-    :return:    (#leaves, operators, branching)
-    """
-    # find # leaves
-    nr = re.compile('[0-9]+')
-    n = int(nr.search(language_str).group())
-
-    # find operators
-    plusmin = re.compile('\+')
-    op = plusmin.search(language_str)
-    if op:
-        operators = [op.group()]
-    else:
-        operators = ops
-
-    # find branchingness
-    branch = re.compile('left|right')
-    branching = branch.search(language_str)
-    if branching:
-        branching = branching.group()
-
-    return [n], operators, branching
-
-
-class MathTreebank():
-    def __init__(self, languages={}, digits=[]):
-        self.examples = []  # attribute containing examples of the treebank
-        self.operators = set([])  # attribute containing operators in the treebank
-        self.digits = set([])  # digits in the treebank
-        for name, N in languages.items():
-            lengths, operators, branching = parse_language(name)
-            [self.operators.add(op) for op in operators]
-            self.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
-
-    def generate_examples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
-        """
-        :param operators:       operators to be used in
-                                arithmetic expressions \in {+,-,\,*}
-        :param digits:          range with digits (list)
-        :param branching:       set to 'left' or 'right' to restrict branching of trees
-        :param n:               number of sentences in tree bank
-        :param min:             min outcome of the composition function
-        :param max:             max outcome of the composition function
-        :param lengths:         number of numeric leaves of expressions
-        """
-        examples = []
-        digits = [str(i) for i in digits]
-        self.digits = self.digits.union(set(digits))
-        self.operators = self.operators.union(set(operators))
-        while len(examples) < n:
-            l = random.choice(lengths)
-            tree = MathExpression.generateME(l, operators, digits, branching=branching)
-            answer = tree.solve()
-            if answer is None:
-                continue
-            if not (min <= answer <= max):
-                continue
-            examples.append((tree,answer))
-        return examples
-
-    def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
-                     n=1000, lengths=range(1, 6)):
-        """
-        Add examples to treebank.
-        """
-        self.examples += self.generate_examples(operators=operators, digits=digits, branching=branching,
-                                               min=min_answ, max=max_answ, n=n, lengths=lengths)
-        examples2 = self.examples[:]
-        np.random.shuffle(examples2)
-        self.pairedExamples = [(ex1[0],ex2[0],('<' if ex1[1] < ex2[1] else ('>' if ex1[1] > ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
-
-    def add_example_from_string(self, example):
-        """
-        Add a tree to the treebank from its string representation.
-        """
-        tree = MathExpression.fromstring(example)
-        ans = tree.solve()
-        self.examples.append((tree, ans))
-
-
-    def write_to_file(self, filename):
-        """
-        Generate a file containing the treebank.
-        Every tree element is separated by spaces, a tab
-        separates the answer from the sentence. E.g
-        ( ( 5 + 6 ) - 3 )   8
-        """
-        f = open(filename, 'wb')
-        for expression, answer in self.examples:
-            f.write(str(expression)+'\t'+str(answer[1])+'\n')
-        f.close()
-
-class IndexedTreebank(MathTreebank):
-    def __init__(self, languages={}, digits=[]):
-        self.index = {'length':defaultdict(list),'maxDepth':defaultdict(list),'accumDepth':defaultdict(list)}
-        MathTreebank.__init__(self,languages,digits)
-        self.examples = tuple(self.examples)
-        self.updateIndex()
-
-    def updateIndex(self,fromPoint = 0,keys=[]):
-        for i, (tree, label) in enumerate(self.examples[fromPoint:]):
-            for key in (self.index.keys() if keys == [] else keys):
-                value = tree.property(key)
-                if i+fromPoint not in self.index[key][value]:
-                    self.index[key][value].append(i+fromPoint)
-
-    def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
-                     n=1000, lengths=range(1, 6)):
-        fromPoint = len(self.examples)
-        self.examples += tuple(self.generate_examples(operators=operators, digits=digits, branching=branching,
-                                               min=min_answ, max=max_answ, n=n, lengths=lengths))
-        self.updateIndex(fromPoint)
-
-    def get_examples_property(self, property):
-        if property not in self.index.keys(): raise KeyError('not a valid property in this IndexedTreebank')
-        else: return {k: self.examples[v] for k, v in self.index[property]}
-
-
-    def get_examples_property_value(self, property,value):
-        return self.get_examples_property(property)[value]
+from nltk import Tree
+from numpy import random as random
 
 class MathExpression(Tree):
     @classmethod
@@ -253,7 +108,7 @@ class MathExpression(Tree):
         """
         return self.toString()
 
-    def solve_recursively(self, format='infix', return_sequences=False):
+    def solveRecursively(self, format='infix', return_sequences=False):
         """
         Solve expression recursively.
         """
@@ -309,7 +164,7 @@ class MathExpression(Tree):
             if stack == []:
                 stack_list.append([(-12345, -12345)])     # empty stack representation
             else:
-                stack_list.append(stack[:])
+                stack_list.append(copy.copy(stack))
 
             intermediate_results.append(cur)
             operators.append({operator.add:True, operator.sub: False}[op])
@@ -373,7 +228,7 @@ class MathExpression(Tree):
             if stack == []:
                 stack_list.append([(-12345, -12345)])
             else:
-                stack_list.append(stack[:])
+                stack_list.append(copy.copy(stack))
 
             intermediate_results.append(cur)
 
@@ -383,7 +238,7 @@ class MathExpression(Tree):
         return cur
                 
 
-    def solve_locally(self, format='infix', return_sequences=False):
+    def solveLocally(self, format='infix', return_sequences=False):
         """
         Input a syntactically correct bracketet
         expression, solve by counting brackets
@@ -426,6 +281,12 @@ class MathExpression(Tree):
 
             elif symbol == ')':
                 subtracting = bracket_stack.pop(-1)
+#                 bracket_stack.pop(-1)         git 
+#                 try:
+#                     subtracting = bracket_stack[-1]
+#                 except IndexError:
+#                     # end of sequence
+#                     pass
 
             elif symbol == '+':
                 pass
@@ -434,8 +295,8 @@ class MathExpression(Tree):
                 subtracting = not subtracting
 
             intermediate_results.append(result)
-            brackets.append(bracket_stack[:])
-            subtracting_list.append(int(subtracting))
+            brackets.append(bracket_stack)
+            subtracting_list.append({True: [1], False:[0]}[subtracting])
 
         if return_sequences:
             return intermediate_results, brackets, subtracting_list
@@ -508,8 +369,8 @@ class MathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
-        intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
+        intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
+        intermediate_recursively, stack_recursively, subtracting_recursively = self.solveRecursively(return_sequences=True, format=format)
 
         self.targets = {}
 
@@ -522,7 +383,7 @@ class MathExpression(Tree):
         self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
         # subtracting
-        self.targets['subtracting'] = [[val] for val in subtracting]
+        self.targets['subtracting'] = subtracting
 
         # intermediate outcomes recursive computation
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
@@ -559,8 +420,8 @@ def make_noise_plots():
         sae[name] = 0
         sse[name] = 0
         for expression, answer in m.examples:
-            results_locally = np.array([expression.solve_locally(format="infix", return_sequences=True)[0]])
-            results_recursively = np.array([expression.solve_recursively(format="infix", return_sequences=True)[0]])
+            results_locally = np.array([expression.solveLocally(format="infix", return_sequences=True)[0]])
+            results_recursively = np.array([expression.solveRecursively(format="infix", return_sequences=True)[0]])
 
             sae[name] += np.mean(np.absolute(results_locally-results_recursively))
             sse[name] += np.mean(np.square(results_locally-results_recursively))
@@ -581,7 +442,7 @@ def test_solve_locally(format, digits, operators):
         examples = m.generate_examples(operators=ops, digits=digits, n=500, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solve_locally(format=format)
+            outcome = expression.solveLocally(format=format)
             if outcome != answer:
                 incorrect += 1
                 # print(expression, answer, outcome)
@@ -595,19 +456,10 @@ def test_solve_recursively(format, digits, operators):
         examples = m.generate_examples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
-            outcome = expression.solve_recursively(format=format)
+            outcome = expression.solveRecursively(format=format)
             if outcome != answer:
                 incorrect += 1
                 print(expression.toString(format), answer, outcome)
                 raw_input()
 
         print("percentage incorrect for length %i: %f" % (length, incorrect/50))
-
-
-
-if __name__ == '__main__':
-    digits = np.arange(-10,10)
-    ops = ['+', '-']
-    ex2 = MathExpression.fromstring('( 4 - ( 5 - ( 3 + 1 ) ) )')
-    test_solve_locally(format='infix', digits=digits, operators=ops)
-

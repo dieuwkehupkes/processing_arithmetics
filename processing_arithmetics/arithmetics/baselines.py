@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-from arithmetics import mathTreebank, test_treebank
+from arithmetics import MathTreebank, test_treebank
 from collections import OrderedDict
 import random
 import matplotlib
@@ -110,10 +110,10 @@ if __name__ == '__main__':
         bin_accs.append(binary_accuracy)
 
     xticks = [l[1:] for l in languages_test.keys()]
-    xticks[0]='9L'
-    xticks[1]='9R'
+    xticks[0] = '9L'
+    xticks[1] = '9R'
     ranges = 0.15*np.arange(len(xticks))
-    width=0.1
+    width = 0.1
 
     noise_pars = "Operator noise = %f, Digit noise = %f" % (operator_noise, digit_noise) 
     # noise_pars = "standard deviation = %f" % r

@@ -3,14 +3,12 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
-import sys
-sys.path.insert(0, '../arithmetics') 
-from arithmetics import mathTreebank
-from TrainingHistory import TrainingHistory
-from DrawWeights import DrawWeights
-from PlotEmbeddings import PlotEmbeddings
+from ..arithmetics import MathTreebank
+from .TrainingHistory import TrainingHistory
+from .DrawWeights import DrawWeights
+from .PlotEmbeddings import PlotEmbeddings
 import copy
-from Logger import Logger
+from .Logger import Logger          # TODO do we need this one still?
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -121,7 +119,7 @@ class Training(object):
         Generate training data
         """
         if isinstance(data, dict):
-            data = mathTreebank(data, digits=digits)
+            data = MathTreebank(data, digits=digits)
             random.shuffle(data.examples)
 
         return architecture.data_from_treebank(treebank=data, dmap=dmap, pad_to=pad_to,
@@ -140,7 +138,7 @@ class Training(object):
         :param languages:       can be either:
                                     - a dictionary mapping language names to numbers
                                     - a list with (name, treebank) tuples
-                                    - a mathTreebank object
+                                    - a MathTreebank object
         :param pad_to:          desired length of test sentences
         :return:                dictionary mapping classifier names to targets
         UNTESTED
@@ -152,7 +150,7 @@ class Training(object):
                 X_test, Y_test = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
                 test_data.append((name, X_test, Y_test))
 
-        elif isinstance(data, mathTreebank):
+        elif isinstance(data, MathTreebank):
             X_test, Y_test = architecture.data_from_treebank(data, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
             test_data = [('test treebank', X_test, Y_test)]
 
@@ -480,7 +478,7 @@ class A1(Training):
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
-        Generate test data from a mathTreebank object.
+        Generate test data from a MathTreebank object.
         """
         X, Y = [], []
         for expression, answer in treebank.examples:
@@ -572,7 +570,7 @@ class A4(Training):
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to=None, classifiers=None, format='infix'):
         """
-        Generate data from mathTreebank object.
+        Generate data from MathTreebank object.
         """
         # create empty input and targets
         X1, X2, Y = [], [], []
@@ -658,7 +656,7 @@ class Seq2Seq(Training):
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to, classifiers=None, format='infix'):
         """
-        Generate test data from a mathTreebank object.
+        Generate test data from a MathTreebank object.
         """
         # create dictionary with outputs
         X, Y = [], []
@@ -799,7 +797,7 @@ class Probing(Training):
     @staticmethod
     def data_from_treebank(treebank, dmap, pad_to, classifiers, format='infix'):
         """
-        Generate test data from a mathTreebank object.
+        Generate test data from a MathTreebank object.
         """
         # create dictionary with outputs
         X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
