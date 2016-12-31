@@ -28,6 +28,8 @@ class Training(object):
         """
         # set dmap
         self.dmap = self._dmap(digits, operators)
+        self.digits = digits
+        self.operators = operators
 
     def generate_model(self, recurrent_layer, input_size, input_length, size_hidden,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
@@ -133,6 +135,9 @@ class Training(object):
         """
         Generate training data
         """
+        # check if digits are in dmap of model
+        assert not bool(set(digits) - set(self.digits)), "Model cannot process inputted digits"
+
         if isinstance(data, dict):
             data = MathTreebank(data, digits=digits)
             random.shuffle(data.examples)
