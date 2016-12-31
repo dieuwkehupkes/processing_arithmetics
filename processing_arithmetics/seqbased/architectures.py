@@ -3,12 +3,9 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
-from .TrainingHistory import TrainingHistory
-from .DrawWeights import DrawWeights
-from .PlotEmbeddings import PlotEmbeddings
+from .callbacks import *
 from ..arithmetics import MathTreebank
 import copy
-from .Logger import Logger          # TODO do we need this one still?
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -23,11 +20,12 @@ class Training(object):
         - init (set lossfunction and metrics)
         - train
     """
-    def __init__(self, **kwargs):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], **kwargs):
         """
         Create training architecture
         """
-        raise NotImplementedError
+        # set dmap
+        self.dmap = self._dmap(digits, operators)
 
     def generate_model(self, recurrent_layer, input_dim, input_size, input_length,
                        size_hidden, dmap,
@@ -112,6 +110,26 @@ class Training(object):
         # run build function
         self.generate_model(recurrent_layer=recurrent_layer, input_dim=model_info['input_dim'], input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, dmap=dmap, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, extra_classifiers=classifiers)
         return
+
+    @staticmethod
+    def _dmap(digits, operators):
+        """
+        Generate a mapp from integers to digits
+        and operators. Be very careful changing this map,
+        using different dmaps across training and testing
+        will not give sensible results.
+        """
+        N_operators = len(operators)
+        N_digits = len(digits)
+        N = N_digits + N_operators + 2
+        digits_str = [str(i) for i in digits]
+        # start counting at 1 to not ignore first word during training
+        dmap = OrderedDict(zip(digits_str+operators+['(', ')'], np.arange(1, N+1)))
+
+        return dmap
+
+
+
 
     @staticmethod
     def generate_training_data(architecture, data, dmap, digits=np.arange(-10, 11), pad_to=None, format='infix', classifiers=None):
@@ -265,8 +283,8 @@ class Training(object):
         Get different type of weights from a json model. Check
         if network falls in family of networks that we are
         studying in this project: one layer recurrent neural
-        networks that are trained in one of the architectures
-        from this class A1 or A2.
+        networks that are trained with one of the architectures
+        in from the Training type.
         """
 
         # check if model is of correct type TODO
@@ -286,9 +304,9 @@ class Training(object):
             if layer_type == 'InputLayer':
                 # decide on architecture by checking # of input layers
                 if 'architecture' in model_info:
-                    model_info['architecture'] = 'A4'
+                    model_info['architecture'] = 'ComparisonTraining'
                 else:
-                    model_info['architecture'] = 'A1'
+                    model_info['architecture'] = 'ScalarPrediction'
 
             elif layer_type == 'Embedding':
                 assert 'weights_embeddings' not in model_info, "Model has too many embeddings layers"
@@ -432,7 +450,7 @@ class Training(object):
         raise NotImplementedError("Should be implemented in subclass")
 
 
-class A1(Training):
+class ScalarPrediction(Training):
     """
     Give description.
     """
@@ -514,7 +532,7 @@ class A1(Training):
         return 2
 
 
-class A4(Training):
+class ComparisonTraining(Training):
     """
     Give description.
     """
@@ -697,7 +715,7 @@ class Seq2Seq(Training):
         return 2
 
 
-class Probing(Training):
+class DiagnosticClassifier(Training):
     """
     Retrain an already trained model with new classifiers to
     test what information is extratable from the representations
