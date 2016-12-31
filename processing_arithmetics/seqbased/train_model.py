@@ -1,12 +1,11 @@
-import sys 
-sys.path.insert(0, '../arithmetics') 
 import argparse
 from keras.layers import SimpleRNN, GRU, LSTM
 import pickle
 import numpy as np
 from keras.models import load_model
+from ..arithmetics import MathTreebank
 from architectures import Training, A1, A4, Probing, Seq2Seq
-from arithmetics import mathTreebank, training_treebank, test_treebank, heldout_treebank
+from ..arithmetics.arithmetics import training_treebank, test_treebank, heldout_treebank       # TODO change name
 import re
 
 # Train a model with the default train/test and validation set

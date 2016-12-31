@@ -3,10 +3,10 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
-from ..arithmetics import MathTreebank
 from .TrainingHistory import TrainingHistory
 from .DrawWeights import DrawWeights
 from .PlotEmbeddings import PlotEmbeddings
+from ..arithmetics import MathTreebank
 import copy
 from .Logger import Logger          # TODO do we need this one still?
 import matplotlib.pyplot as plt
