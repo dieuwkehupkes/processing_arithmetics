@@ -54,7 +54,7 @@ parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
 parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
 parser.add_argument("--val_split", help="Set validation split", default=0.1)
 
-parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=25)
+parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=max_length(15))
 
 # pretrained model argument
 parser.add_argument("-m", "--model", type=str, help="Add pretrained model")
@@ -86,7 +86,7 @@ validation_data = args.architecture.generate_training_data(architecture=training
 if args.model:
     model = load_model(args.model)
     training.add_pretrained_model(model=model, 
-         dmap=dmap, copy_weights = None,           #TODO change this too!
+         dmap=dmap, copy_weights=None,           #TODO change this too!
          fix_classifier_weights=args.fix_classifier_weights,
          fix_embeddings=args.fix_embeddings,
          fix_recurrent_weights=args.fix_recurrent_weights,
@@ -120,11 +120,10 @@ pickle.dump(history, open(args.save_to + '.history', 'wb'))
 ######################################################################################
 # Test model
 
-exit()
+# generate test data
+test_data = args.architecture.generate_test_data(architecture=training, data=languages_test, dmap=dmap, digits=np.arange(-10, 11), format=args.format, pad_to=args.maxlen) 
 
-# TODO fix this, make the treebanks with generate data oid
-# then implement this in architecures ipv here
-for name, X, Y in languages_test:
+for name, X, Y in test_data:
     acc = training.model.evaluate(X, Y)
     print "Accuracy for for test set %s:" % name,
     print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])

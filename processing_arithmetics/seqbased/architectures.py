@@ -134,7 +134,7 @@ class Training(object):
 
 
     @staticmethod
-    def generate_test_data(architecture, languages, dmap, digits, pad_to=None, test_separately=True, classifiers=None, format='infix'):
+    def generate_test_data(architecture, data, dmap, digits, pad_to=None, test_separately=True, classifiers=None, format='infix'):
         """
         Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
         :param languages:       can be either:
@@ -146,25 +146,25 @@ class Training(object):
         UNTESTED
         """
 
-        if isinstance(languages, list):
+        if isinstance(data, list):
             test_data = []
-            for name, treebank in languages:
+            for name, treebank in data:
                 X_test, Y_test = architecture.data_from_treebank(treebank, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
                 test_data.append((name, X_test, Y_test))
 
-        elif isinstance(languages, mathTreebank):
-            X_test, Y_test = architecture.data_from_treebank(languages, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
+        elif isinstance(data, mathTreebank):
+            X_test, Y_test = architecture.data_from_treebank(data, dmap=dmap, pad_to=pad_to, classifiers=classifiers, format=format)
             test_data = [('test treebank', X_test, Y_test)]
 
         elif test_separately:
             test_data = []
-            for name, N in languages.items():
+            for name, N in data.items():
                 X, Y = architecture.generate_training_data(architecture=architecture, data={name: N}, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = architecture.generate_training_data(architecture=architecture, data=languages, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
-            name = ', '.join(languages.keys())
+            X, Y = architecture.generate_training_data(architecture=architecture, data=data, dmap=dmap, digits=digits, classifiers=classifiers, pad_to=pad_to, format=format)
+            name = ', '.join(data.keys())
             test_data = [(name, X, Y)]
 
         return test_data
@@ -213,9 +213,24 @@ class Training(object):
         print "Accuracy for for validation set %s:\t" % \
               '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
 
-    def test(architecture, testsets, dmap, metrics, test_separately):
-        # TODO implement this!
-        pass
+    def test(self, test_data, metrics=None, test_separately=True):
+        """
+        Test model.
+        # TODO parameters
+        """
+        # input new metrics
+        if metrics:
+            self.model.compile(loss=self.loss_function, optimizer='adam', metrics=metrics)
+
+        evaluation = {}
+        for name, X, Y in test_data:
+            acc = self.model.evaluate(X, Y)
+            evaluation[name] = acc
+            print "Accuracy for for test set %s:" % name,
+            print '\t'.join(['%s: %f' % (self.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+
+        return evaluation
+
 
     def get_sample_weights(self, training_data, sample_weight):
         """
