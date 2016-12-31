@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 from keras.models import load_model
 from ..arithmetics import MathTreebank
-from architectures import Training, A1, A4, Probing, Seq2Seq
+from architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
 from ..arithmetics.arithmetics import training_treebank, test_treebank, heldout_treebank       # TODO change name
 import re
 
@@ -14,7 +14,7 @@ import re
 # Helper functions for argument parsing
 
 def get_architecture(architecture):
-    arch_dict = {'A1':A1, 'A4':A4, 'DiagnosticClassifier':Probing, 'DC':Probing, 'Seq2Seq':Seq2Seq}
+    arch_dict = {'ScalarPrediction':ScalarPrediction, 'ComparisonTraining':ComparisonTraining, 'DiagnosticClassifier':DiagnosticClassifier, 'DC':DiagnosticClassifier, 'Seq2Seq':Seq2Seq}
     return arch_dict[architecture]
 
 def get_hidden_layer(hl_name):
@@ -37,7 +37,7 @@ def max_length(N):
 parser = argparse.ArgumentParser()
 
 # positional arguments
-parser.add_argument("architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[A1, A4, Probing, Seq2Seq])
+parser.add_argument("architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq])
 parser.add_argument("hidden", type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
 parser.add_argument("nb_epochs", type=int, help="Number of epochs")
 parser.add_argument("save_to", help="Save trained model to filename")
@@ -69,23 +69,22 @@ languages_train             = training_treebank(seed=args.seed)
 languages_val              = heldout_treebank(seed=args.seed)
 languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
 digits = np.arange(-10, 11)
-dmap = pickle.load(open('best_models/dmap', 'rb'))      # TODO change this!
-input_dim = len(dmap)+1
+operators = ['+', '-']
 input_size = 2
 
 
 #################################################################
 # Train model
 
-training = args.architecture()
-training_data = args.architecture.generate_training_data(architecture=training, data=languages_train, dmap=dmap, format=args.format, pad_to=args.maxlen) 
-validation_data = args.architecture.generate_training_data(architecture=training, data=languages_val, dmap=dmap, format=args.format, pad_to=args.maxlen) 
+training = args.architecture(digits=digits, operators=operators)
+training_data = training.generate_training_data(data=languages_train, format=args.format, pad_to=args.maxlen) 
+validation_data = training.generate_training_data(data=languages_val, format=args.format, pad_to=args.maxlen) 
 
 # Add pretrained model if this is given in arguments
 if args.model:
     model = load_model(args.model)
     training.add_pretrained_model(model=model, 
-         dmap=dmap, copy_weights=None,           #TODO change this too!
+         copy_weights=None,                                  #TODO change this too!
          fix_classifier_weights=args.fix_classifier_weights,
          fix_embeddings=args.fix_embeddings,
          fix_recurrent_weights=args.fix_recurrent_weights,
@@ -93,9 +92,8 @@ if args.model:
          dropout_recurrent=args.dropout)
 
 else:
-    training.generate_model(args.hidden, input_dim=input_dim, 
-        input_size=input_size, input_length=args.maxlen, 
-        size_hidden=args.size_hidden, dmap=dmap,
+    training.generate_model(args.hidden, input_size=input_size,
+        input_length=args.maxlen, size_hidden=args.size_hidden,
         fix_classifier_weights=args.fix_classifier_weights, 
         fix_embeddings=args.fix_embeddings,
         fix_recurrent_weights=args.fix_recurrent_weights,
@@ -120,7 +118,7 @@ pickle.dump(history, open(args.save_to + '.history', 'wb'))
 # Test model
 
 # generate test data
-test_data = args.architecture.generate_test_data(architecture=training, data=languages_test, dmap=dmap, digits=np.arange(-10, 11), format=args.format, pad_to=args.maxlen) 
+test_data = training.generate_test_data(data=languages_test, digits=np.arange(-10, 11), format=args.format, pad_to=args.maxlen) 
 
 for name, X, Y in test_data:
     acc = training.model.evaluate(X, Y)
