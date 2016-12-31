@@ -3,7 +3,6 @@ import numpy as np
 import operator
 from nltk import Tree
 from numpy import random as random
-import copy
 import re
 from collections import defaultdict, OrderedDict
 
@@ -15,19 +14,19 @@ ops = ['+','-']
 
 def training_treebank(seed, languages=languages_train, digits=ds):
     np.random.seed(seed)
-    m = mathTreebank(languages, digits=digits)
+    m = MathTreebank(languages, digits=digits)
     return m
 
 
 def heldout_treebank(seed, languages=languages_heldout, digits=ds):
     np.random.seed(seed)
-    m = mathTreebank(languages, digits=digits)
+    m = MathTreebank(languages, digits=digits)
     return m
 
 def test_treebank(seed, languages=languages_test, digits=ds):
     np.random.seed(seed)
     for name, N in languages.items():
-        yield name, mathTreebank(languages={name: N}, digits=digits)
+        yield name, MathTreebank(languages={name: N}, digits=digits)
 
 def parse_language(language_str):
     """
@@ -56,10 +55,7 @@ def parse_language(language_str):
     return [n], operators, branching
 
 
-
-
-
-class mathTreebank():
+class MathTreebank():
     def __init__(self, languages={}, digits=[]):
         self.examples = []  # attribute containing examples of the treebank
         self.operators = set([])  # attribute containing operators in the treebank
@@ -69,9 +65,7 @@ class mathTreebank():
             [self.operators.add(op) for op in operators]
             self.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
 
-
-
-    def generateExamples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+    def generate_examples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
         """
         :param operators:       operators to be used in
                                 arithmetic expressions \in {+,-,\,*}
@@ -88,7 +82,7 @@ class mathTreebank():
         self.operators = self.operators.union(set(operators))
         while len(examples) < n:
             l = random.choice(lengths)
-            tree = mathExpression.generateME(l, operators, digits, branching=branching)
+            tree = MathExpression.generateME(l, operators, digits, branching=branching)
             answer = tree.solve()
             if answer is None:
                 continue
@@ -102,7 +96,7 @@ class mathTreebank():
         """
         Add examples to treebank.
         """
-        self.examples += self.generateExamples(operators=operators, digits=digits, branching=branching,
+        self.examples += self.generate_examples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths)
         examples2 = self.examples[:]
         np.random.shuffle(examples2)
@@ -112,7 +106,7 @@ class mathTreebank():
         """
         Add a tree to the treebank from its string representation.
         """
-        tree = mathExpression.fromstring(example)
+        tree = MathExpression.fromstring(example)
         ans = tree.solve()
         self.examples.append((tree, ans))
 
@@ -129,10 +123,10 @@ class mathTreebank():
             f.write(str(expression)+'\t'+str(answer[1])+'\n')
         f.close()
 
-class indexedTreebank(mathTreebank):
+class IndexedTreebank(MathTreebank):
     def __init__(self, languages={}, digits=[]):
         self.index = {'length':defaultdict(list),'maxDepth':defaultdict(list),'accumDepth':defaultdict(list)}
-        mathTreebank.__init__(self,languages,digits)
+        MathTreebank.__init__(self,languages,digits)
         self.examples = tuple(self.examples)
         self.updateIndex()
 
@@ -146,19 +140,19 @@ class indexedTreebank(mathTreebank):
     def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
                      n=1000, lengths=range(1, 6)):
         fromPoint = len(self.examples)
-        self.examples += tuple(self.generateExamples(operators=operators, digits=digits, branching=branching,
+        self.examples += tuple(self.generate_examples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths))
         self.updateIndex(fromPoint)
 
-    def getExamplesProperty(self, property):
-        if property not in self.index.keys(): raise KeyError('not a valid property in this indexedTreebank')
+    def get_examples_property(self, property):
+        if property not in self.index.keys(): raise KeyError('not a valid property in this IndexedTreebank')
         else: return {k: self.examples[v] for k, v in self.index[property]}
 
 
-    def getExamplesPropertyValue(self, property,value):
-        return self.getExamplesProperty(property)[value]
+    def get_examples_property_value(self, property,value):
+        return self.get_examples_property(property)[value]
 
-class mathExpression(Tree):
+class MathExpression(Tree):
     @classmethod
     def generateME(cls,length, operators, digits, branching=None):
         if length < 1: print('whatup?')
@@ -221,7 +215,7 @@ class mathExpression(Tree):
         if propname == 'length': return self.length
         elif propname == 'maxDepth': return self.maxDepth
         elif propname == 'accumDepth': return self.length-1  #number of left brackets, len(re.findall('\(',str(self)))
-        else: raise KeyError(propname+' is not a valid property of mathExpression')
+        else: raise KeyError(propname+' is not a valid property of MathExpression')
 
     def solve(self):
         """
@@ -258,21 +252,6 @@ class mathExpression(Tree):
         Return string representation of tree.
         """
         return self.toString()
-
-    def statesPrint(self):
-        seqR=self.solve_recursively('infix',True)
-        seqL=self.solve_locally('infix',True)
-        print('\\newcommand{\\chars}{\phantom{0},'+','.join(['{'+x+'}' if x in ['(',')'] else x for x in str(self).split() ])+'}')
-        print('\\newcommand{\\recresults}{0,'+','.join([str(x) for x in seqR[0]])+'}')
-        print('\\newcommand{\\incresults}{0,'+','.join([str(x) for x in seqL[0]])+'}')
-        print('\\newcommand{\\recmodes}{+,'+','.join(['-' if x else '+' for x in seqR[2]])+'}')
-        print('\\newcommand{\\incmodes}{+,'+','.join(['-' if x else '+' for x in seqL[2]])+'}')
-        print('\\newcommand{\\incstackM}{{},'+','.join(['{'+','.join(['-' if x else '+' for x in stack])+'}' for stack in seqL[1]])+'}')
-        trans = {operator.add:'+', operator.sub:'-'}
-        print('\\newcommand{\\recstackM}{{},'+','.join(['{'+','.join([trans[x[0]] for x in stack])+'}' for stack in seqR[1]])+'}')
-        print('\\newcommand{\\recstackN}{{},'+','.join(['{'+','.join([str(x[1]) for x in stack])+'}' for stack in seqR[1]])+'}')
-
-
 
     def solve_recursively(self, format='infix', return_sequences=False):
         """
@@ -328,9 +307,9 @@ class mathExpression(Tree):
             # store state
 
             if stack == []:
-                stack_list.append([])     # empty stack representation
+                stack_list.append([(-12345, -12345)])     # empty stack representation
             else:
-                stack_list.append(copy.copy(stack))
+                stack_list.append(stack[:])
 
             intermediate_results.append(cur)
             operators.append({operator.add:True, operator.sub: False}[op])
@@ -394,7 +373,7 @@ class mathExpression(Tree):
             if stack == []:
                 stack_list.append([(-12345, -12345)])
             else:
-                stack_list.append(copy.copy(stack))
+                stack_list.append(stack[:])
 
             intermediate_results.append(cur)
 
@@ -447,12 +426,6 @@ class mathExpression(Tree):
 
             elif symbol == ')':
                 subtracting = bracket_stack.pop(-1)
-#                 bracket_stack.pop(-1)         git 
-#                 try:
-#                     subtracting = bracket_stack[-1]
-#                 except IndexError:
-#                     # end of sequence
-#                     pass
 
             elif symbol == '+':
                 pass
@@ -462,7 +435,7 @@ class mathExpression(Tree):
 
             intermediate_results.append(result)
             brackets.append(bracket_stack[:])
-            subtracting_list.append(subtracting)
+            subtracting_list.append(int(subtracting))
 
         if return_sequences:
             return intermediate_results, brackets, subtracting_list
@@ -549,7 +522,7 @@ class mathExpression(Tree):
         self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
         # subtracting
-        self.targets['subtracting'] = [[val] for val in subtracting]
+        self.targets['subtracting'] = subtracting
 
         # intermediate outcomes recursive computation
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
@@ -577,7 +550,7 @@ def make_noise_plots():
     import matplotlib.pylab as plt
     digits = np.arange(-5,5)
     languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
-    m = mathTreebank(languages=languages, digits=digits)
+    m = MathTreebank(languages=languages, digits=digits)
     sae = {}
     sse = {}
     mae = []
@@ -603,9 +576,9 @@ def make_noise_plots():
     plt.show()
 
 def test_solve_locally(format, digits, operators):
-    m = mathTreebank()
+    m = MathTreebank()
     for length in np.arange(3,10):
-        examples = m.generateExamples(operators=ops, digits=digits, n=500, lengths=[length])
+        examples = m.generate_examples(operators=ops, digits=digits, n=500, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
             outcome = expression.solve_locally(format=format)
@@ -617,9 +590,9 @@ def test_solve_locally(format, digits, operators):
         print("percentage incorrect for length %i: %f" % (length, incorrect/50))
 
 def test_solve_recursively(format, digits, operators):
-    m = mathTreebank()
+    m = MathTreebank()
     for length in np.arange(3,10):
-        examples = m.generateExamples(operators=ops, digits=digits, n=5000, lengths=[length])
+        examples = m.generate_examples(operators=ops, digits=digits, n=5000, lengths=[length])
         incorrect = 0.0
         for expression, answer in examples:
             outcome = expression.solve_recursively(format=format)
@@ -635,5 +608,6 @@ def test_solve_recursively(format, digits, operators):
 if __name__ == '__main__':
     digits = np.arange(-10,10)
     ops = ['+', '-']
+    ex2 = MathExpression.fromstring('( 4 - ( 5 - ( 3 + 1 ) ) )')
     test_solve_locally(format='infix', digits=digits, operators=ops)
 
