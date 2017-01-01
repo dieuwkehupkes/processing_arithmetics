@@ -8,5 +8,5 @@ setup(name='processing_arithmetics',
       author='Sara Veldhoen, Dieuwke Hupkes',
       author_email='dieuwkehupkes@gmail.com',
       dependency_links=['https://github.com/dieuwkehupkes/keras'],
-      install_requires=['keras', 'matplotlib', 'sklearn', 'nltk', 'h5py'],
+      install_requires=['matplotlib', 'sklearn', 'nltk', 'h5py'],
       packages=find_packages())
