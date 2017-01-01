@@ -1,7 +1,6 @@
 from __future__ import print_function
 import numpy as np
 import operator
-import copy
 import re
 from collections import defaultdict, OrderedDict
 from nltk import Tree
@@ -164,7 +163,7 @@ class MathExpression(Tree):
             if stack == []:
                 stack_list.append([(-12345, -12345)])     # empty stack representation
             else:
-                stack_list.append(copy.copy(stack))
+                stack_list.append(stack[:])
 
             intermediate_results.append(cur)
             operators.append({operator.add:True, operator.sub: False}[op])
@@ -228,7 +227,7 @@ class MathExpression(Tree):
             if stack == []:
                 stack_list.append([(-12345, -12345)])
             else:
-                stack_list.append(copy.copy(stack))
+                stack_list.append(stack[:])
 
             intermediate_results.append(cur)
 
