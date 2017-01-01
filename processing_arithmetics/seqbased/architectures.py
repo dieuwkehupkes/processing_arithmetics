@@ -69,7 +69,6 @@ class Training(object):
         self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
-        print kwargs
         if 'classifiers' in kwargs:
             self.classifiers = kwargs['classifiers']
 
@@ -92,6 +91,9 @@ class Training(object):
 
         if model_info['input_dim'] != self.input_dim:
             raise ValueError("dmap mismatch: input dimensionality of pretrained model does not match the expected inputs")
+
+        if model_info['dmap'] != self.dmap:
+            raise ValueError("Model dmap is not identical to architecture dmap")
 
         # find recurrent layer
         recurrent_layer = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}[model_info['recurrent_layer']]
@@ -294,6 +296,7 @@ class Training(object):
 
         model_info = {}
         model_info['classifiers'] = {}
+        model_info['dmap'] = model.dmap
         # loop through layers to get weight matrices
 
         for n_layer in xrange(n_layers):
