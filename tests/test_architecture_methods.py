@@ -6,6 +6,16 @@ from keras.layers import GRU
 import pickle
 import os
 
+def test_dmap():
+    # generate architecture
+    A = Training(np.arange(-10, 11), operators=['+','-'])
+
+    # test if all elements are in dmap
+    assert set(A.dmap.keys()) == set([str(i) for i in np.arange(-10,11)] + ['+','-','(',')'])
+
+    # check if 0 is empty
+    assert 0 not in A.dmap.values()
+
 def test_ScalarPrediction_methods():
     _test_architecture_methods(ScalarPrediction)
 
@@ -48,7 +58,7 @@ def _test_architecture_methods(architecture, **classifiers):
     # test generate training data from dictionary
     training_data = A.generate_training_data({'L1':5, 'L3l':10, 'L4r':10}, pad_to=40, **classifiers)
 
-    # test generate training data from math treebank?
+    # test generate training data from math treebank
     m = MathTreebank({'L1':5, 'L3l':10, 'L4r':10}, digits=np.arange(-10, 11))
     validation_data = A.generate_training_data(m, pad_to=40, **classifiers)
 
