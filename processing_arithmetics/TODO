@@ -1,0 +1,23 @@
+- schrijf meer tests
+
+- seq2seq generate training data slaat niet echt ergens op nu vrees ik...
+
+- voeg regularizer toe?
+- clean up callbacks
+    - rm Logger callback in generate callbacks + rm print_every param
+
+- something with readme, readme.rts? in setup.py
+- add readme to scripts folder
+
+- make tests shorter?
+- change name arithmetics folder
+
+
+
+What is tested:
+ - compileren en trainen van verschillende architecturen
+ - train_model
+
+Wat is nog niet getest:
+ - de rest ehe
+- verander namen A1, A4 in niet geteste
