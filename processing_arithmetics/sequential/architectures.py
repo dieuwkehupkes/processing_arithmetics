@@ -8,6 +8,8 @@ from .callbacks import TrainingHistory, PlotEmbeddings
 from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
 import copy
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import random
