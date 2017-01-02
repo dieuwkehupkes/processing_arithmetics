@@ -107,39 +107,46 @@ training.train(training_data=training_data, validation_data=validation_data,
         epochs=args.nb_epochs, verbosity=1, filename=args.save_to,
         save_every=False)
 
-training.print_accuracies
-     
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
 pickle.dump(history, open(args.save_to + '.history', 'wb'))
 
 
 ######################################################################################
-# Test model
+# Test model and write to file
+
+eval_filename = open(args.save_to+'_evaluation', 'w')
 
 # generate test data
 test_data = training.generate_test_data(data=languages_test, digits=np.arange(-10, 11), format=args.format, pad_to=args.maxlen) 
 
+# Helper function to print settings to file
+def sum_settings(args):
+    # create string of settings
+    settings_str = ''
+    settings_str += 'Trainings architecture: %s' % args.architecture
+    settings_str += '\nRecurrent layer: %s' % args.hidden
+    settings_str += '\nSize hidden layer: %i' % args.size_hidden
+    settings_str += '\nFormat: %s' % args.format
+    settings_str += '\nTrain seed: %s' % args.seed
+    settings_str += '\nTest seed: %s' % args.seed_test
+    settings_str += '\nBatch size: %i' % args.batch_size
+    settings_str += '\nNumber of epochs: %i' % args.nb_epochs
+    settings_str += '\nOptimizer: %s' % args.optimizer
+
+    return settings_str
+
+eval_filename.write(sum_settings(args))
+eval_filename.write('\n\n\n')
+
 for name, X, Y in test_data:
     acc = training.model.evaluate(X, Y)
-    print "Accuracy for for test set %s:" % name,
-    print '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
+    eval_filename.write(name)
+    print "Accuracy for %s:" % name,
+    results = '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(1, len(acc))])
+    print results
+    eval_filename.write('\n'+results)
+
+eval_filename.close
 
 
-# TODO still use this somewhere?
-def print_sum(settings):
-    # print summary of training session
-    print('Model summary:')
-    print('Recurrent layer: %s' % str(settings.recurrent_layer))
-    print('Size hidden layer: %i' % settings.size_hidden)
-    print('Initialisation embeddings: %s' % settings.encoding)
-    print('Size embeddings: %i' % settings.input_size)
-    print('Batch size: %i' % settings.batch_size)
-    print('Number of epochs: %i' % settings.nb_epoch)
-    print('Optimizer: %s' % settings.optimizer)
-    print('Trained on:')
-    try:
-        for language, nr in settings.languages_train.items():
-            print('%i sentences from %s' % (nr, language))
-    except AttributeError:
-        print('Unknown')
