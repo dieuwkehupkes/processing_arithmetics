@@ -6,33 +6,14 @@ from keras.models import load_model
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
 from processing_arithmetics.arithmetics.arithmetics import training_treebank, test_treebank, heldout_treebank       # TODO change name
+from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re
 
 # Train a model with the default train/test and validation set
 
-###################################################
-# Helper functions for argument parsing
-
-def get_architecture(architecture):
-    arch_dict = {'ScalarPrediction':ScalarPrediction, 'ComparisonTraining':ComparisonTraining, 'DiagnosticClassifier':DiagnosticClassifier, 'DC':DiagnosticClassifier, 'Seq2Seq':Seq2Seq}
-    return arch_dict[architecture]
-
-def get_hidden_layer(hl_name):
-    hl_dict = {'SimpleRNN': SimpleRNN, 'SRN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}
-    return hl_dict[hl_name]
-
-def max_length(N):
-    """
-    Compute length of arithmetic expression
-    with N numeric leaves
-    :param N: number of numeric leaves of expression
-    """
-    l = 4*N-3
-    return l
-
 
 ###################################################
-# Get arguments
+# Create argument parser
 
 parser = argparse.ArgumentParser()
 
@@ -77,8 +58,6 @@ input_size = 2
 # Train model
 
 training = args.architecture(digits=digits, operators=operators)
-training_data = training.generate_training_data(data=languages_train, format=args.format, pad_to=args.maxlen) 
-validation_data = training.generate_training_data(data=languages_val, format=args.format, pad_to=args.maxlen) 
 
 # Add pretrained model if this is given in arguments
 if args.model:
@@ -102,6 +81,9 @@ else:
 
 
 # train model
+training_data = training.generate_training_data(data=languages_train, format=args.format) 
+validation_data = training.generate_training_data(data=languages_val, format=args.format) 
+
 training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
         epochs=args.nb_epochs, verbosity=1, filename=args.save_to,
@@ -118,7 +100,7 @@ pickle.dump(history, open(args.save_to + '.history', 'wb'))
 eval_filename = open(args.save_to+'_evaluation', 'w')
 
 # generate test data
-test_data = training.generate_test_data(data=languages_test, digits=np.arange(-10, 11), format=args.format, pad_to=args.maxlen) 
+test_data = training.generate_test_data(data=languages_test, digits=np.arange(-10, 11), format=args.format) 
 
 # Helper function to print settings to file
 def sum_settings(args):
