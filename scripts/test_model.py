@@ -1,5 +1,4 @@
 from __future__ import print_function
-from keras.models import load_model
 
 from processing_arithmetics.seqbased.analyser import visualise_hidden_layer
 from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
@@ -35,7 +34,6 @@ digits = np.arange(-10, 11)
 operators = ['+', '-']
 
 architecture = args.architecture(digits=digits, operators=operators)
-compiled_model = load_model(args.model)
-architecture.add_pretrained_model(model=compiled_model)
+architecture.add_pretrained_model(model=args.model)
 test_data = architecture.generate_test_data(data=languages_test, digits=digits)
 architecture.test(test_data, metrics=args.metrics)  # TODO test if this also works for multilpe outputs

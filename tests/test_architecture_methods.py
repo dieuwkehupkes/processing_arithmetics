@@ -68,11 +68,13 @@ def _test_architecture_methods(architecture, **classifiers):
     A.save_model('saved_model')
     os.remove('saved_model')
 
-    # test add pretrained model
-    A.add_pretrained_model(A.model)
-
     # test save model
     A.save_model('saved_model')
+
+    # test add pretrained model
+    A.add_pretrained_model('saved_model')
+
+    # remove model from director structure
     os.remove('saved_model')
 
     # test generate training data from dictionary

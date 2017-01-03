@@ -2,7 +2,6 @@ import argparse
 from keras.layers import SimpleRNN, GRU, LSTM
 import pickle
 import numpy as np
-from keras.models import load_model
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
 from processing_arithmetics.arithmetics.arithmetics import training_treebank, test_treebank, heldout_treebank       # TODO change name
@@ -61,8 +60,7 @@ training = args.architecture(digits=digits, operators=operators)
 
 # Add pretrained model if this is given in arguments
 if args.model:
-    model = load_model(args.model)
-    training.add_pretrained_model(model=model, 
+    training.add_pretrained_model(model=args.model, 
          copy_weights=None,                                  #TODO change this too!
          fix_classifier_weights=args.fix_classifier_weights,
          fix_embeddings=args.fix_embeddings,

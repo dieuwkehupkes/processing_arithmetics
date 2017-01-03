@@ -4,7 +4,7 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
-from .callbacks import TrainingHistory, DrawWeights, PlotEmbeddings
+from .callbacks import TrainingHistory, PlotEmbeddings
 from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
 import copy
@@ -86,6 +86,9 @@ class Training(object):
         :param optimizer:       optimizer to use during training
         :param copy_weights:    determines which weights should be copied
         """
+
+        if isinstance(model, str):
+            model = load_model(model)
 
         model_info = self.get_model_info(model)
 
