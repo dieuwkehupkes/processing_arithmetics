@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.seqbased.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training
-from keras.layers import GRU
+from keras.layers import SimpleRNN
 import pickle
 import os
 
@@ -28,6 +28,27 @@ def test_DiagnosticClassifier_methods():
 def test_Seq2Seq_methods():
     _test_architecture_methods(Seq2Seq)
 
+def test_recompile_new_metrics():
+    # test if model can be tested with different metrics through recompilation
+    digits = np.arange(-10, 11)
+    operators = ['+', '-']
+
+    # generate architecture, load dmap
+    A = ScalarPrediction(digits=digits, operators=operators)
+
+    # test build model
+    A.generate_model(recurrent_layer=SimpleRNN, input_length=40,
+                     input_size=2, size_hidden=3)
+
+    # test generate test data
+    languages = {'L1':10, 'L2':15, 'L3':20}
+    test_data = A.generate_test_data(data=languages, digits=np.arange(-10, 11), pad_to=40, test_separately=True)
+
+    # test model testing
+    A.test(test_data, metrics=['mean_squared_prediction_error'])
+
+
+
 def _test_architecture_methods(architecture, **classifiers):
     """
     Test if methods of Training class still work.
@@ -40,7 +61,7 @@ def _test_architecture_methods(architecture, **classifiers):
     A = architecture(digits=digits, operators=operators)
 
     # test build model
-    A.generate_model(recurrent_layer=GRU, input_length=40,
+    A.generate_model(recurrent_layer=SimpleRNN, input_length=40,
                      input_size=2, size_hidden=3,
                      **classifiers)
 
