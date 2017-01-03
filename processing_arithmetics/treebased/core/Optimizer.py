@@ -10,10 +10,10 @@ class Optimizer():
     def newGradient(self):
         return self.theta.gradient()
 
-## regularization
-## TODO: check if this is correct (mostly the 'amount' of regularization)
+# regularization
+# TODO: check if this is correct (mostly the 'amount' of regularization)
     def regularize(self, portion, tofix = []):
-        if self.lambdaL2 ==0: return
+        if self.lambdaL2 == 0: return
         for name in self.theta.keys():
             if name[0] in tofix: continue
             if name[-1] == 'M':
@@ -36,7 +36,7 @@ class SGD(Optimizer):
             else:
                 if type(grad) == np.ndarray: self.theta[key] -= lr * grad
                 elif type(grad) == myTheta.WordMatrix:
-                    for word in grad: self.theta[key][word] -= lr* grad[word]
+                    for word in grad: self.theta[key][word] -= lr * grad[word]
                 else: raise NameError("Cannot update theta")
 
 
@@ -67,18 +67,18 @@ class Adagrad(Optimizer):
 class Adam(Optimizer):
     def __init__(self,theta,lr=0.001, lambdaL2=0.001, beta_1=0.9,beta_2=0.999, epsilon=1e-8):
         Optimizer.__init__(self,theta,lr,lambdaL2)
-        self.beta_1=beta_1
-        self.beta_2=beta_2
+        self.beta_1 = beta_1
+        self.beta_2 = beta_2
         self.epsilon = epsilon
         self.t = 0
         self.ms = theta.gradient()
-        self.vs=theta.gradient()
+        self.vs = theta.gradient()
 
     def update(self, grads, portion, tofix=[]):
-        self.t +=1
+        self.t += 1
         self.regularize(portion*self.lr, tofix)
 
-        factor = (1- self.beta_2**self.t)**0.5/(1-self.beta_1**self.t)
+        factor = (1 - self.beta_2**self.t)**0.5/(1 - self.beta_1**self.t)
         lr = factor*self.lr
 
         for key, grad in grads.iteritems():

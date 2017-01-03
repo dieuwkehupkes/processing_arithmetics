@@ -1,12 +1,8 @@
 from __future__ import division
 import random
-import core.NN as NN
-import sys
-
-sys.path.insert(0, '../arithmetics')
-import arithmetics
+from .core import NN as NN
+from .. import arithmetics
 from collections import defaultdict, Counter
-
 
 class TB():
     def __init__(self, examples):

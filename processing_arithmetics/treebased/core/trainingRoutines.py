@@ -1,7 +1,8 @@
 from __future__ import division
 from numpy import random as npRandom
 import random as random0
-import sys, os, pickle
+import sys
+import os
 try: import cPickle as pickle
 except: import pickle
 from collections import defaultdict
@@ -30,8 +31,8 @@ Training will iterate over these lists n times
 def alternate(optimizer, datasets, outDir, hyperParams, alt, n=5, names=None,seed = 0):
     npRandom.seed(seed)
     random0.seed(seed)
-    if names is not None: assert len(names)==len(alt)
-    else: names=['']*len(alt)
+    if names is not None: assert len(names) == len(alt)
+    else: names = ['']*len(alt)
     assert len(datasets) == len(alt)
     assert len(hyperParams) == len(alt)
     counters = [0]*len(alt)
@@ -48,7 +49,7 @@ def alternate(optimizer, datasets, outDir, hyperParams, alt, n=5, names=None,see
             newEval = plainTrain(optimizer, dataset['train'],dataset['heldout'], hyperParams[phase], nEpochs=alt[phase], nStart=counters[phase])
             [evals[name].extend(eval) for name, eval in newEval.items()]
 
-            counters[phase]+=alt[phase]
+            counters[phase] += alt[phase]
             outFile = os.path.join(outDir,'phase'+str(phase)+'startEpoch'+str(counters[phase])+'.theta.pik')
             storeTheta(optimizer.theta, outFile)
             print 'Evaluation phase', names[phase]
@@ -64,7 +65,7 @@ def plainTrain(optimizer, tTreebank, hTreebank, hyperParams, nEpochs, nStart = 0
     print hyperParams
 
     batchsize = hyperParams['bSize']
-    evals=defaultdict(list)
+    evals = defaultdict(list)
     tData = tTreebank.getExamples()
 
     for i in xrange(nStart, nStart+nEpochs):
@@ -91,7 +92,7 @@ Train a single (mini)batch, fix the parameters specified by toFix
 def trainBatch(theta, examples, toFix):
     error = 0
     grads = theta.gradient()
-    if len(examples)>0:
+    if len(examples) > 0:
         for nw in examples:
             try:
                 label = nw[1]
@@ -99,6 +100,6 @@ def trainBatch(theta, examples, toFix):
             except:
                 label = None
             derror = nw.train(theta,grads,activate=True, target = label)
-            error+= derror
+            error += derror
     grads.removeAll(toFix)
     return error, grads

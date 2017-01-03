@@ -18,11 +18,11 @@ class Theta(dict):
         self.dims = dims
         self.compositionMatrices()
 
-        #vocabulary = None, default = ('UNKNOWN', 0), dicItems = {}):
+        # vocabulary = None, default = ('UNKNOWN', 0), dicItems = {}):
         # Install word embeddings as a WordMatrix object
         if embeddings is None:
             default = ('UNKNOWN', np.random.random_sample(self.dims['word']) * .2 - .1)
-            self[('word',)] = WordMatrix(vocabulary, default =  default, dicItems=[(word, np.random.random_sample(self.dims['word']) * .2 - .1) for word in vocabulary])
+            self[('word',)] = WordMatrix(vocabulary, default = default, dicItems=[(word, np.random.random_sample(self.dims['word']) * .2 - .1) for word in vocabulary])
         else:
             self[('word',)] = embeddings
 

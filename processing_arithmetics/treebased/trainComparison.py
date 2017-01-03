@@ -4,12 +4,12 @@ from collections import defaultdict, Counter
 
 import data
 import pickle
-import core.myTheta as myTheta
-import core.trainingRoutines as tr
-from core import Optimizer
+from .core import myTheta as myTheta
+from .core import trainingRoutines as tr
+from .core import Optimizer
 import argparse
-import sys, os
-#import core.gradient_check as check
+import sys
+import os
 
 ''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
 def installTheta(thetaFile, seed, d, comparison):
@@ -22,7 +22,7 @@ def installTheta(thetaFile, seed, d, comparison):
         # legacy; in theta from older versions of the code 'plus' and 'minus' in the vocabulary
         if '+' not in theta[('word',)].voc:
             theta[('word',)].extendVocabulary(['+','-'])
-            theta[('word',)]['+']=theta[('word',)]['plus']
+            theta[('word',)]['+'] = theta[('word',)]['plus']
             theta[('word',)]['-'] = theta[('word',)]['minus']
 
     else:
@@ -37,8 +37,8 @@ def installTheta(thetaFile, seed, d, comparison):
 
 def main(args):
     print args
-    hyperParams={k:args[k] for k in ['bSize']}
-    hyperParams['toFix']=[]
+    hyperParams = {k:args[k] for k in ['bSize']}
+    hyperParams['toFix'] = []
     hyperParamsCompare = hyperParams.copy()
     hyperParamsPredict = hyperParams.copy()
 
@@ -47,9 +47,9 @@ def main(args):
 
     # initialize optimizer with learning rate (other hyperparams: default values)
     opt = args['optimizer']
-    if opt =='adagrad': optimizer = Optimizer.Adagrad(theta,lr = args['learningRate'])
-    elif opt =='adam': optimizer = Optimizer.Adam(theta,lr = args['learningRate'])
-    elif opt =='sgd': optimizer = Optimizer.SGD(theta,lr = args['learningRate'])
+    if opt == 'adagrad': optimizer = Optimizer.Adagrad(theta,lr = args['learningRate'])
+    elif opt == 'adam': optimizer = Optimizer.Adam(theta,lr = args['learningRate'])
+    elif opt == 'sgd': optimizer = Optimizer.SGD(theta,lr = args['learningRate'])
     else: raise RuntimeError("No valid optimizer chosen")
 
     '''
@@ -58,19 +58,19 @@ def main(args):
     NB: this feature is not really used in the current experiments
     '''
     q = 10
-    if q>args['nEpochs']:
+    if q > args['nEpochs']:
         q = args['nEpochs']//2
 
     kind = args['kind']
-    if kind =='c':
+    if kind == 'c':
         hypers = [hyperParamsCompare]
         names = ['comparison']
         phases = [q]
-    elif kind =='p':
+    elif kind == 'p':
         hypers = [hyperParamsPredict]
         names = ['prediction']
         phases = [q]
-    elif kind =='a':
+    elif kind == 'a':
         hypers = [hyperParamsPredict, hyperParamsCompare]
         names = ['prediction', 'comparison']
         phases = [q//2,q//2]
@@ -86,10 +86,10 @@ def main(args):
 
     # create convergence plot
     for name, eval in evals.items():
-        toplot = [e[key] for e in eval for key in e  if 'loss' in key]
+        toplot = [e[key] for e in eval for key in e if 'loss' in key]
         plt.plot(xrange(len(toplot)), toplot,label=name)
     plt.legend()
-    plt.title([ key for key in eval[0].keys() if 'loss'  in key][0])
+    plt.title([key for key in eval[0].keys() if 'loss' in key][0])
     plt.savefig(os.path.join(args['outDir'],'convergencePlot.png'))
 
 

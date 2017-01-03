@@ -3,20 +3,16 @@ from collections import defaultdict
 
 import data
 import pickle
-import core.myTheta as myTheta
 import argparse
-import sys, os
+import sys
+import os
 import matplotlib.pyplot as plt
-# imports
+
+from .core import myTheta as myTheta
 from keras.models import Model
 from keras.layers import Dense, Input
 import numpy as np
-import pickle
 from keras.models import model_from_json
-from collections import defaultdict
-import sys
-import argparse
-
 
 def convert4Keras(thetaFile, seed):
     print 'Converting nws into keras format'
@@ -74,7 +70,7 @@ def trainModel(model, tdata, vdata, verbose=2, n=50, batch_size=24):
 
 def saveModel(model, name='something'):
     model.save_weights(name + '_weights.h5', overwrite=True)
-    saved_model = open(name + '.json', 'w').write(model.to_json())
+    open(name + '.json', 'w').write(model.to_json())
 
 
 def loadModel(model_name, model_weights):
