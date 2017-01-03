@@ -23,7 +23,7 @@ def test_ComparisonTraining_methods():
     _test_architecture_methods(ComparisonTraining)
 
 def test_DiagnosticClassifier_methods():
-    _test_architecture_methods(DiagnosticClassifier, classifiers=['subtracting'])
+    _test_architecture_methods(DiagnosticClassifier, classifiers=['subtracting', 'intermediate_recursively'])
 
 def test_Seq2Seq_methods():
     _test_architecture_methods(Seq2Seq)
@@ -96,7 +96,7 @@ def _test_architecture_methods(architecture, **classifiers):
     test_data = A.generate_test_data(data=languages, digits=np.arange(-10, 11), test_separately=True)
 
     # test model testing
-    A.test(test_data)
+    A.test(test_data, metrics=['mse', 'mspe', 'binary_accuracy'])
 
     # TODO test get model info?
 

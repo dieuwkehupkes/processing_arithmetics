@@ -809,7 +809,7 @@ class DiagnosticClassifier(Training):
         # create model
         self.model = ArithmeticModel(input=input_layer, output=classifiers, dmap=self.dmap)
 
-        self.model.compile(loss=self.loss_functions, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
+        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
 
     def set_attributes(self):
@@ -818,7 +818,7 @@ class DiagnosticClassifier(Training):
         corresponding lossfunctions, metrics and output sizes
         as attributes to the class.
         """
-        self.loss_functions = dict([(key, self.loss[key]) for key in self.classifiers])
+        self.loss_function = dict([(key, self.loss[key]) for key in self.classifiers])
         self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers])
         self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
