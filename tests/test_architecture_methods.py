@@ -48,7 +48,6 @@ def test_recompile_new_metrics():
     A.test(test_data, metrics=['mean_squared_prediction_error'])
 
 
-
 def _test_architecture_methods(architecture, **classifiers):
     """
     Test if methods of Training class still work.
@@ -70,18 +69,18 @@ def _test_architecture_methods(architecture, **classifiers):
     os.remove('saved_model')
 
     # test add pretrained model
-    A.add_pretrained_model(A.model, **classifiers)
+    A.add_pretrained_model(A.model)
 
     # test save model
     A.save_model('saved_model')
     os.remove('saved_model')
 
     # test generate training data from dictionary
-    training_data = A.generate_training_data({'L1':5, 'L3l':10, 'L4r':10}, pad_to=40, **classifiers)
+    training_data = A.generate_training_data({'L1':5, 'L3l':10, 'L4r':10}, pad_to=40)
 
     # test generate training data from math treebank
     m = MathTreebank({'L1':5, 'L3l':10, 'L4r':10}, digits=np.arange(-10, 11))
-    validation_data = A.generate_training_data(m, pad_to=40, **classifiers)
+    validation_data = A.generate_training_data(m, pad_to=40)
 
     # test train
     if os.path.exists('temp1.h5'):
@@ -92,7 +91,7 @@ def _test_architecture_methods(architecture, **classifiers):
 
     # test generate test data
     languages = {'L1':10, 'L2':15, 'L3':20}
-    test_data = A.generate_test_data(data=languages, digits=np.arange(-10, 11), pad_to=40, test_separately=True, **classifiers)
+    test_data = A.generate_test_data(data=languages, digits=np.arange(-10, 11), pad_to=40, test_separately=True)
 
     # test model testing
     A.test(test_data)

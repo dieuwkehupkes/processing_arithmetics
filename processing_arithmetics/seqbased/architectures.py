@@ -134,7 +134,7 @@ class Training(object):
 
         return dmap
 
-    def generate_training_data(self, data, digits=np.arange(-10, 11), pad_to=None, format='infix', **kwargs):
+    def generate_training_data(self, data, digits=np.arange(-10, 11), pad_to=None, format='infix'):
         """
         Generate training data
         """
@@ -146,15 +146,17 @@ class Training(object):
             random.shuffle(data.examples)
 
         return self.data_from_treebank(treebank=data, pad_to=pad_to,
-                                       format=format, **kwargs)
+                                       format=format)
 
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         raise NotImplementedError("Should be implemented in subclass")
 
-    def generate_test_data(self, data, digits, pad_to=None, test_separately=True, format='infix', **kwargs):
+    def generate_test_data(self, data, digits, pad_to=None, test_separately=True, format='infix'):
         """
-        Take a dictionary that maps language names to number of sentences, and a list of classifiers for which to create test data. Return dictionary with classifier name as key and test data as output.
+        Take a dictionary that maps language names to number of sentences for 
+        which to create test data. Return dictionary with classifier name 
+        as key and test data as output.
         :param languages:       can be either:
                                     - a dictionary mapping language names to numbers
                                     - a list with (name, treebank) tuples
@@ -167,21 +169,21 @@ class Training(object):
         if isinstance(data, list):
             test_data = []
             for name, treebank in data:
-                X_test, Y_test = self.data_from_treebank(treebank, pad_to=pad_to, format=format, **kwargs)
+                X_test, Y_test = self.data_from_treebank(treebank, pad_to=pad_to, format=format)
                 test_data.append((name, X_test, Y_test))
 
         elif isinstance(data, MathTreebank):
-            X_test, Y_test = self.data_from_treebank(data, pad_to=pad_to, format=format, **kwargs)
+            X_test, Y_test = self.data_from_treebank(data, pad_to=pad_to, format=format)
             test_data = [('test treebank', X_test, Y_test)]
 
         elif test_separately:
             test_data = []
             for name, N in data.items():
-                X, Y = self.generate_training_data(data={name: N}, digits=digits, pad_to=pad_to, format=format, **kwargs)
+                X, Y = self.generate_training_data(data={name: N}, digits=digits, pad_to=pad_to, format=format)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = self.generate_training_data(data=data, digits=digits, pad_to=pad_to, format=format, **kwargs)
+            X, Y = self.generate_training_data(data=data, digits=digits, pad_to=pad_to, format=format)
             name = ', '.join(data.keys())
             test_data = [(name, X, Y)]
 
@@ -231,10 +233,9 @@ class Training(object):
         print "Accuracy for for validation set %s:\t" % \
               '\t'.join(['%s: %f' % (item[0], item[1][-1]) for item in hist.metrics_val.items()])
 
-    def test(self, test_data, metrics=None, test_separately=True):
+    def test(self, test_data, metrics=None):
         """
-        Test model.
-        # TODO parameters
+        Test model and print results. Return a dictionary with the results.
         """
         # input new metrics
         if metrics:
@@ -436,7 +437,7 @@ class Training(object):
 
         return callbacks
 
-    def data_from_treebank(self, treebank, pad_to=None, format='infix', **kwargs):
+    def data_from_treebank(self, treebank, pad_to=None, format='infix'):
         raise NotImplementedError("Should be implemented in subclass")
 
     @staticmethod
@@ -818,19 +819,19 @@ class DiagnosticClassifier(Training):
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
 
-    def data_from_treebank(self, treebank, pad_to, classifiers, format='infix'):
+    def data_from_treebank(self, treebank, pad_to, format='infix'):
         """
         Generate test data from a MathTreebank object.
         """
         # create dictionary with outputs
-        X, Y = [], dict([(classifier, []) for classifier in classifiers]) 
+        X, Y = [], dict([(classifier, []) for classifier in self.classifiers]) 
 
         # loop over examples
         for expression, answer in treebank.examples:
             expression.get_targets(format=format)
             input_seq = [self.dmap[i] for i in expression.toString(format).split()]
             X.append(input_seq)
-            for classifier in classifiers:
+            for classifier in self.classifiers:
                 target = expression.targets[classifier]
                 Y[classifier].append(target)
         # pad sequences to have the same length
