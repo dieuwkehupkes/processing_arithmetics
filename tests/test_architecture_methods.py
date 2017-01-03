@@ -69,14 +69,12 @@ def _test_architecture_methods(architecture, **classifiers):
 
     os.remove('temp1.h5')
 
-    # TODO use actually the Training.test for this
     # test generate test data
     languages = {'L1':10, 'L2':15, 'L3':20}
     test_data = A.generate_test_data(data=languages, digits=np.arange(-10, 11), pad_to=40, test_separately=True, **classifiers)
 
     # test model testing
-    for name, X, Y in test_data:
-        A.model.evaluate(X, Y)
+    A.test(test_data)
 
     # TODO test get model info?
 
