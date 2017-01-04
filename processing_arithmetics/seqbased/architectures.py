@@ -734,9 +734,12 @@ class DiagnosticClassifier(Training):
     test what information is extratable from the representations
     the model generates.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None):
         # run superclass init
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
+
+        assert model is not None, "Call constructor on a model to diagnose"
+        assert classifiers is not None, "Add diagnostic classifiers to diagnose model"
 
         # set loss and metric functions
         self.loss = {
@@ -767,18 +770,20 @@ class DiagnosticClassifier(Training):
                 'intermediate_recursively':1,
                 'top_stack':1}
 
+        # set classifiers and attributes
+        self.classifiers = classifiers
+        self.set_attributes()
+
+        # add model
+        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings'], classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
         Build model with given embeddings and recurren weights.
         """
 
-        # set attributes
-        self.set_attributes()
-
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
-        mask1 = Masking(mask_value=0.0)(input_layer)
 
 
         # create embeddings
@@ -786,7 +791,7 @@ class DiagnosticClassifier(Training):
                                input_length=self.input_length, weights=W_embeddings,
                                trainable=False,
                                mask_zero=self.mask_zero,
-                               name='embeddings')(mask1)
+                               name='embeddings')(input_layer)
 
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',

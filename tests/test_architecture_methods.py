@@ -23,8 +23,47 @@ def test_ComparisonTraining_methods():
     _test_architecture_methods(ComparisonTraining)
 
 def test_DiagnosticClassifier_methods():
-    _test_architecture_methods(DiagnosticClassifier, classifiers=['subtracting', 'intermediate_recursively'])
+    digits = np.arange(-10, 11)
+    operators = ['+', '-']
+    A = ScalarPrediction(digits=digits, operators=operators)
+    A.generate_model(recurrent_layer=SimpleRNN, input_length=40,
+                     input_size=2, size_hidden=3)
 
+    DC = DiagnosticClassifier(digits=digits, operators=operators, classifiers=['subtracting', 'intermediate_recursively'], model=A.model)
+
+    # test save model
+    DC.save_model('saved_model')
+    os.remove('saved_model')
+
+    # test save model
+    DC.save_model('saved_model')
+
+    # test add pretrained model
+    DC.add_pretrained_model('saved_model')
+
+    # remove model from director structure
+    os.remove('saved_model')
+
+    # test generate training data from dictionary
+    training_data = DC.generate_training_data({'L1':5, 'L3l':10, 'L4r':10})
+
+    # test generate training data from math treebank
+    m = MathTreebank({'L1':5, 'L3l':10, 'L4r':10}, digits=np.arange(-10, 11))
+    validation_data = DC.generate_training_data(m)
+
+    # test train
+    if os.path.exists('temp1.h5'):
+        os.remove('temp1.h5')
+    DC.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data)
+
+    os.remove('temp1.h5')
+
+    # test generate test data
+    languages = {'L1':10, 'L2':15, 'L3':20}
+    test_data = DC.generate_test_data(data=languages, digits=np.arange(-10, 11), test_separately=True)
+
+    # test model testing
+    DC.test(test_data, metrics=['mse', 'mspe', 'binary_accuracy'])
 def test_Seq2Seq_methods():
     _test_architecture_methods(Seq2Seq)
 
