@@ -333,14 +333,14 @@ class MathExpression(Tree):
 
         return cur
 
-    def solveAlmost(self, return_sequences=False):
+    def solve_almost(self, format='infix', return_sequences=False):
         """
         Solve expression with a simpel completely 
         local strategy that almost always gives the
         right answer, but not always.
         """
 
-        symbols = self.iterate()
+        symbols = self.iterate(format='infix')
     
         result = 0
         subtracting = False
