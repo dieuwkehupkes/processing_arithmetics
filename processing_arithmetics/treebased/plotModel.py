@@ -2,6 +2,7 @@ import pickle
 import argparse
 import data
 import numpy as np
+from .. import arithmetics
 # import core.activation as myActivation
 
 import plotTools as pt
@@ -154,7 +155,7 @@ def plotForSubtree2(nw, theta, n=0):
 def plotAnExample(theta):
     fig, ax = pt.newFig(([-1.5, 3.5], [-3, 4.5]))
     pt.minimalTicks(ax)
-    me = data.arithmetics.mathExpression.fromstring('( 5 - ( 2 + 3 ) )')
+    me = arithmetics.mathExpression.fromstring('( 5 - ( 2 + 3 ) )')
     ans = me.solve()
     print str(me), ans
 
@@ -175,7 +176,7 @@ def plotComparison(theta):
         print 'no comparison matrix in theta'
         return
 
-    mtb = data.arithmetics.training_treebank(args['seed'], languages={'L9': 25}, )
+    mtb = arithmetics.training_treebank(args['seed'], languages={'L9': 25}, )
     rnnTB = data.RNNTB(mtb.examples)
     colors = pt.colorscale(120)
     rnn, tar = rnnTB.examples[0]
