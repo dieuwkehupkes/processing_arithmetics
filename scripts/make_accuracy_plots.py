@@ -8,8 +8,12 @@ import numpy as np
 import matplotlib.pylab as plt
 
 """
-Describe what this script does.
+Generate plots that compare the accuracy of different models with
+the accuracy it should have according to certain symbolic strategies
+ADD: compare also with noisy symbolic strategies.
 """
+
+# TODO check if this also works for probing?
 
 ###################################################
 # Create argument parser
