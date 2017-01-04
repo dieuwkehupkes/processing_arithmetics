@@ -1,4 +1,36 @@
-from .arithmetics import *
+from .MathExpression import MathExpression
+from numpy import random as random
+import numpy as np
+import re
+from collections import defaultdict
+
+
+def parse_language(language_str):
+    """
+    Give in a string for a language, return
+    a tuple with arguments to generate examples.
+    :return:    (#leaves, operators, branching)
+    """
+    # find # leaves
+    nr = re.compile('[0-9]+')
+    n = int(nr.search(language_str).group())
+
+    # find operators
+    plusmin = re.compile('\+')
+    op = plusmin.search(language_str)
+    if op:
+        operators = [op.group()]
+    else:
+        operators = ['+', '-']
+
+    # find branchingness
+    branch = re.compile('left|right')
+    branching = branch.search(language_str)
+    if branching:
+        branching = branching.group()
+
+    return [n], operators, branching
+
 
 class MathTreebank():
     def __init__(self, languages={}, digits=[]):
@@ -67,6 +99,7 @@ class MathTreebank():
         for expression, answer in self.examples:
             f.write(str(expression)+'\t'+str(answer[1])+'\n')
         f.close()
+
 
 class IndexedTreebank(MathTreebank):
     def __init__(self, languages={}, digits=[]):
