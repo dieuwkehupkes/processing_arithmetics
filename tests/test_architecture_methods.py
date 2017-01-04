@@ -100,5 +100,5 @@ def _test_architecture_methods(architecture, **classifiers):
 
     # TODO test get model info?
 
-
-
+if __name__ == '__main__':
+    pytest.main([__file__])
