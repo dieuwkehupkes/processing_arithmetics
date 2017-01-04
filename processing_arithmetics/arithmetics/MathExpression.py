@@ -434,31 +434,3 @@ def make_noise_plots():
     ax.set_xticklabels(languages.keys())
     plt.legend()
     plt.show()
-
-def test_solve_locally(format, digits, operators):
-    m = MathTreebank()
-    for length in np.arange(3,10):
-        examples = m.generate_examples(operators=ops, digits=digits, n=500, lengths=[length])
-        incorrect = 0.0
-        for expression, answer in examples:
-            outcome = expression.solveLocally(format=format)
-            if outcome != answer:
-                incorrect += 1
-                # print(expression, answer, outcome)
-                # raw_input()
-
-        print("percentage incorrect for length %i: %f" % (length, incorrect/50))
-
-def test_solve_recursively(format, digits, operators):
-    m = MathTreebank()
-    for length in np.arange(3,10):
-        examples = m.generate_examples(operators=ops, digits=digits, n=5000, lengths=[length])
-        incorrect = 0.0
-        for expression, answer in examples:
-            outcome = expression.solveRecursively(format=format)
-            if outcome != answer:
-                incorrect += 1
-                print(expression.toString(format), answer, outcome)
-                raw_input()
-
-        print("percentage incorrect for length %i: %f" % (length, incorrect/50))
