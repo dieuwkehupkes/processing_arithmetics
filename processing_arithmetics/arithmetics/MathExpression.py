@@ -406,8 +406,11 @@ class MathExpression(Tree):
         for symbol in self.toString(format=format).split():
             yield symbol
 
+# TODO this should perhaps go in a script instead of here
 def make_noise_plots():
     import matplotlib.pylab as plt
+    from .MathTreebank import MathTreebank
+    from .treebanks import test_treebank
     digits = np.arange(-5,5)
     languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
     m = MathTreebank(languages=languages, digits=digits)
