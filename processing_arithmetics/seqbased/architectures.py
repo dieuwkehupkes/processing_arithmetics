@@ -243,15 +243,19 @@ class Training(object):
         if metrics:
             self.model.compile(loss=self.loss_function, optimizer='adam', metrics=metrics)
 
-        evaluation = {}
+        evaluation = OrderedDict()
         for name, X, Y in test_data:
             acc = self.model.evaluate(X, Y)
-            evaluation[name] = acc
-            print "Accuracy for for test set %s:" % name,
-            print '\t'.join(['%s: %f' % (self.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
-
+            evaluation[name] = dict([(self.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
         return evaluation
 
+    def print_evaluation(self, evaluation):
+        """
+        Print evaluation results in a readable fashion.
+        """
+        for name in evaluation:
+            print("Test set %s:" % name)
+            print('\t'.join(['%s: %f' % (metric, value) for metric, value in evaluation[name]]))
 
     def get_sample_weights(self, training_data, sample_weight):
         """
