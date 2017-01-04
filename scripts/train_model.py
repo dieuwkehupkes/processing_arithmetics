@@ -3,12 +3,21 @@ from keras.layers import SimpleRNN, GRU, LSTM
 import pickle
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
-from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
+from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
 from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank       # TODO change name
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re
 
-# Train a model with the default train/test and validation set
+"""
+Train a model with the default train/test and validation set
+"""
+
+
+###################################################
+# Set some params
+digits = np.arange(-10, 11)
+operators = ['+', '-']
+input_size = 2
 
 
 ###################################################
@@ -17,10 +26,10 @@ import re
 parser = argparse.ArgumentParser()
 
 # positional arguments
-parser.add_argument("architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq])
-parser.add_argument("hidden", type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
-parser.add_argument("nb_epochs", type=int, help="Number of epochs")
-parser.add_argument("save_to", help="Save trained model to filename")
+parser.add_argument("architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, Seq2Seq])
+parser.add_argument("--hidden", required=True, type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
+parser.add_argument("--nb_epochs", required=True, type=int, help="Number of epochs")
+parser.add_argument("--save_to", required=True, help="Save trained model to filename")
 
 # optional arguments
 parser.add_argument("-size_hidden", type=int, help="Size of the hidden layer", default=15)
@@ -48,9 +57,6 @@ args = parser.parse_args()
 languages_train             = training_treebank(seed=args.seed)
 languages_val              = heldout_treebank(seed=args.seed)
 languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
-digits = np.arange(-10, 11)
-operators = ['+', '-']
-input_size = 2
 
 
 #################################################################
@@ -98,7 +104,7 @@ pickle.dump(history, open(args.save_to + '.history', 'wb'))
 eval_filename = open(args.save_to+'_evaluation', 'w')
 
 # generate test data
-test_data = training.generate_test_data(data=languages_test, digits=np.arange(-10, 11), format=args.format) 
+test_data = training.generate_test_data(data=languages_test, digits=digits, format=args.format) 
 
 # Helper function to print settings to file
 def sum_settings(args):
