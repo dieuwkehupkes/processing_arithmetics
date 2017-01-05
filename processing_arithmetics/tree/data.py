@@ -1,7 +1,7 @@
 from __future__ import division
 import random
 from .core import NN as NN
-from .. import treebanks as arithmetics
+from ..arithmetics import treebanks as arithmetics
 from collections import defaultdict, Counter
 
 class TB():
