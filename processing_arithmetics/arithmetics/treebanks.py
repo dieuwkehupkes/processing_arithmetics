@@ -11,6 +11,7 @@ languages_heldout = {'L3':500, 'L6':800, 'L8':800}
 languages_train = {'L1':3, 'L2': 3, 'L4':3, 'L5':3, 'L7':3}
 languages_test = OrderedDict([('L9_left', 15), ('L9_right', 15), ('L1', 5), ('L2', 5), ('L3', 15), ('L4', 3), ('L5', 5), ('L6', 1), ('L7', 15), ('L8', 15), ('L9', 15)])
 ds = np.arange(-10,11)
+ops = ['+', '-']
 
 def training_treebank(seed, languages=languages_train, digits=ds):
     np.random.seed(seed)
