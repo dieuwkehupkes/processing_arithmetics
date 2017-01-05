@@ -1,5 +1,5 @@
 from keras.layers import SimpleRNN, GRU, LSTM
-from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
+from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
 
 # file with transformation functions used by argparse
 

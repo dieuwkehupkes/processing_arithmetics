@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-from processing_arithmetics.seqbased.analyser import visualise_hidden_layer
-from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
+from processing_arithmetics.sequential.analyser import visualise_hidden_layer
+from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.arithmetics.treebanks import test_treebank
 

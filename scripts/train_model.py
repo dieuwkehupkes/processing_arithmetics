@@ -3,7 +3,7 @@ from keras.layers import SimpleRNN, GRU, LSTM
 import pickle
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
-from processing_arithmetics.seqbased.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
+from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
 from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank       # TODO change name
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re

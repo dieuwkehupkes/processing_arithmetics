@@ -1,4 +1,4 @@
-from processing_arithmetics.seqbased.architectures import ScalarPrediction
+from processing_arithmetics.sequential.architectures import ScalarPrediction
 from processing_arithmetics.arithmetics.MathTreebank import MathTreebank
 from argument_transformation import get_architecture
 import argparse

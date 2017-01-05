@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from processing_arithmetics.arithmetics.MathTreebank import MathTreebank
-from processing_arithmetics.seqbased.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training
+from processing_arithmetics.sequential.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training
 from keras.layers import SimpleRNN
 import pickle
 import os

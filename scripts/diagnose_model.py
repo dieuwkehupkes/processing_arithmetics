@@ -2,7 +2,7 @@ from keras.models import load_model
 import argparse
 import pickle
 import numpy as np
-from processing_arithmetics.seqbased.architectures import DiagnosticClassifier
+from processing_arithmetics.sequential.architectures import DiagnosticClassifier
 from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank
 from argument_transformation import max_length
 
