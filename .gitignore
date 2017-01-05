@@ -1,6 +1,7 @@
 *.pyc
 .idea/*
 *.swp
+/scripts/untested_*
 /treebased/trainedModels/*
 /treebasedDebug/trainedModels/*
 /treebased/keras_model/kerasTrainedModels/*
