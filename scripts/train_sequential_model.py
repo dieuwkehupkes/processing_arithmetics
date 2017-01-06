@@ -26,7 +26,7 @@ input_size = 2
 parser = argparse.ArgumentParser()
 
 # positional arguments
-parser.add_argument("architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, Seq2Seq])
+parser.add_argument("-architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, Seq2Seq], required=True)
 parser.add_argument("--hidden", required=True, type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
 parser.add_argument("--nb_epochs", required=True, type=int, help="Number of epochs")
 parser.add_argument("--save_to", required=True, help="Save trained model to filename")
@@ -38,6 +38,7 @@ parser.add_argument("--format", type=str, help="Set formatting of arithmetic exp
 parser.add_argument("--seed_test", type=int, help="Set random seed for testset", default=100)
 
 parser.add_argument("--optimizer", help="Set optimizer for training", choices=['adam', 'adagrad', 'adamax', 'adadelta', 'rmsprop', 'sgd'], default='adam')
+parser.add_argument("--loss_function", "-loss", help="Loss for training", choices=['mae', 'mse'], default='mse')
 parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
 parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
 parser.add_argument("--val_split", help="Set validation split", default=0.1)
@@ -88,8 +89,9 @@ validation_data = training.generate_training_data(data=languages_val, format=arg
 
 training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
+        optimizer=args.optimizer, loss_function=args.loss_function,
         epochs=args.nb_epochs, verbosity=1, filename=args.save_to,
-        optimizer=args.optimizer, save_every=False)
+        save_every=False)
 
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
