@@ -35,9 +35,8 @@ class Training(object):
     def generate_model(self, recurrent_layer, input_size, input_length, size_hidden,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
                        fix_classifier_weights=False, fix_embeddings=False, 
-                       fix_recurrent_weights=False,
-                       mask_zero=True, dropout_recurrent=0.0,
-                       optimizer='adam', **kwargs):
+                       fix_recurrent_weights=False, mask_zero=True,
+                       dropout_recurrent=0.0, **kwargs):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -52,7 +51,6 @@ class Training(object):
         :param train_recurrent:     set to false to fix recurrent weights during training
         :param mask_zero:           set to true to mask 0 values
         :param dropout_recurrent:   dropout param for recurrent weights
-        :param optimizer:           optimizer to use during training
         :return:
         """
 
@@ -66,7 +64,6 @@ class Training(object):
         self.train_recurrent = not fix_recurrent_weights
         self.mask_zero = mask_zero
         self.dropout_recurrent = dropout_recurrent
-        self.optimizer = optimizer
         self.trainings_history = None
         self.model = None
         if 'classifiers' in kwargs:
@@ -76,14 +73,13 @@ class Training(object):
         self._build(W_embeddings, W_recurrent, W_classifier)
 
 
-    def add_pretrained_model(self, model, copy_weights=['recurrent','embeddings','classifier'], fix_classifier_weights=False, fix_embeddings=False, fix_recurrent_weights=False, mask_zero=True, dropout_recurrent=0.0, optimizer='adam', **kwargs):
+    def add_pretrained_model(self, model, copy_weights=['recurrent','embeddings','classifier'], fix_classifier_weights=False, fix_embeddings=False, fix_recurrent_weights=False, mask_zero=True, dropout_recurrent=0.0, **kwargs):
         """
         Add a model with already trained weights. Model can be originally
         from a different training architecture, check which weights should be
         copied.
         :param model:           A keras model
         :param model_weights:   h5 file containing model weights
-        :param optimizer:       optimizer to use during training
         :param copy_weights:    determines which weights should be copied
         """
 
@@ -191,7 +187,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, filename, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -200,6 +196,14 @@ class Training(object):
                                         embeddings.
         """
         X_train, Y_train = training_data
+
+        if not metrics:
+            metrics = self.metrics
+        if not loss_function:
+            loss_function = self.loss_function
+
+        # compile model
+        self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
 
         callbacks = self.generate_callbacks(plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
@@ -498,10 +502,6 @@ class ScalarPrediction(Training):
         # create model
         self.model = ArithmeticModel(input=input_layer, output=output_layer, dmap=self.dmap)
 
-        # compile
-        self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
-                           metrics=self.metrics)
-
     def data_from_treebank(self, treebank, format='infix'):
         """
         Generate test data from a MathTreebank object.
@@ -594,10 +594,6 @@ class ComparisonTraining(Training):
         # create model
         self.model = ArithmeticModel(input=[input1, input2], output=output_layer, dmap=self.dmap)
 
-        # compile
-        self.model.compile(loss={'output': self.loss_function}, optimizer=self.optimizer,
-                           metrics=self.metrics)
-
     def data_from_treebank(self, treebank, format='infix'):
         """
         Generate data from MathTreebank object.
@@ -653,7 +649,7 @@ class Seq2Seq(Training):
 
         # set loss and metric functions
         # set loss function and metrics
-        self.loss_function = 'mean_squared_error'
+        self.loss_function = {'output': 'mean_squared_error'}
         self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
@@ -685,8 +681,6 @@ class Seq2Seq(Training):
         output = TimeDistributed(Dense(1, activation='linear'), name='output')(mask)
 
         self.model = ArithmeticModel(input=input_layer, output=output, dmap=self.dmap)
-
-        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
 
     def data_from_treebank(self, treebank, format='infix'):
         """
@@ -817,9 +811,6 @@ class DiagnosticClassifier(Training):
 
         # create model
         self.model = ArithmeticModel(input=input_layer, output=classifiers, dmap=self.dmap)
-
-        self.model.compile(loss=self.loss_function, optimizer=self.optimizer, metrics=self.metrics, sample_weight_mode='temporal')
-
 
     def set_attributes(self):
         """

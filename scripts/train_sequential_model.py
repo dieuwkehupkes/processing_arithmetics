@@ -71,7 +71,6 @@ if args.model:
          fix_classifier_weights=args.fix_classifier_weights,
          fix_embeddings=args.fix_embeddings,
          fix_recurrent_weights=args.fix_recurrent_weights,
-         optimizer=args.optimizer,
          dropout_recurrent=args.dropout)
 
 else:
@@ -80,7 +79,6 @@ else:
         fix_classifier_weights=args.fix_classifier_weights, 
         fix_embeddings=args.fix_embeddings,
         fix_recurrent_weights=args.fix_recurrent_weights,
-        optimizer=args.optimizer,
         dropout_recurrent=args.dropout)
 
 
@@ -91,7 +89,7 @@ validation_data = training.generate_training_data(data=languages_val, format=arg
 training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
         epochs=args.nb_epochs, verbosity=1, filename=args.save_to,
-        save_every=False)
+        optimizer=args.optimizer, save_every=False)
 
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)

@@ -54,7 +54,7 @@ def test_DiagnosticClassifier_methods():
     # test train
     if os.path.exists('temp1.h5'):
         os.remove('temp1.h5')
-    DC.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data)
+    DC.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data, optimizer='adam')
 
     os.remove('temp1.h5')
 
@@ -126,7 +126,7 @@ def _test_architecture_methods(architecture, **classifiers):
     # test train
     if os.path.exists('temp1.h5'):
         os.remove('temp1.h5')
-    A.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data)
+    A.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data, optimizer='adam')
 
     os.remove('temp1.h5')
 
