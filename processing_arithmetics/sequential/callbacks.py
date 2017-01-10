@@ -103,8 +103,12 @@ class TrainingHistory(Callback):
         """
         if not self.filename:
             return
-        f = self.filename+str(self.i)+'.h5'
-        self.model.save(f, overwrite=False)
+        elif self.save_every == float("inf"):
+            filename = self.filename
+        else:
+            filename = self.filename+'_'+str(self.i)
+
+        self.model.save(filename+'.h5', overwrite=False)
 
 
 class PlotEmbeddings(Callback):
