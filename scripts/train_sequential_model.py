@@ -145,5 +145,6 @@ for name, X, Y in test_data:
 
 eval_file.close
 
-os.remove(eval_filename)
-os.remove(args.save_to+'.h5')
+if args.remove:
+    os.remove(eval_filename)
+    os.remove(args.save_to+'.h5')
