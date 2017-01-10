@@ -1,12 +1,14 @@
 import argparse
 from keras.layers import SimpleRNN, GRU, LSTM
+from keras.models import load_model
 import pickle
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
-from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank       # TODO change name
+from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank, small_training_treebank, small_test_treebank
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re
+import os
 
 """
 Train a model with the default train/test and validation set
@@ -51,14 +53,21 @@ parser.add_argument("-fix_embeddings", action="store_true", help="Fix embedding 
 parser.add_argument("-fix_classifier_weights", action="store_true", help="Fix classifier weights during training")
 parser.add_argument("-fix_recurrent_weights", action="store_true", help="Fix recurrent weights during training")
 
+parser.add_argument("--remove", action="store_true", help="Remove stored model after training")
+parser.add_argument("--verbosity", "-v", type=int, choices=[0,1,2])
+parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
 
-# TODO verbosity?
 args = parser.parse_args()
 
-languages_train             = training_treebank(seed=args.seed)
-languages_val              = heldout_treebank(seed=args.seed)
-languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
+if not args.debug:
+    languages_train             = training_treebank(seed=args.seed)
+    languages_val              = heldout_treebank(seed=args.seed)
+    languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
 
+else:
+    languages_train             = small_training_treebank()
+    languages_val              = small_training_treebank()
+    languages_test              = [(name, treebank) for name, treebank in small_test_treebank()]
 
 #################################################################
 # Train model
@@ -90,18 +99,20 @@ validation_data = training.generate_training_data(data=languages_val, format=arg
 training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
         optimizer=args.optimizer, loss_function=args.loss_function,
-        epochs=args.nb_epochs, verbosity=1, filename=args.save_to,
+        epochs=args.nb_epochs, verbosity=args.verbosity, filename=args.save_to,
         save_every=False)
 
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
-pickle.dump(history, open(args.save_to + '.history', 'wb'))
+if not args.remove:
+    pickle.dump(history, open(args.save_to + '.history', 'wb'))
 
 
 ######################################################################################
 # Test model and write to file
 
-eval_filename = open(args.save_to+'_evaluation', 'w')
+eval_filename = args.save_to+'_evaluation'
+eval_file = open(eval_filename, 'w')
 
 # generate test data
 test_data = training.generate_test_data(data=languages_test, digits=digits, format=args.format) 
@@ -110,7 +121,7 @@ test_data = training.generate_test_data(data=languages_test, digits=digits, form
 def sum_settings(args):
     # create string of settings
     settings_str = ''
-    settings_str += 'Trainings architecture: %s' % args.architecture
+    settings_str += '\n\n\nTrainings architecture: %s' % args.architecture
     settings_str += '\nRecurrent layer: %s' % args.hidden
     settings_str += '\nSize hidden layer: %i' % args.size_hidden
     settings_str += '\nFormat: %s' % args.format
@@ -122,17 +133,17 @@ def sum_settings(args):
 
     return settings_str
 
-eval_filename.write(sum_settings(args))
-eval_filename.write('\n\n\n')
+eval_file.write(sum_settings(args))
 
 for name, X, Y in test_data:
     acc = training.model.evaluate(X, Y)
-    eval_filename.write(name)
-    print "Accuracy for %s:" % name,
+    eval_file.write(name)
+    print "Accuracy for \n%s:\t\t" % name,
     results = '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(1, len(acc))])
     print results
-    eval_filename.write('\n'+results)
+    eval_file.write('\n'+results)
 
-eval_filename.close
+eval_file.close
 
-
+os.remove(eval_filename)
+os.remove(args.save_to+'.h5')
