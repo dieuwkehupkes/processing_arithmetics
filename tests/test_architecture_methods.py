@@ -52,11 +52,11 @@ def test_DiagnosticClassifier_methods():
     validation_data = DC.generate_training_data(m)
 
     # test train
-    if os.path.exists('temp1.h5'):
-        os.remove('temp1.h5')
+    if os.path.exists('temp.h5'):
+        os.remove('temp.h5')
     DC.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data, optimizer='adam')
 
-    os.remove('temp1.h5')
+    os.remove('temp.h5')
 
     # test generate test data
     languages = {'L1':10, 'L2':15, 'L3':20}
@@ -124,11 +124,11 @@ def _test_architecture_methods(architecture, **classifiers):
     validation_data = A.generate_training_data(m)
 
     # test train
-    if os.path.exists('temp1.h5'):
-        os.remove('temp1.h5')
+    if os.path.exists('temp.h5'):
+        os.remove('temp.h5')
     A.train(training_data, batch_size=2, epochs=1, filename='temp', validation_data=validation_data, optimizer='adam')
 
-    os.remove('temp1.h5')
+    os.remove('temp.h5')
 
     # test generate test data
     languages = {'L1':10, 'L2':15, 'L3':20}
