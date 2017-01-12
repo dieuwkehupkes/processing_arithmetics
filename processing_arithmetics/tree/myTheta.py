@@ -26,8 +26,6 @@ class Theta(dict):
         else:
             self[('word',)] = embeddings
 
-        print 'initialized Theta. Dims:', self.dims
-
 
     def removeAll(self, toRemove=[]):
         # Remove all matrices and biases that belong to the categories in toRemove
@@ -71,7 +69,6 @@ class Theta(dict):
 
     def compositionMatrices(self):
         din = self.dims['inside'] # local dimensionality variable
-        print '\tCreate composition matrices of all kinds'
         try:
             minArity = self.dims['minArity']
         except:

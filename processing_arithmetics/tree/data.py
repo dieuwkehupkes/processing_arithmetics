@@ -1,6 +1,6 @@
 from __future__ import division
 import random
-from .core import NN as NN
+import NN as NN
 from ..arithmetics import treebanks as arithmetics
 from collections import defaultdict, Counter
 
@@ -56,16 +56,16 @@ class CompareClassifyTB(TB):
             examples.append((classifier, label))
         return examples
 
-    def evaluate(self, theta, name='', n=0, verbose=1):
+    def evaluate(self, theta, n=0, verbose=1):
         if n == 0: n = len(self.examples)
         error = 0.0
         true = 0.0
         diffs = []
-        confusion = defaultdict(Counter)
+        if verbose==1: confusion = defaultdict(Counter)
         for nw, target in self.getExamples(n):
             error += nw.evaluate(theta, target)
             prediction = nw.predict(theta=theta, activate = False)
-            confusion[target][prediction] += 1
+            if verbose == 1: confusion[target][prediction] += 1
             if prediction == target:
                 true += 1
             else:
@@ -77,10 +77,9 @@ class CompareClassifyTB(TB):
 
         accuracy = true / n
         loss = error / n
-        if verbose == 1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
-        if verbose == 1: print '\tLoss:', loss, 'Accuracy:', accuracy, 'Confusion:'
+        if verbose == 1: print '\tLoss (cross entropy):', loss, ', accuracy:', accuracy, 'Confusion:'
         if verbose == 1: print confusionS(confusion, self.labels)
-        if verbose > 0: print '\taverage absolute difference of missclassified examples:', sum(diffs) / len(diffs)
+        if verbose > 0: print '\tAverage absolute difference of missclassified examples:', sum(diffs) / len(diffs)
         return {'loss (cross entropy)': loss, 'accuracy': accuracy}
 
 
@@ -132,14 +131,12 @@ class ScalarPredictionTB(TB):
 def getTestTBs(seed, kind, comparison=False):
     for name, mtb in arithmetics.test_treebank(seed):
         if kind == 'comparison':
-            yield name, CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
-        elif kind == 'prediction':
-            yield name, ScalarPredictionTB(mtb.examples)
+            yield name, CompareClassifyTB(mtb.pairedExamples(), comparison=comparison)
         elif kind == 'RNN':
             yield name, RNNTB(mtb.examples)
 
 
-def getTBs(seed, kind, comparison=False):
+def getTBs(seed, kind='omparison', comparisonLayer=False):
     data = {}
     for part in 'train', 'heldout':
         if part == 'train':
@@ -153,9 +150,7 @@ def getTBs(seed, kind, comparison=False):
                                                #           'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000,
                                                #           'L8': 15000, 'L9': 15000})
         if kind == 'comparison':
-            data[part] = CompareClassifyTB(mtb.pairedExamples, comparison=comparison)
-        elif kind == 'prediction':
-            data[part] = ScalarPredictionTB(mtb.examples)
+            data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
         elif kind == 'RNN':
             data[part] = RNNTB(mtb.examples)
     return data

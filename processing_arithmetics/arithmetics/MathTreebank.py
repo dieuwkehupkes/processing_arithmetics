@@ -75,9 +75,12 @@ class MathTreebank():
         """
         self.examples += self.generate_examples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths)
+
+
+    def pairedExamples(self):
         examples2 = self.examples[:]
         np.random.shuffle(examples2)
-        self.pairedExamples = [(ex1[0],ex2[0],('<' if ex1[1] < ex2[1] else ('>' if ex1[1] > ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
+        return [(ex1[0],ex2[0],('<' if ex1[1] < ex2[1] else ('>' if ex1[1] > ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
 
     def add_example_from_string(self, example):
         """
