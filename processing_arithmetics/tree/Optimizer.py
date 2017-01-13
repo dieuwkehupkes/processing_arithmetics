@@ -2,7 +2,7 @@ import numpy as np
 import myTheta
 
 class Optimizer():
-    def __init__(self, theta, lr = 0.01, lambdaL2 = 0):
+    def __init__(self, theta, lr = 0.01, lambdaL2 = 0.0001):
         self.theta = theta
         self.lr = lr
         self.lambdaL2 = lambdaL2
@@ -11,8 +11,8 @@ class Optimizer():
         return self.theta.gradient()
 
 # regularization
-# TODO: check if this is correct (mostly the 'amount' of regularization)
-    def regularize(self, portion, tofix = []):
+# TODO: check if this is correct 
+    def regularize(self, portion=1, tofix = []):
         if self.lambdaL2 == 0: return
         for name in self.theta.keys():
             if name[0] in tofix: continue
@@ -26,9 +26,8 @@ class SGD(Optimizer):
     def __init__(self, theta, lr = 0.01, lambdaL2 = 0):
         Optimizer.__init__(self,theta, lr=lr, lambdaL2=lambdaL2)
 
-    def update(self, grads, portion, tofix=[]):
-        lr = portion * self.lr
-        self.regularize(lr, tofix)
+    def update(self, grads, tofix=[]):
+        lr =  self.lr
 
         for key, grad in grads.iteritems():
             if key[0] in tofix:
@@ -46,9 +45,8 @@ class Adagrad(Optimizer):
         self.histgrad = self.theta.gradient()
         self.epsilon = epsilon
 
-    def update(self, grads, portion, tofix=[]):
+    def update(self, grads, tofix=[]):
         lr = self.lr
-        self.regularize(portion*lr, tofix)
 
         for key, grad in grads.iteritems():
             if key[0] in tofix:
@@ -74,9 +72,8 @@ class Adam(Optimizer):
         self.ms = theta.gradient()
         self.vs = theta.gradient()
 
-    def update(self, grads, portion, tofix=[]):
+    def update(self, grads, tofix=[]):
         self.t += 1
-        self.regularize(portion*self.lr, tofix)
 
         factor = (1 - self.beta_2**self.t)**0.5/(1 - self.beta_1**self.t)
         lr = factor*self.lr

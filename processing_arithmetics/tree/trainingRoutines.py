@@ -42,7 +42,8 @@ def plainTrain(optimizer, tTreebank, hTreebank, hyperParams, nEpochs, nStart = 0
             error,grads = trainBatch(optimizer.theta, minibatch, toFix=hyperParams['toFix'])
             if verbose>0 and batch % verbose == 0:
                 print ('\tBatch '+str(batch)+', average error: '+str(error / len(minibatch))+', theta norm: '+str(optimizer.theta.norm()))
-            optimizer.update(grads,len(minibatch)/len(tData))
+            optimizer.update(grads)
+        optimizer.regularize()
 
         evals['heldout'].append(hTreebank.evaluate(optimizer.theta,verbose = 0))
         evals['train'].append(tTreebank.evaluate(optimizer.theta,verbose = 0))
