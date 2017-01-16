@@ -1,8 +1,10 @@
 *.pyc
 .idea/*
 *.swp
+/scripts/_untested_*
 /treebased/trainedModels/*
 /treebasedDebug/trainedModels/*
 /treebased/keras_model/kerasTrainedModels/*
 /treebasedDebug/keras_model/kerasTrainedModels/*
 /keras
+/processing_arithmetics.egg-info
