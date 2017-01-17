@@ -10,6 +10,13 @@ class TrainingHistory(Callback):
     during training.
     """
     def __init__(self, metrics, recurrent_id,  save_every, filename, param_id=1):
+        """
+        :param metrics:        metrics to be monitored during training
+        :param recurrent_id:   id of the recurrent layer 
+        :param save_every:     store model every save_every epochs
+        :param filename:       filename to write trained model to
+        :param_id:             
+        """
         assert (isinstance(metrics, dict) or isinstance(metrics, list))
         self.recurrent_id = recurrent_id
         self.param_id = param_id
@@ -19,31 +26,12 @@ class TrainingHistory(Callback):
         else:
             self.save_every = float("inf")
         self.filename = filename
-        if isinstance(metrics, dict):
-            self.mo = True
-        else:
-            self.mo = False
+        if isinstance(metrics, list):
+            self.metrics = {'output': metrics}
 
     def on_train_begin(self, logs={}):
 
         # if metrics is a dictionary, model has multiple outputs
-        if self.mo:
-            self.on_train_begin_mo(logs)
-        else:
-            self.on_train_begin_1o(logs)
-
-        self.esp = []                   # track esp recurrent layer
-        self.i = 0                      # track epoch nr
-
-    def on_train_begin_1o(self, logs):
-
-        self.losses = []                # track training loss
-        self.val_losses = []            # track validation loss
-        self.prediction_error = []      # track training prediction error
-        self.metrics_train = dict([(metric, []) for metric in self.metrics])       # track metrics on training set
-        self.metrics_val = dict([(metric, []) for metric in self.metrics])         # treck metrics on validation set
-
-    def on_train_begin_mo(self, logs):
         self.losses = dict([(output, []) for output in self.metrics])
         self.val_losses = dict([(output, []) for output in self.metrics])
         self.prediction_error = dict([(output, []) for output in self.metrics])
@@ -51,34 +39,13 @@ class TrainingHistory(Callback):
         self.metrics_train = dict([(output, dict([(self.metrics[output][metric], []) for metric in xrange(len(self.metrics[output]))])) for output in self.metrics])       # track metrics on training set
         self.metrics_val = dict([(output, dict([(self.metrics[output][metric], []) for metric in xrange(len(self.metrics[output]))])) for output in self.metrics])       # track metrics on training set
 
+        self.esp = []                   # track esp recurrent layer
+        self.i = 0                      # track epoch nr
 
     def on_epoch_end(self, epoch, logs={}):
         """
         Append tracking objects to their respective lists
         """
-        if self.mo:
-            self.on_epoch_end_mo(epoch, logs)
-        else:
-            self.on_epoch_end_1o(epoch, logs)
-
-        if self.i % self.save_every == 0 and self.i != 0:
-            self.write_to_file()
-
-        self.i += 1
-
-        # compute esp
-        # recurrent_weights = self.model.layers[self.recurrent_id].get_weights()[self.param_id]
-        # spec = np.max(np.absolute(np.linalg.eig(recurrent_weights)[0]))
-        # self.esp.append(spec)
-
-    def on_epoch_end_1o(self, epoch, logs):
-        self.losses.append(logs.get('loss'))
-        self.val_losses.append(logs.get('val_loss'))
-        for metric in self.metrics:
-            self.metrics_train[metric].append(logs.get(metric))
-            self.metrics_val[metric].append(logs.get('val_'+metric))
-
-    def on_epoch_end_mo(self, epoch, logs):
         for output in self.metrics:
             if len(self.metrics) == 1:
                 name = ''
@@ -92,10 +59,19 @@ class TrainingHistory(Callback):
                 self.metrics_train[output][metric].append(logs.get(name+metric))
                 self.metrics_val[output][metric].append(logs.get('val_'+name+metric))
 
+        if self.i % self.save_every == 0 and self.i != 0:
+            self.write_to_file()
+
+        self.i += 1
+
+        # compute esp
+        # recurrent_weights = self.model.layers[self.recurrent_id].get_weights()[self.param_id]
+        # spec = np.max(np.absolute(np.linalg.eig(recurrent_weights)[0]))
+        # self.esp.append(spec)
+
 
     def on_train_end(self, logs):
         self.write_to_file()
-
 
     def write_to_file(self):
         """
