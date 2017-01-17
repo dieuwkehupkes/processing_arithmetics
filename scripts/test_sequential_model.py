@@ -3,7 +3,7 @@ from __future__ import print_function
 from processing_arithmetics.sequential.analyser import visualise_hidden_layer
 from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
 from processing_arithmetics.arithmetics import MathTreebank
-from processing_arithmetics.arithmetics.treebanks import test_treebank
+from processing_arithmetics.arithmetics.treebanks import treebank
 
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 
@@ -29,7 +29,7 @@ parser.add_argument("metrics", nargs='*', help="Add if you want to test metrics 
 
 args = parser.parse_args()
 
-languages_test = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
+languages_test = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test')]
 digits = np.arange(-10, 11)
 operators = ['+', '-']
 

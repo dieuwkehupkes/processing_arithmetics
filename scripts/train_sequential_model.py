@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
-from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank, small_training_treebank, small_test_treebank
+from processing_arithmetics.arithmetics.treebanks import treebank
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re
 import os
@@ -59,15 +59,10 @@ parser.add_argument("--debug", action="store_true", help="Run with small treeban
 
 args = parser.parse_args()
 
-if not args.debug:
-    languages_train             = training_treebank(seed=args.seed)
-    languages_val              = heldout_treebank(seed=args.seed)
-    languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
+languages_train = treebank(seed=args.seed, kind='train', debug=args.debug)
+languages_val = treebank(seed=args.seed, kind='heldout', debug=args.debug)
+languages_test = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test',debug=args.debug)]
 
-else:
-    languages_train             = small_training_treebank()
-    languages_val              = small_training_treebank()
-    languages_test              = [(name, treebank) for name, treebank in small_test_treebank()]
 
 #################################################################
 # Train model
