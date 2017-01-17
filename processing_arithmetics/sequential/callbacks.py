@@ -105,6 +105,7 @@ class VisualiseEmbeddings(Callback):
         assert self.model.layers[self.embeddings_id].get_weights()[0].shape[1] == 2, "only 2D embddings can be visualised"
 
         img = []
+        weights = self.model.layers[self.embeddings_id].get_weights()[0]
         for i in xrange(1, len(weights)):
             xy = tuple(weights[i])
             x, y = xy
