@@ -44,6 +44,7 @@ parser.add_argument("--loss_function", "-loss", help="Loss for training", choice
 parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
 parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
 parser.add_argument("--val_split", help="Set validation split", default=0.1)
+parser.add_argument("--test", action="store_true", help="Test model after training")
 
 parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=max_length(15))
 
@@ -56,6 +57,7 @@ parser.add_argument("-fix_recurrent_weights", action="store_true", help="Fix rec
 parser.add_argument("--remove", action="store_true", help="Remove stored model after training")
 parser.add_argument("--verbosity", "-v", type=int, choices=[0,1,2])
 parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
+parser.add_argument("--visualise_embeddings", action="store_true", help="Visualise embeddings after training")
 
 args = parser.parse_args()
 
@@ -100,7 +102,7 @@ training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
         optimizer=args.optimizer, loss_function=args.loss_function,
         epochs=args.nb_epochs, verbosity=args.verbosity, filename=args.save_to,
-        save_every=False)
+        save_every=False, visualise_embeddings=args.visualise_embeddings)
 
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
@@ -110,6 +112,11 @@ if not args.remove:
 
 ######################################################################################
 # Test model and write to file
+
+if not args.test:
+    os.remove(args.save_to+'.h5')
+    exit()
+
 
 eval_filename = args.save_to+'_evaluation'
 eval_file = open(eval_filename, 'w')
@@ -145,5 +152,3 @@ for name, X, Y in test_data:
 
 eval_file.close
 
-os.remove(eval_filename)
-os.remove(args.save_to+'.h5')
