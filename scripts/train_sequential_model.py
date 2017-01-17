@@ -44,6 +44,7 @@ parser.add_argument("--loss_function", "-loss", help="Loss for training", choice
 parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
 parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
 parser.add_argument("--val_split", help="Set validation split", default=0.1)
+parser.add_argument("--test", action="store_true", help="Test model after training")
 
 parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=max_length(15))
 
@@ -112,6 +113,11 @@ if not args.remove:
 ######################################################################################
 # Test model and write to file
 
+if not args.test:
+    os.remove(args.save_to+'.h5')
+    exit()
+
+
 eval_filename = args.save_to+'_evaluation'
 eval_file = open(eval_filename, 'w')
 
@@ -146,5 +152,3 @@ for name, X, Y in test_data:
 
 eval_file.close
 
-os.remove(eval_filename)
-os.remove(args.save_to+'.h5')
