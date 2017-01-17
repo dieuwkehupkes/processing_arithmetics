@@ -56,7 +56,7 @@ parser.add_argument("-fix_recurrent_weights", action="store_true", help="Fix rec
 parser.add_argument("--remove", action="store_true", help="Remove stored model after training")
 parser.add_argument("--verbosity", "-v", type=int, choices=[0,1,2])
 parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
-parser.add_argument("--plot_embeddings", action="store_true", help="Plot embeddings after training")
+parser.add_argument("--visualise_embeddings", action="store_true", help="Visualise embeddings after training")
 
 args = parser.parse_args()
 
@@ -101,7 +101,7 @@ training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
         optimizer=args.optimizer, loss_function=args.loss_function,
         epochs=args.nb_epochs, verbosity=args.verbosity, filename=args.save_to,
-        save_every=False, plot_embeddings=args.plot_embeddings)
+        save_every=False, visualise_embeddings=args.visualise_embeddings)
 
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)

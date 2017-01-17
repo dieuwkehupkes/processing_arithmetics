@@ -87,14 +87,16 @@ class TrainingHistory(Callback):
         self.model.save(filename+'.h5', overwrite=False)
 
 
-class PlotEmbeddings(Callback):
+class VisualiseEmbeddings(Callback):
 
-    def __init__(self, N, dmap, embeddings_id):
+    def __init__(self, dmap, embeddings_id):
         """
         Plot embeddings
-        :param N:   plot embeddings every N epochs
         """
-        self.N = N
+        self.fig = plt.figure(figsize=(6,6))
+        self.ax = self.fig.add_subplot(1, 1, 1)
+        self.ax.set_xlim([-1, 1])
+        self.ax.set_ylim([-1, 1])
         self.embeddings_id = embeddings_id
         self.dmap = dict(zip(dmap.values(), dmap.keys()))
 
@@ -102,26 +104,26 @@ class PlotEmbeddings(Callback):
         # check if embeddings have correct dimensionality
         assert self.model.layers[self.embeddings_id].get_weights()[0].shape[1] == 2, "only 2D embddings can be visualised"
 
-    def on_train_end(self, logs={}):
-        # Plot weights last time after training ended
-        self.plot()
+        self.imgs = []
 
-    def plot(self):
-        """
-        Plot weights
-        """
-        weights = self.model.layers[self.embeddings_id].get_weights()[0]
-        # find limits
-        xmin, ymin = 1.1 * weights.min(axis=0)
-        xmax, ymax = 1.1 * weights.max(axis=0)
-        plt.clf()
-        for i in xrange(1, len(weights)):
-            xy = tuple(weights[i])
-            x, y = xy
-            plt.plot(x, y, 'o')
-            plt.annotate(self.dmap[i], xy=xy)
-            plt.xlim([xmin, xmax])
-            plt.ylim([ymin, ymax])
+    def on_epoch_end(self, epoch, logs={}):
+        # get snapshot of the embedding weights every 5 batches
+        if epoch % 1 == 0:
+            weights = self.model.layers[self.embeddings_id].get_weights()[0]
+            img = []
+            for i in xrange(1, len(weights)):
+                xy = tuple(weights[i])
+                x, y = xy
+                img += self.ax.plot(x, y, 'o')
+                img.append(self.ax.annotate(self.dmap[i], xy=xy))
+
+            plt.plot()
+            self.imgs.append(img)
+
+
+    def on_train_end(self, logs={}):
+        # Create animation of weight changes
+        anim = animation.ArtistAnimation(self.fig, self.imgs, interval=500, blit=False, repeat_delay=3000)
         plt.show()
 
 

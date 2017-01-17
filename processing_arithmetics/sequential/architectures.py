@@ -4,7 +4,7 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
-from .callbacks import TrainingHistory, PlotEmbeddings
+from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
 import copy
@@ -187,12 +187,12 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
                                         after training.
-        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+        :param visualise_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
                                         embeddings.
         """
         X_train, Y_train = training_data
@@ -205,7 +205,7 @@ class Training(object):
         # compile model
         self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
 
-        callbacks = self.generate_callbacks(plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
+        callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
         sample_weight = self.get_sample_weights(training_data, sample_weight)
 
@@ -440,7 +440,7 @@ class Training(object):
 
         if plot_embeddings:
             if plot_embeddings is True:
-                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap, embeddings_id=embeddings_id)
+                embeddings_plot = VisualiseEmbeddings(self.dmap, embeddings_id=embeddings_id)
                 callbacks.append(embeddings_plot)
             else:
                 pass
