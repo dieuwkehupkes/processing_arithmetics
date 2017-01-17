@@ -102,12 +102,6 @@ class PlotEmbeddings(Callback):
         # check if embeddings have correct dimensionality
         assert self.model.layers[self.embeddings_id].get_weights()[0].shape[1] == 2, "only 2D embddings can be visualised"
 
-    def on_epoch_end(self, epoch, logs={}):
-        # Get a snapshot of the weight matrix every 5 batches
-        if epoch % self.N == 0 and epoch != 0:
-            # plot embeddings
-            self.plot()
-
     def on_train_end(self, logs={}):
         # Plot weights last time after training ended
         self.plot()

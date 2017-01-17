@@ -440,10 +440,10 @@ class Training(object):
 
         if plot_embeddings:
             if plot_embeddings is True:
-                pass
-            else:
                 embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap, embeddings_id=embeddings_id)
                 callbacks.append(embeddings_plot)
+            else:
+                pass
 
         return callbacks
 
