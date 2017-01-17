@@ -429,7 +429,7 @@ class Training(object):
         """
         Generate sequence of callbacks to use during training
         :param recurrent_id:
-        :param weights_animation:        set to true to generate visualisation of embeddings
+        :param weights_animation:           set to true to generate visualisation of embeddings
         :param plot_embeddings:             generate scatter plot of embeddings every plot_embeddings epochs
         :param print_every:                 print summary of results every print_every epochs
         :return:
@@ -603,7 +603,7 @@ class ComparisonTraining(Training):
         pad_to = self.input_length
 
         # loop over examples
-        for example1, example2, compare in treebank.pairedExamples:
+        for example1, example2, compare in treebank.pairedExamples():
             input_seq1 = [self.dmap[i] for i in example1.toString(format).split()]
             input_seq2 = [self.dmap[i] for i in example2.toString(format).split()]
             answer = np.zeros(3)
