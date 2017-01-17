@@ -1,9 +1,9 @@
 from __future__ import division
 
-from processing_arithmetics.tree import data, myTheta
+from processing_arithmetics.treebased import data, myTheta
 import pickle
-from processing_arithmetics.tree import trainingRoutines as ctr
-from processing_arithmetics.tree import predictionTraining as ptr
+from processing_arithmetics.treebased import trainingRoutines as ctr
+from processing_arithmetics.treebased import predictionTraining as ptr
 from processing_arithmetics.arithmetics import treebanks
 import argparse
 import os
@@ -49,7 +49,7 @@ def main(args):
     predictionArgs = {k[:-1]: v for (k, v) in args.iteritems() if k[-1] == 'P'}
     predictionArgs['outDir'] = args['outDir']
     print('Prediction training:' + str(predictionArgs))
-    ptr.trainPrediction(predictionArgs,datasetP,str(001))
+    ptr.trainPrediction(predictionArgs,datasetP,'prediction')
 
 
 def mybool(string):
