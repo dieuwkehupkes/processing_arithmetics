@@ -113,10 +113,11 @@ class VisualiseEmbeddings(Callback):
             img.append(self.ax.annotate(self.dmap[i], xy=xy))
         plt.plot()
         self.imgs = [img]
+        self.i=0
 
-    def on_epoch_end(self, epoch, logs={}):
-        # get snapshot of the embedding weights every 5 batches
-        if epoch % 1 == 0:
+    def on_batch_end(self, batch, logs={}):
+        # get snapshot of the embedding weights every 20 batches
+        if self.i % 50 == 0:
             weights = self.model.layers[self.embeddings_id].get_weights()[0]
             img = []
             for i in xrange(1, len(weights)):
@@ -127,6 +128,7 @@ class VisualiseEmbeddings(Callback):
 
             plt.plot()
             self.imgs.append(img)
+        self.i+=1
 
 
     def on_train_end(self, logs={}):
