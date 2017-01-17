@@ -99,6 +99,7 @@ class VisualiseEmbeddings(Callback):
         self.ax.set_ylim([-1, 1])
         self.embeddings_id = embeddings_id
         self.dmap = dict(zip(dmap.values(), dmap.keys()))
+        self.cmap = self.make_cmap(self.dmap)
 
     def on_train_begin(self, logs={}):
         # check if embeddings have correct dimensionality
@@ -123,7 +124,7 @@ class VisualiseEmbeddings(Callback):
             for i in xrange(1, len(weights)):
                 xy = tuple(weights[i])
                 x, y = xy
-                img += self.ax.plot(x, y, 'o')
+                img += self.ax.plot(x, y, 'o', color=self.cmap[i])
                 img.append(self.ax.annotate(self.dmap[i], xy=xy))
 
             plt.plot()
@@ -135,6 +136,24 @@ class VisualiseEmbeddings(Callback):
         # Create animation of weight changes
         anim = animation.ArtistAnimation(self.fig, self.imgs, interval=500, blit=False, repeat_delay=3000)
         plt.show()
+
+    def make_cmap(self, dmap):
+        N = len(dmap)-4
+        colorscale = plt.get_cmap('summer', N) 
+        cmap = {}
+        for word_id in dmap:
+            try:
+                cmap[word_id] = colorscale(int(dmap[word_id])+10)
+            except ValueError:
+                if dmap[word_id] in ['(', ')']:
+                    cmap[word_id] = 'black'
+                elif dmap[word_id] in ['+', '-']:
+                    cmap[word_id] = 'red'
+                else:
+                    print("This is not supposed to happen")
+        
+        return cmap
+
 
 
 class DrawWeights(Callback):
