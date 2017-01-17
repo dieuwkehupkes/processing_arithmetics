@@ -104,7 +104,14 @@ class VisualiseEmbeddings(Callback):
         # check if embeddings have correct dimensionality
         assert self.model.layers[self.embeddings_id].get_weights()[0].shape[1] == 2, "only 2D embddings can be visualised"
 
-        self.imgs = []
+        img = []
+        for i in xrange(1, len(weights)):
+            xy = tuple(weights[i])
+            x, y = xy
+            img += self.ax.plot(x, y, 'o')
+            img.append(self.ax.annotate(self.dmap[i], xy=xy))
+        plt.plot()
+        self.imgs = [img]
 
     def on_epoch_end(self, epoch, logs={}):
         # get snapshot of the embedding weights every 5 batches
