@@ -83,74 +83,49 @@ class CompareClassifyTB(TB):
         return {'loss (cross entropy)': loss, 'accuracy': accuracy}
 
 
-class ScalarPredictionTB(TB):
-    def __init__(self, examples):
-        self.examples = self.convertExamples(examples)
+# def getTestTBs(seed, kind, comparison=False, debug=False):
+#     for name, mtb in arithmetics.test_treebank(seed,):
+#         if kind == 'comparison':
+#             yield name, CompareClassifyTB(mtb.pairedExamples(), comparison=comparison)
+#         elif kind == 'RNN':
+#             yield name, RNNTB(mtb.examples)
 
-    def convertExamples(self, items):
-        examples = []
-        for tree, label in items:
-            predictor = NN.Predictor(NN.RNN(tree))
-            examples.append((predictor, label))
-        return examples
-
-    def evaluate(self, theta, name='', n=0, verbose=1):
-        if n == 0: n = len(self.examples)
-        sse = 0.0
-        sspe = defaultdict(float)
-        lens = defaultdict(int)
-        true = 0.0
-        for nw, target in self.getExamples(n):
-
-            pred = nw.predict(theta, roundoff=True)
-            sse += nw.evaluate(theta, target, activate=False, roundoff=False)
-            length = int((
-                         nw.length + 1) / 2)  # number of leaves = the number of digits + the number of operators, which is #digits-1
-            sspe[length] += nw.error(theta, target, activate=False, roundoff=True)
-            lens[length] += 1
-            if target == pred: true += 1
-            if verbose == 2:
-                print 'length:', length, (
-                    'right' if target == pred else 'wrong'), 'prediction:', pred, 'target:', target, 'error:', nw.error(
-                    theta,
-                    target,
-                    activate=False,
-                    roundoff=True), '(' + str(
-                    nw.error(theta, target, activate=False, roundoff=False)) + ')'
-
-        mse = sse / n
-        accuracy = true / n
-        mspe = sum(sspe.values()) / n
-        if verbose == 1: print '\tEvaluation on ' + name + ' data (' + str(n) + ' examples):'
-        if verbose == 1: print '\tLoss (MSE):', mse, 'Accuracy:', accuracy, 'MSPE:', mspe
-        if verbose == 1: print '\tMSPE per length: ', [
-            (length, (sspe[length] / lens[length] if lens[length] > 0 else 'undefined')) for length in sspe.keys()]
-        return {'loss (mse)': mse, 'accuracy': accuracy, 'mspe': mspe}
-
-
-def getTestTBs(seed, kind, comparison=False):
-    for name, mtb in arithmetics.test_treebank(seed):
-        if kind == 'comparison':
-            yield name, CompareClassifyTB(mtb.pairedExamples(), comparison=comparison)
-        elif kind == 'RNN':
-            yield name, RNNTB(mtb.examples)
-
-
-def getTBs(seed, kind='omparison', comparisonLayer=False):
+def data4comparison(seed, comparisonLayer=False, debug = False):
     data = {}
     for part in 'train', 'heldout':
-        if part == 'train':
-            mtb = arithmetics.training_treebank(seed)
-        elif part == 'heldout':
-            mtb = arithmetics.heldout_treebank(seed,
-                                               languages={'L9_left': 500, 'L9_right': 500, 'L1': 5, 'L2': 50,
-                                                          'L3': 150, 'L4': 200, 'L5': 300, 'L6': 400, 'L7': 500,
-                                                          'L8': 500, 'L9': 500})
-                                               #languages={'L9_left': 15000, 'L9_right': 15000, 'L1': 50, 'L2': 500,
-                                               #           'L3': 1500, 'L4': 3000, 'L5': 5000, 'L6': 10000, 'L7': 15000,
-                                               #           'L8': 15000, 'L9': 15000})
-        if kind == 'comparison':
-            data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
-        elif kind == 'RNN':
-            data[part] = RNNTB(mtb.examples)
+        mtb = arithmetics.treebank(seed, kind=part, debug=debug)
+        data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
     return data
+
+
+
+# def getTBs(seed, kind='comparison', comparisonLayer=False, debug = False):
+#     data = {}
+#     for part in 'train', 'heldout':
+#         mtb = arithmetics.treebank(seed,kind=part,debug=debug)
+#         if kind == 'comparison':
+#             data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
+#         elif kind == 'RNN':
+#             data[part] = RNNTB(mtb.examples)
+#     return data
+
+def data4prediction(theta, seed, debug= False):
+    allData = defaultdict(lambda: defaultdict(list))
+
+
+
+    for part in 'train', 'heldout':
+        mtb = arithmetics.treebank(seed, kind=part, debug=debug)
+        for nw, target in RNNTB(mtb.examples).examples: #getTBs(seed=seed, kind='RNN',debug=debug)['train'].getExamples():
+            a = nw.activate(theta)
+            allData['X_' + part]['all'].append(a)
+            allData['Y_' + part]['all'].append(target)
+            allData['strings_' + part]['all'].append(str(nw))
+    mtbt = arithmetics.treebank(seed, kind='test', debug=debug)
+    for lan, tb in mtbt:
+        for nw, target in RNNTB(mtb.examples).getExamples():
+            a = nw.activate(theta)
+            allData['X_test'][lan].append(a)
+            allData['Y_test'][lan].append(target)
+            allData['strings_test'][lan].append(str(nw))
+    return dict(allData)
