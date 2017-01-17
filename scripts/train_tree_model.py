@@ -1,14 +1,11 @@
 from __future__ import division
-from matplotlib import pyplot as plt
 
-from processing_arithmetics.tree import data
+from processing_arithmetics.tree import data, myTheta
 import pickle
-from processing_arithmetics.tree import myTheta as myTheta
-from processing_arithmetics.tree import trainingRoutines as tr
-from processing_arithmetics.tree import Optimizer
+from processing_arithmetics.tree import trainingRoutines as ctr
+from processing_arithmetics.tree import predictionTraining as ptr
 from processing_arithmetics.arithmetics import treebanks
 import argparse
-from collections import defaultdict
 import os
 
 ''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
@@ -35,62 +32,25 @@ def installTheta(thetaFile, seed, d, comparison):
     theta.extend4Prediction(-1)
     return theta
 
-
 def main(args):
-    print args
-    hyperParams = {k:args[k] for k in ['bSize']}
-    hyperParams['toFix'] = [] # a selection of parameters can be fixed, e.g. the word embeddings
-
+    #print args
     # initialize theta (object with model parameters)
-    theta = installTheta(args['pars'],seed=args['seed'],d=(args['dim'],args['dword']),comparison=args['comparison'])
+    theta = installTheta(args['parsC'],seed=args['seed'],d=(args['dim'],args['dword']),comparison=args['comparison'])
 
-    # initialize optimizer with learning rate (other hyperparams: default values)
-    opt = args['optimizer']
-    if opt == 'adagrad': optimizer = Optimizer.Adagrad(theta,lr = args['learningRate'])
-    elif opt == 'adam': optimizer = Optimizer.Adam(theta,lr = args['learningRate'])
-    elif opt == 'sgd': optimizer = Optimizer.SGD(theta,lr = args['learningRate'])
-    else: raise RuntimeError("No valid optimizer chosen")
+    # generate training and heldout data for comparion training and train model
+    datasetC = data.data4comparison(seed=args['seed'], comparisonLayer=args['comparison'],debug=args['debug'])
+    comparisonArgs={k[:-1]:v for (k,v) in args.iteritems() if k[-1]=='C'}
+    comparisonArgs['outDir']=args['outDir']
+    print('Comparison training:'+ str(comparisonArgs))
+    ctr.trainComparison(comparisonArgs, theta, datasetC)
 
-    # generate training and heldout data
-    dataset = data.getTBs(seed=args['seed'], kind='comparison', comparisonLayer=args['comparison'])
+    # generate training and heldout data for prediction training and train model
+    datasetP = data.data4prediction(theta, seed=args['seed'],debug=args['debug'])
+    predictionArgs = {k[:-1]: v for (k, v) in args.iteritems() if k[-1] == 'P'}
+    predictionArgs['outDir'] = args['outDir']
+    print('Prediction training:' + str(predictionArgs))
+    ptr.trainPrediction(predictionArgs,datasetP,str(001))
 
-    # start training
-    # returns the scores for convergence analysis
-    # prints intermediate results
-
-    nEpochs = args['nEpochs']
-    f = args['storageFreq']
-    evals = defaultdict(list)
-
-
-    for i in range(nEpochs//f):
-      # store model parameters,
-      # train f epochs and run an evaluation
-        outFile = os.path.join(args['outDir'], 'startEpoch' + str(i*f) + '.theta.pik')
-        tr.storeTheta(optimizer.theta, outFile)
-        for name, tb in dataset.iteritems():
-            print('Evaluation on ' + name + ' data')
-            tb.evaluate(optimizer.theta, verbose=1)
-        thisEvals = tr.plainTrain(optimizer, dataset['train'], dataset['heldout'], hyperParams, nEpochs=f, nStart=i * f)
-        for name in thisEvals.iterkeys(): evals[name]+= thisEvals[name]
-
-    if nEpochs%f!=0:
-        evals = tr.plainTrain(optimizer, dataset['train'], dataset['heldout'], hyperParams, nEpochs=nEpochs%f, nStart=(i+1)* f)
-        for name in thisEvals.iterkeys(): evals[name] += thisEvals[name]
-
-    # store final model parameters and run final evaluation
-    for name, tb in dataset.iteritems():
-        print('Evaluation on '+name+' data ('+str(len(tb.examples))+' examples)')
-        tb.evaluate(optimizer.theta, verbose=1)
-
-
-    # create convergence plot
-    for name, eval in evals.items():
-        toplot = [e[key] for e in eval for key in e if 'loss' in key]
-        plt.plot(xrange(len(toplot)), toplot,label=name)
-    plt.legend()
-    plt.title([key for key in eval[0].keys() if 'loss' in key][0])
-    plt.savefig(os.path.join(args['outDir'],'convergencePlot.png'))
 
 def mybool(string):
     if string in ['F', 'f', 'false', 'False']: return False
@@ -99,22 +59,33 @@ def mybool(string):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train classifier')
+    parser.add_argument('-debug','--debug',type=mybool, default=False, required=False)
+    parser.add_argument('-s', '--seed', type=int, default=0, help='Random seed to be used', required=False)
     # storage:
-    parser.add_argument('-o','--outDir', type=str, help='Output dir to store model', required=True)
-    parser.add_argument('-p','--pars', type=str, default='', help='Existing model file', required=False)
-    # network hyperparameters:
+    parser.add_argument('-o','--outDir', type=str, help='Output dir to store models', required=True)
+    parser.add_argument('-pc','--parsC', type=str, default='', help='Existing model file (TreeRNN)', required=False)
+    parser.add_argument('-pp', '--parsP', type=str, default='', help='Existing model file (Keras)', required=False)
+    # network hyperparameters TreeRNN:
     parser.add_argument('-c','--comparison', type=int, default=0, help='Dimensionality of comparison layer (0 is no layer)', required=False)
     parser.add_argument('-d','--dim', type=int, default = 2, help='Dimensionality of internal representations', required=False)
     parser.add_argument('-dw','--dword', type=int, default = 2, help='Dimensionality of word embeddings', required=False)
-    # training hyperparameters:
-    parser.add_argument('-opt', '--optimizer', type=str, default='sgd', choices=['sgd', 'adagrad', 'adam'], help='Optimization scheme', required=False)
-    parser.add_argument('-s', '--seed', type=int, default=0, help='Random seed to be used', required=False)
-    parser.add_argument('-n','--nEpochs', type=int, default=100, help='Maximal number of epochs to train', required=False)
-    parser.add_argument('-f', '--storageFreq', type=int, default=10, help='Model is stored after every f epochs',
+    # network hyperparameters Prediction:
+    parser.add_argument('-dh', '--dHiddenP', type=int, default=0, help='Dimensionality of hidden layer (0 is no layer)', required=False)
+    parser.add_argument('-loss', '--lossP',choices=['mse', 'mae'], default='mse', help='Loss function for prediction', required=False)
+    # training hyperparameters comparison:
+    parser.add_argument('-optC', '--optimizerC', type=str, default='sgd', choices=['sgd', 'adagrad', 'adam'], help='Optimization scheme for comparison training', required=False)
+    parser.add_argument('-nc','--nEpochsC', type=int, default=100, help='Number of epochs for comparison training', required=False)
+    parser.add_argument('-bc','--bSizeC', type=int, default = 50, help='Batch size for comparison training', required=False)
+    parser.add_argument('-f', '--storageFreqC', type=int, default=10, help='Model is evaluated and stored after every f epochs', required=False)
+    parser.add_argument('-lc','--lambdaC', type=float, default=0.0001, help='Regularization parameter lambdaL2', required=False)
+    parser.add_argument('-lrc','--learningRateC', type=float, default=0.01, help='Learning rate parameter', required=False)
+
+    # training hyperparameters prediction:
+    parser.add_argument('-np', '--nEpochsP', type=int, default=100, help='Number of epochs for prediction training',
                         required=False)
-    parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
-    parser.add_argument('-l','--lambda', type=float, default=0.0001, help='Regularization parameter lambdaL2', required=False)
-    parser.add_argument('-lr','--learningRate', type=float, default=0.01, help='Learning rate parameter', required=False)
+    parser.add_argument('-bp', '--bSizeP', type=int, default=50, help='Batch size for prediction training', required=False)
+    parser.add_argument('-lp','--lambdaP', type=float, default=0.0001, help='Regularization parameter lambdaL2', required=False)
+    parser.add_argument('-lrp','--learningRateP', type=float, default=0.01, help='Learning rate parameter', required=False)
 
 
     args = vars(parser.parse_args())

@@ -11,7 +11,7 @@ class Optimizer():
         return self.theta.gradient()
 
 # regularization
-# TODO: check if this is correct 
+# TODO: check if this is correct
     def regularize(self, portion=1, tofix = []):
         if self.lambdaL2 == 0: return
         for name in self.theta.keys():
