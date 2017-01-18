@@ -162,8 +162,8 @@ class Classifier(Node):
     def __init__(self, children, labels, comparison):
         self.comparison = comparison
         if comparison:
-            comparisonlayer = Node(children, [self], ('comparison',), 'ReLU')
-            Node.__init__(self, [comparisonlayer], [], ('classify',), 'softmax')
+            comparisonlayer = Node(children, ('comparison',), 'ReLU')
+            Node.__init__(self, [comparisonlayer], ('classify',), 'softmax')
         else:
             Node.__init__(self, inputs=children,cat=('classify',), nonlinearity='softmax')
         self.labels = labels
