@@ -30,15 +30,15 @@ class MathExpression(Tree):
         if True: #len(children)>1:
             Tree.__init__(self, label, children)
             if len(children) > 1:
-                self.maxDepth = max([child.maxDepth for child in children]) + 1
+                self.max_depth = max([child.max_depth for child in children]) + 1
                 self.length = sum([child.length for child in children])
             else:
-                self.maxDepth = 0
+                self.max_depth = 0
                 self.length = 1
 
         else:
             Tree.__init__(self, '',)
-            self.maxDepth = 0
+            self.max_depth = 0
             self.length = 1
 
     @classmethod
@@ -56,19 +56,19 @@ class MathExpression(Tree):
         nltk_str = ' '.join(nltk_list)
 
         tree = Tree.fromstring(nltk_str)
-        return cls.fromTree(tree)
+        return cls.from_tree(tree)
 
     @classmethod
-    def fromTree(cls, tree):
+    def from_tree(cls, tree):
         if type(tree) is Tree:
-            children = [cls.fromTree(c) for c in tree]
+            children = [cls.from_tree(c) for c in tree]
             return cls(tree.label(), children)
         else: return cls(tree,[])
 
     def property(self, propname):
         if propname == 'length': return self.length
-        elif propname == 'maxDepth': return self.maxDepth
-        elif propname == 'accumDepth': return self.length-1  #number of left brackets, len(re.findall('\(',str(self)))
+        elif propname == 'max_depth': return self.max_depth
+        elif propname == 'accum_depth': return self.length-1  #number of left brackets, len(re.findall('\(',str(self)))
         else: raise KeyError(propname+' is not a valid property of MathExpression')
 
     def solve(self):
@@ -78,17 +78,17 @@ class MathExpression(Tree):
         return eval(self.__str__())
 
 
-    def toString(self, format='infix', digit_noise=None, operator_noise=None):
+    def to_string(self, format='infix', digit_noise=None, operator_noise=None):
         """
         :param numbers noise: standard deviation of digit noise
         :param operator_noise: change of changing operator
         """
         operators = ['+','-']
         if self.label() == 'dummy':
-            childrenStr = [c.toString(format,digit_noise,operator_noise) for c in self]
-            if format == 'infix': return '( '+' '.join([childrenStr[0],childrenStr[1]]+childrenStr[2:])+' )'
-            elif format == 'prefix': return '( '+' '.join([childrenStr[1],childrenStr[0]] + childrenStr[2:])+' )'
-            elif format == 'postfix': return '( '+' '.join([childrenStr[0]]+childrenStr[2:] + [childrenStr[1]])+' )'
+            children_str = [c.to_string(format,digit_noise,operator_noise) for c in self]
+            if format == 'infix': return '( '+' '.join([children_str[0],children_str[1]]+children_str[2:])+' )'
+            elif format == 'prefix': return '( '+' '.join([children_str[1],children_str[0]] + children_str[2:])+' )'
+            elif format == 'postfix': return '( '+' '.join([children_str[0]]+children_str[2:] + [children_str[1]])+' )'
             else: raise ValueError("%s Unexisting format" % format)
         else:
             if self.label() in operators:
@@ -105,9 +105,9 @@ class MathExpression(Tree):
         """
         Return string representation of tree.
         """
-        return self.toString()
+        return self.to_string()
 
-    def solveRecursively(self, format='infix', return_sequences=False):
+    def solve_recursively(self, format='infix', return_sequences=False):
         """
         Solve expression recursively.
         """
@@ -237,7 +237,7 @@ class MathExpression(Tree):
         return cur
                 
 
-    def solveLocally(self, format='infix', return_sequences=False):
+    def solve_locally(self, format='infix', return_sequences=False):
         """
         Input a syntactically correct bracketet
         expression, solve by counting brackets
@@ -368,8 +368,8 @@ class MathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
-        intermediate_recursively, stack_recursively, subtracting_recursively = self.solveRecursively(return_sequences=True, format=format)
+        intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
+        intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
 
         self.targets = {}
 
@@ -403,7 +403,7 @@ class MathExpression(Tree):
         """
         Iterate over symbols in expression.
         """
-        for symbol in self.toString(format=format).split():
+        for symbol in self.to_string(format=format).split():
             yield symbol
 
 # TODO this should perhaps go in a script instead of here
@@ -422,8 +422,8 @@ def make_noise_plots():
         sae[name] = 0
         sse[name] = 0
         for expression, answer in m.examples:
-            results_locally = np.array([expression.solveLocally(format="infix", return_sequences=True)[0]])
-            results_recursively = np.array([expression.solveRecursively(format="infix", return_sequences=True)[0]])
+            results_locally = np.array([expression.solve_locally(format="infix", return_sequences=True)[0]])
+            results_recursively = np.array([expression.solve_recursively(format="infix", return_sequences=True)[0]])
 
             sae[name] += np.mean(np.absolute(results_locally-results_recursively))
             sse[name] += np.mean(np.square(results_locally-results_recursively))

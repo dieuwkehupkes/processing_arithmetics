@@ -26,7 +26,7 @@ def _test_solve_locally(format):
     for length in np.arange(3,10):
         examples = m.generate_examples(operators=operators, digits=digits, n=500, lengths=[length])
         for expression, answer in examples:
-            outcome = expression.solveLocally(format=format)
+            outcome = expression.solve_locally(format=format)
             if outcome != answer:
                 incorrect += 1
 
@@ -40,7 +40,7 @@ def _test_solve_recursively(format):
     for length in np.arange(3,10):
         examples = m.generate_examples(operators=operators, digits=digits, n=500, lengths=[length])
         for expression, answer in examples:
-            outcome = expression.solveRecursively(format=format)
+            outcome = expression.solve_recursively(format=format)
             if outcome != answer:
                 incorrect += 1
 

@@ -2,22 +2,22 @@ import pytest
 import numpy as np
 
 from processing_arithmetics.treebased import data, myTheta
-from processing_arithmetics.sequential.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training
-from keras.layers import SimpleRNN
+# from processing_arithmetics.sequential.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training
+# from keras.layers import SimpleRNN
 import pickle
-import os
+# import os
 
 def test_model_storage():
-    model = myTheta.installTheta('', 0, [2,2], 5)
+    model = myTheta.install_theta('', 0, [2,2], 5)
     #print model[('comparison','B')]
     assert model[('comparison','B')].shape[0] == 5
     assert model[('comparison', 'M')].shape == (5,4)
     modelfile = 'modeltmp.pik'
     with open(modelfile, 'wb') as f: pickle.dump(model, f)
 
-    model = myTheta.installTheta('', 0, [0,0], 0)
+    model = myTheta.install_theta('', 0, [0,0], 0)
     assert ('comparison',) not in model
-    model = myTheta.installTheta(modelfile, 0, 2, 5)
+    model = myTheta.install_theta(modelfile, 0, 2, 5)
     assert model[('comparison', 'M')].shape == (5, 4)
 
 def _numgr(nw, target, theta, item, itemgrad, epsilon = 0.0001):
@@ -27,16 +27,16 @@ def _numgr(nw, target, theta, item, itemgrad, epsilon = 0.0001):
     #for i in range(len(item)):
         old = item[i]
         item[i]= old + epsilon
-        errorPlus = nw.error(theta, target, True)
+        error_plus = nw.error(theta, target, True)
         item[i] = old - epsilon
-        errorMin = nw.error(theta, target, True)
+        error_min = nw.error(theta, target, True)
         item[i] = old
-        if errorPlus==errorMin: itemgrad[i]=0
-        else: itemgrad[i] = (errorPlus - errorMin) / (2 * epsilon)
+        if error_plus==error_min: itemgrad[i]=0
+        else: itemgrad[i] = (error_plus - error_min) / (2 * epsilon)
         it.iternext()
 
 def test_gradient():
-    theta = myTheta.installTheta('', 0, [2,2], 5)
+    theta = myTheta.install_theta('', 0, [2,2], 5)
     dataset = data.data4comparison(0,True,True)
     for nw, target in dataset['train'].examples:
         grad = theta.gradient()

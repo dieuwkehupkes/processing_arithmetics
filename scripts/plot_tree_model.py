@@ -187,7 +187,7 @@ def plot_comparison(theta):
 
             fig, ax = pt.new_fig()
 
-            for rnn, tar in rnnTB.getExamples():
+            for rnn, tar in rnnTB.get_examples():
                 rep = rnn.activate(theta)
                 leftie = left.dot(rep)
                 rightie = right.dot(rep)
@@ -215,7 +215,7 @@ def plot_answers(theta):
     tolabel = {'+': {i: [] for i in range(-60, 61, 10)}, '-': {i: [] for i in range(-60, 61, 10)}}
     # tolabel=tolabel+tolabel[:]+tolabel[:]
     doLater = []
-    for rnn, tar in rnnTB.getExamples():
+    for rnn, tar in rnnTB.get_examples():
         rep = rnn.activate(theta)
         for i in [0, 2]:
             proj = mbits[i].dot(rep)

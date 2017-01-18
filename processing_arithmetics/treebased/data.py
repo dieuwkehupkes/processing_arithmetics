@@ -36,12 +36,12 @@ def confusion_s(matrix, labels):
     return s
 
 
-class RNNTB(TB):
+class RNNTB(TreeBank):
     def __init__(self, examples):
         self.examples = [(NN.RNN(me), target) for (me, target) in examples]
 
 
-class CompareClassifyTB(TB):
+class CompareClassifyTB(TreeBank):
     def __init__(self, examples, comparison=False):
         self.labels = ['<', '=', '>']
         self.comparison = comparison

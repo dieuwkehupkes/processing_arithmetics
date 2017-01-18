@@ -509,8 +509,8 @@ class ScalarPrediction(Training):
         X, Y = [], []
         pad_to = self.input_length
         for expression, answer in treebank.examples:
-            # str_expression = expression.toString(format).split()
-            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+            # str_expression = expression.to_string(format).split()
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             answer = answer
             X.append(input_seq)
             Y.append(answer)
@@ -603,9 +603,9 @@ class ComparisonTraining(Training):
         pad_to = self.input_length
 
         # loop over examples
-        for example1, example2, compare in treebank.pairedExamples():
-            input_seq1 = [self.dmap[i] for i in example1.toString(format).split()]
-            input_seq2 = [self.dmap[i] for i in example2.toString(format).split()]
+        for example1, example2, compare in treebank.paired_examples():
+            input_seq1 = [self.dmap[i] for i in example1.to_string(format).split()]
+            input_seq2 = [self.dmap[i] for i in example2.to_string(format).split()]
             answer = np.zeros(3)
             answer[np.argmax([compare == '<', compare == '=',  compare == '>'])] = 1
             X1.append(input_seq1)
@@ -693,7 +693,7 @@ class Seq2Seq(Training):
         # loop over examples
         for expression, answer in treebank.examples:
             expression.get_targets()
-            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
 
@@ -835,7 +835,7 @@ class DiagnosticClassifier(Training):
         # loop over examples
         for expression, answer in treebank.examples:
             expression.get_targets(format=format)
-            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             for classifier in self.classifiers:
                 target = expression.targets[classifier]
