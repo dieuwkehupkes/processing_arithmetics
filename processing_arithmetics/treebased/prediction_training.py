@@ -11,18 +11,18 @@ import pickle
 from keras.models import model_from_json
 
 
-def shuffleData(d):
+def shuffle_data(d):
     indices = np.arange(len(d[0]))
     np.random.shuffle(indices)
     return zip(*[(d[0][i], d[1][i], d[2][i]) for i in indices])
 
 
-def defineModel(hidden=None, loss='mse'):
+def define_model(hidden=None, loss='mse'):
     # generate your input layer, this is not actually containing anything,
     input_layer = Input(shape=(2,), name='input')
     # this is the classifier, activation is linear but can be different of course
     if hidden:
-        hidden_layer = Dense(hidden['dHidden'], activation=hidden['aHidden'], weights=None, trainable=True,
+        hidden_layer = Dense(hidden['d_hidden'], activation=hidden['a_hidden'], weights=None, trainable=True,
                              name='hidden')(input_layer)
         classifier = Dense(1, activation='linear', weights=None, trainable=True, name='output')(hidden_layer)
     else:
@@ -36,19 +36,19 @@ def defineModel(hidden=None, loss='mse'):
     return model
 
 
-def trainModel(model, tdata, vdata, verbose=2, n=50, batch_size=24):
+def train_model(model, tdata, vdata, verbose=2, n=50, batch_size=24):
     # train the model, takes 10 percent out of the training data for validation
     return model.fit(x=np.array(tdata[0]), y=np.array(tdata[1]),
                      validation_data=(np.array(vdata[0]), np.array(vdata[1])), batch_size=batch_size, nb_epoch=n,
                      shuffle=True, verbose=verbose)
 
 
-def saveModel(model, name='something'):
+def save_model(model, name='something'):
     model.save_weights(name + '_weights.h5', overwrite=True)
     saved_model = open(name + '.json', 'w').write(model.to_json())
 
 
-def loadModel(model_name, model_weights):
+def load_model(model_name, model_weights):
     model = model_from_json(open(model_name).read())
     model.load_weights(model_weights)
     model.compile(optimizer='adam', loss='mse',
@@ -64,7 +64,7 @@ def evaluate(model, data, name):
     return results
 
 
-def printModel(model):
+def print_model(model):
     print(model.summary())
     for layer in model.layers:
         config = layer.get_config()
@@ -75,20 +75,20 @@ def printModel(model):
                 print ''
 
 
-def plotHistory(history, loss, saveTo=None):
+def plot_history(history, loss, save_to=None):
     plt.plot(history.history['loss'], label='train')
     plt.plot(history.history['val_loss'], label='heldout')
     plt.legend()
     # plt.xticks(xrange(len(hgtistory.history['loss'])))
     plt.xlabel('Epoch')
     plt.ylabel('Loss (' + loss + ')')
-    if saveTo:
-        plt.savefig(saveTo)
+    if save_to:
+        plt.savefig(save_to)
     else:
         plt.show()
 
 
-def saveResults(results, metrics, filename):
+def save_results(results, metrics, filename):
     identifiers = []
     values = []
     for dataset in sorted(results.keys()):
@@ -98,33 +98,33 @@ def saveResults(results, metrics, filename):
         f.write(','.join(identifiers) + '\n')
         f.write(','.join([str(v) for v in values]) + '\n')
 
-def trainPrediction(args, dataset, exp):
-    if args['dHidden'] > 0:
-        hidden = {k: args[k] for k in ['dHidden', 'aHidden']}
+def train_prediction(args, dataset, exp):
+    if args['d_hidden'] > 0:
+        hidden = {k: args[k] for k in ['d_hidden', 'a_hidden']}
     else:
         hidden = None
 
-    model = defineModel(hidden=hidden, loss=args['loss'])
-    printModel(model)
+    model = define_model(hidden=hidden, loss=args['loss'])
+    print_model(model)
 
-    trainData = shuffleData((dataset['X_train']['all'], dataset['Y_train']['all'], dataset['strings_train']['all']))
-    valData = shuffleData((dataset['X_heldout']['all'], dataset['Y_heldout']['all'], dataset['strings_heldout']['all']))
-    history = trainModel(model=model, tdata=trainData, vdata=valData, n=args['nEpochs'], batch_size=args['bSize'])
+    train_data = shuffle_data((dataset['X_train']['all'], dataset['Y_train']['all'], dataset['strings_train']['all']))
+    val_data = shuffle_data((dataset['X_heldout']['all'], dataset['Y_heldout']['all'], dataset['strings_heldout']['all']))
+    history = train_model(model=model, tdata=train_data, vdata=val_data, n=args['n_epochs'], batch_size=args['b_size'])
 
-    plotHistory(history, args['loss'],os.path.join(args['outDir'], exp + 'convergence.png'))
+    plot_history(history, args['loss'],os.path.join(args['out_dir'], exp + 'convergence.png'))
 
-    saveModel(model, os.path.join(args['outDir'], exp))
+    save_model(model, os.path.join(args['out_dir'], exp))
 
     results = {}
     for kind in ['train', 'heldout']:
-        results[kind] = evaluate(model, trainData, kind)
+        results[kind] = evaluate(model, train_data, kind)
 
     for lan in sorted(dataset['X_test'].keys()):
-        testData = (dataset['X_test'][lan], dataset['Y_test'][lan], dataset['strings_test'][lan])
-        results['test_' + lan] = evaluate(model, testData, 'test ' + lan)
+        test_data = (dataset['X_test'][lan], dataset['Y_test'][lan], dataset['strings_test'][lan])
+        results['test_' + lan] = evaluate(model, test_data, 'test ' + lan)
 
-    saveResults(results, model.metrics_names, os.path.join(args['outDir'], exp + '_results.csv'))
-    saveModel(model, os.path.join(args['outDir'], exp))
+    save_results(results, model.metrics_names, os.path.join(args['out_dir'], exp + '_results.csv'))
+    save_model(model, os.path.join(args['out_dir'], exp))
 
 
 def main(args):
@@ -136,31 +136,31 @@ def main(args):
     if not os.path.exists(destination):
         os.mkdir(destination)
 
-    dataFile = os.path.join(destination, 'kerasData' + str(args['seed']) + '.pik')
-    if not os.path.exists(dataFile):
-        dataset = data.convert4Keras(args['thetaFile'], seed=args['seed'])
-        with open(dataFile, 'wb') as f:
+    data_file = os.path.join(destination, 'keras_data' + str(args['seed']) + '.pik')
+    if not os.path.exists(data_file):
+        dataset = data.convert4Keras(args['theta_file'], seed=args['seed'])
+        with open(data_file, 'wb') as f:
             pickle.dump(dataset, f)
     else:
         print 'Retrieving earlier created data'
-        with open(dataFile, 'rb') as f:
+        with open(data_file, 'rb') as f:
             data = pickle.load(f)
 
-    trainPrediction(args, dataset, exp)
+    train_prediction(args, dataset, exp)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train classifier')
     # data:
 
-    parser.add_argument('-theta', '--thetaFile', type=str, help='File with pickled Theta', required=False)
+    parser.add_argument('-theta', '--theta_file', type=str, help='File with pickled Theta', required=False)
     parser.add_argument('-exp', '--experiment', type=str, help='Identifier of the experiment', required=True)
     parser.add_argument('-o', '--out', type=str, help='Output name to store model', required=True)
     parser.add_argument('-s', '--seed', type=int, help='Random seed to be used', required=True)
-    parser.add_argument('-n', '--nEpochs', type=int, help='Number of epochs to train', required=True)
-    parser.add_argument('-b', '--bSize', type=int, default=24, help='Batch size for minibatch training', required=False)
-    parser.add_argument('-dh', '--dHidden', type=int, default=0, help='Size of hidden layer', required=False)
-    parser.add_argument('-ah', '--aHidden', type=str, choices=['linear', 'tanh', 'relu'],
+    parser.add_argument('-n', '--n_epochs', type=int, help='Number of epochs to train', required=True)
+    parser.add_argument('-b', '--b_size', type=int, default=24, help='Batch size for minibatch training', required=False)
+    parser.add_argument('-dh', '--d_hidden', type=int, default=0, help='Size of hidden layer', required=False)
+    parser.add_argument('-ah', '--a_hidden', type=str, choices=['linear', 'tanh', 'relu'],
                         help='Activation of hidden layer', required=False)
     parser.add_argument('-l', '--loss', type=str, choices=['mse', 'mae'],
                         help='Loss function to minimize', required=True)

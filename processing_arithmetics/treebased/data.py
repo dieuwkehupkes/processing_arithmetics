@@ -4,17 +4,17 @@ import NN as NN
 from ..arithmetics import treebanks as arithmetics
 from collections import defaultdict, Counter
 
-class TB():
+class TreeBank():
     def __init__(self, examples):
         self.examples = examples
 
-    def getExamples(self, n=0):
+    def get_examples(self, n=0):
         if n == 0: n = len(self.examples)
         random.shuffle(self.examples)
         return self.examples[:n]
 
 
-def confusionS(matrix, labels):
+def confusion_s(matrix, labels):
     if len(labels) < 15:
         s = '\t'
         for label in labels:
@@ -45,9 +45,9 @@ class CompareClassifyTB(TB):
     def __init__(self, examples, comparison=False):
         self.labels = ['<', '=', '>']
         self.comparison = comparison
-        self.examples = self.convertExamples(examples, comparison)
+        self.examples = self.convert_examples(examples, comparison)
 
-    def convertExamples(self, items, comparison):
+    def convert_examples(self, items, comparison):
         examples = []
 
         for left, right, label in items:
@@ -62,7 +62,7 @@ class CompareClassifyTB(TB):
         true = 0.0
         diffs = []
         if verbose==1: confusion = defaultdict(Counter)
-        for nw, target in self.getExamples(n):
+        for nw, target in self.get_examples(n):
             error += nw.evaluate(theta, target)
             prediction = nw.predict(theta=theta, activate = False)
             if verbose == 1: confusion[target][prediction] += 1
@@ -94,7 +94,7 @@ def data4comparison(seed, comparisonLayer=False, debug = False):
     data = {}
     for part in 'train', 'heldout':
         mtb = arithmetics.treebank(seed, kind=part, debug=debug)
-        data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
+        data[part] = CompareClassifyTB(mtb.paired_examples(), comparison=comparisonLayer)
     return data
 
 
@@ -110,22 +110,22 @@ def data4comparison(seed, comparisonLayer=False, debug = False):
 #     return data
 
 def data4prediction(theta, seed, debug= False):
-    allData = defaultdict(lambda: defaultdict(list))
+    all_data = defaultdict(lambda: defaultdict(list))
 
 
 
     for part in 'train', 'heldout':
         mtb = arithmetics.treebank(seed, kind=part, debug=debug)
-        for nw, target in RNNTB(mtb.examples).examples: #getTBs(seed=seed, kind='RNN',debug=debug)['train'].getExamples():
+        for nw, target in RNNTB(mtb.examples).examples: #getTBs(seed=seed, kind='RNN',debug=debug)['train'].get_examples():
             a = nw.activate(theta)
-            allData['X_' + part]['all'].append(a)
-            allData['Y_' + part]['all'].append(target)
-            allData['strings_' + part]['all'].append(str(nw))
+            all_data['X_' + part]['all'].append(a)
+            all_data['Y_' + part]['all'].append(target)
+            all_data['strings_' + part]['all'].append(str(nw))
     mtbt = arithmetics.treebank(seed, kind='test', debug=debug)
     for lan, tb in mtbt:
-        for nw, target in RNNTB(mtb.examples).getExamples():
+        for nw, target in RNNTB(mtb.examples).get_examples():
             a = nw.activate(theta)
-            allData['X_test'][lan].append(a)
-            allData['Y_test'][lan].append(target)
-            allData['strings_test'][lan].append(str(nw))
-    return dict(allData)
+            all_data['X_test'][lan].append(a)
+            all_data['Y_test'][lan].append(target)
+            all_data['strings_test'][lan].append(str(nw))
+    return dict(all_data)

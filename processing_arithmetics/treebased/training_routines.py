@@ -1,5 +1,5 @@
 from __future__ import division
-from numpy import random as npRandom
+from numpy import random as np_random
 from matplotlib import pyplot as plt
 import Optimizer
 import random as random0
@@ -11,32 +11,32 @@ from collections import defaultdict
 '''
 Storage of parameters as pickled theta object
 '''
-def storeTheta(theta, outFile):
+def store_theta(theta, out_file):
     # secure storage: keep back-up of old version until writing is complete
-    try: os.rename(outFile, outFile+'.back-up')
+    try: os.rename(out_file, out_file+'.back-up')
     except: True #file did probably not exist, don't bother
 
-    with open(outFile,'wb') as f: pickle.dump(theta,f)
+    with open(out_file,'wb') as f: pickle.dump(theta,f)
 
-    try: os.remove(outFile+'.back-up')
+    try: os.remove(out_file+'.back-up')
     except: True #file did not exist, don't bother
-    print '\tWrote theta to file: ',outFile
+    print '\tWrote theta to file: ',out_file
 
-def trainComparison(args, theta, dataset):
-    hyperParams = {k:args[k] for k in ['bSize']}
-    hyperParams['toFix'] = [] # a selection of parameters can be fixed, e.g. the word embeddings
+def train_comparison(args, theta, dataset):
+    hyper_params = {k:args[k] for k in ['b_size']}
+    hyper_params['to_fix'] = [] # a selection of parameters can be fixed, e.g. the word embeddings
     # initialize optimizer with learning rate (other hyperparams: default values)
     opt = args['optimizer']
-    if opt == 'adagrad': optimizer = Optimizer.Adagrad(theta,lr = args['learningRate'], lambdaL2=args['lambda'])
-    elif opt == 'adam': optimizer = Optimizer.Adam(theta,lr = args['learningRate'], lambdaL2=args['lambda'])
-    elif opt == 'sgd': optimizer = Optimizer.SGD(theta,lr = args['learningRate'], lambdaL2=args['lambda'])
+    if opt == 'adagrad': optimizer = Optimizer.Adagrad(theta,lr = args['learningrate'], lambda_l2=args['lambda'])
+    elif opt == 'adam': optimizer = Optimizer.Adam(theta,lr = args['learningrate'], lambda_l2=args['lambda'])
+    elif opt == 'sgd': optimizer = Optimizer.SGD(theta,lr = args['learningrate'], lambda_l2=args['lambda'])
     else: raise RuntimeError("No valid optimizer chosen")
 
     # train model
-    evals = plainTrain(optimizer, dataset, hyperParams, nEpochs=args['nEpochs'], outdir=args['outDir'])
+    evals = plain_train(optimizer, dataset, hyper_params, n_epochs=args['n_epochs'], outdir=args['out_dir'])
 
     # store learned model
-    storeTheta(theta, os.path.join(args['outDir'], 'comparisonFinalModel.theta.pik'))
+    store_theta(theta, os.path.join(args['out_dir'], 'comparisonFinalModel.theta.pik'))
 
     # run final evaluation
     for name, tb in dataset.iteritems():
@@ -50,34 +50,34 @@ def trainComparison(args, theta, dataset):
         plt.plot(xrange(len(toplot)), toplot,label=name)
     plt.legend()
     plt.title([key for key in eval[0].keys() if 'loss' in key][0])
-    plt.savefig(os.path.join(args['outDir'],'convergenceComparisonTraining.png'))
+    plt.savefig(os.path.join(args['out_dir'],'convergenceComparisonTraining.png'))
 
 '''
 Train for nEpochs epochs on tTreebank.
 Evaluate on hTreebank after each epoch
 Print out traindata performance every 'verbose' batches
 '''
-def plainTrain(optimizer, dataset, hyperParams, nEpochs, verbose=50,f=10, outdir='tmp'):
-    batchsize = hyperParams['bSize']
+def plain_train(optimizer, dataset, hyper_params, n_epochs, verbose=50,f=10, outdir='tmp'):
+    batchsize = hyper_params['b_size']
     evals = defaultdict(list)
-    tData = dataset['train'].getExamples()
+    t_data = dataset['train'].get_examples()
 
-    for i in range(nEpochs):
+    for i in range(n_epochs):
         # store model parameters,
         # train f epochs and run an evaluation
         if i%f ==0: # every f epochs: store model parameters and do verbose evaluation
-            outFile = os.path.join(outdir, 'comparisonStartEpoch' + str(i * f) + '.theta.pik')
-            storeTheta(optimizer.theta, outFile)
+            out_file = os.path.join(outdir, 'comparisonStartEpoch' + str(i * f) + '.theta.pik')
+            store_theta(optimizer.theta, out_file)
             for name, tb in dataset.iteritems():
                 print('Evaluation on ' + name + ' data')
                 tb.evaluate(optimizer.theta, verbose=1)
 
-        print 'Epoch', i, '(' + str(len(tData)) + ' examples)'
+        print 'Epoch', i, '(' + str(len(t_data)) + ' examples)'
 
-        npRandom.shuffle(tData)  # randomly split the data into parts of batchsize
-        for batch in xrange((len(tData) + batchsize - 1) // batchsize):
-            minibatch = tData[batch * batchsize:(batch + 1) * batchsize]
-            error,grads = trainBatch(optimizer.theta, minibatch, toFix=hyperParams['toFix'])
+        np_random.shuffle(t_data)  # randomly split the data into parts of batchsize
+        for batch in xrange((len(t_data) + batchsize - 1) // batchsize):
+            minibatch = t_data[batch * batchsize:(batch + 1) * batchsize]
+            error,grads = train_batch(optimizer.theta, minibatch, to_fix=hyper_params['to_fix'])
             if verbose>0 and batch % verbose == 0:
                 print ('\tBatch '+str(batch)+', average error: '+str(error / len(minibatch))+', theta norm: '+str(optimizer.theta.norm()))
             optimizer.update(grads)
@@ -90,9 +90,9 @@ def plainTrain(optimizer, dataset, hyperParams, nEpochs, verbose=50,f=10, outdir
     return evals
 
 '''
-Train a single (mini)batch, fix the parameters specified in toFix
+Train a single (mini)batch, fix the parameters specified in to_fix
 '''
-def trainBatch(theta, examples, toFix):
+def train_batch(theta, examples, to_fix):
     error = 0
     grads = theta.gradient()
     if len(examples) > 0:
@@ -104,5 +104,5 @@ def trainBatch(theta, examples, toFix):
                 label = None
             derror = nw.train(theta,grads,activate=True, target = label)
             error += derror
-    grads.removeAll(toFix)
+    grads.remove_all(to_fix)
     return error, grads

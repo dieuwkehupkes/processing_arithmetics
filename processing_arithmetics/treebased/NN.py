@@ -19,9 +19,9 @@ class Node():
         self.cat = cat
         self.nonlin = nonlinearity
 
-    def forward(self, theta, activateIn=True):
-        if activateIn:
-            [i.forward(theta, activateIn) for i in self.inputs]
+    def forward(self, theta, activate_in=True):
+        if activate_in:
+            [i.forward(theta, activate_in) for i in self.inputs]
         self.inputsignal = np.concatenate([c.a for c in self.inputs])
         self.dinputsignal = np.concatenate([c.ad for c in self.inputs])
 
@@ -33,18 +33,18 @@ class Node():
         self.a, self.ad = activation.activate(self.z, self.nonlin)
 
 
-    def backprop(self, theta, delta, gradient, moveOn=True):
+    def backprop(self, theta, delta, gradient, move_on=True):
         M = theta[self.cat + ('M',)]
         gradient[self.cat + ('M',)] += np.outer(delta, self.inputsignal)
         gradient[self.cat + ('B',)] += delta
 
-        deltaB = np.multiply(np.transpose(M).dot(delta), self.dinputsignal)
-        if moveOn:
+        delta_b = np.multiply(np.transpose(M).dot(delta), self.dinputsignal)
+        if move_on:
             lens = [len(c.a) for c in self.inputs]
             splitter = [sum(lens[:i]) for i in range(len(lens))][1:]
-            [inputNode.backprop(theta, delt, gradient, moveOn) for inputNode, delt in zip(self.inputs, np.split(deltaB, splitter))]
+            [input_node.backprop(theta, delt, gradient, move_on) for input_node, delt in zip(self.inputs, np.split(delta_b, splitter))]
         else:
-            return deltaB
+            return delta_b
 
     def __str__(self):
         return '( ' + ' '.join([str(child) for child in self.inputs]) + ' )'
@@ -57,14 +57,14 @@ class Leaf(Node):
         Node.__init__(self, inputs=[], cat=cat, nonlinearity= nonlinearity)
         self.key = key
 
-    def forward(self, theta, activateIn=True):
+    def forward(self, theta, activate_in=True):
         self.z = theta[self.cat][self.key]
         self.a, self.ad = activation.activate(self.z, self.nonlin)
 
-    def backprop(self, theta, delta, gradient, moveOn=False):
+    def backprop(self, theta, delta, gradient, move_on=False):
         gradient[self.cat][self.key] += delta
 
-    def aLen(self, theta):
+    def a_len(self, theta):
         return len(theta[self.cat][self.key])
 
     def __str__(self):
@@ -83,20 +83,20 @@ class RNN():
             return Leaf(cat=('word',), key=me.label(), nonlinearity='identity')
 
     @classmethod
-    def nodeLength(cls, node):
+    def node_length(cls, node):
         if isinstance(node, Leaf):
             return 1
         else:
-            return sum([cls.nodeLength(n) for n in node.inputs])
+            return sum([cls.node_length(n) for n in node.inputs])
 
     @classmethod
-    def getLeaves(cls, node):
+    def get_leaves(cls, node):
         if isinstance(node, Leaf):
             return [node]
         else:
             leaves = []
             for n in node.inputs:
-                leaves.extend(cls.getLeaves(n))
+                leaves.extend(cls.get_leaves(n))
             return leaves
 
     def __init__(self, me, activation='tanh'):
@@ -111,15 +111,15 @@ class RNN():
         try:
             return self.length
         except:
-            self.length = self.nodeLength(self.root)
+            self.length = self.node_length(self.root)
             return self.length
 
     def leaves(self):
-        return self.getLeaves(self.root)
+        return self.get_leaves(self.root)
 
-    def maxArity(self, node=None):
+    def max_arity(self, node=None):
         if node is None: node = self.root
-        ars = [self.maxArity(c) for c in node.inputs]
+        ars = [self.max_arity(c) for c in node.inputs]
         ars.append(len(node.inputs))
         return max(ars)
 
@@ -147,7 +147,7 @@ class Predictor(Node):
         if activate: self.forward(theta)
         delta = -2 * (target - self.a)
         # TODO: check delta message
-        self.backprop(theta, delta, gradient, moveOn=True)
+        self.backprop(theta, delta, gradient, move_on=True)
 
         return self.error(theta, target, False)
 
@@ -173,7 +173,7 @@ class Classifier(Node):
         delta = np.copy(self.a)
         true = self.labels.index(target)
         delta[true] -= 1
-        self.backprop(theta, delta, gradient, moveOn=True)
+        self.backprop(theta, delta, gradient, move_on=True)
         error = self.error(theta, target, False)
         return error
 

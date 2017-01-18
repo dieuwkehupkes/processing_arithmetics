@@ -66,9 +66,9 @@ def draw_arrow(ax, fr, to, label, style='solid', color='black', head=0.05, txtsi
     
     try: rotation = int(round(np.rad2deg(np.arctan(dy / dx))))
     except: rotation = 1
-    anLoc = (fr[0]+rotation*0.2*dx, fr[1]+rotation*0.2*dy+0.1)
+    an_loc = (fr[0]+rotation*0.2*dx, fr[1]+rotation*0.2*dy+0.1)
 
-    an = ax.text(anLoc[0], anLoc[1], label, color=txtcolor, ha="center", va="center", rotation=1,
+    an = ax.text(an_loc[0], an_loc[1], label, color=txtcolor, ha="center", va="center", rotation=1,
                  size=txtsize, zorder=1)  # ,bbox=dict(facecolor='white', edgecolor='none', fill=True, alpha=0.8))
     return [ar, an]
 
