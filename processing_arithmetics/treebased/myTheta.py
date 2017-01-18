@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 import sys
 import pickle
-
+import processing_arithmetics.arithmetics.treebanks as tb
 
 
 ''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
@@ -22,8 +22,8 @@ def installTheta(thetaFile, seed, d, comparison):
     else:
 
         dims = {'inside': d[0], 'word': d[1], 'minArity': 3, 'maxArity': 3}
-        voc = ['UNKNOWN'] + [str(w) for w in data.arithmetics.ds] + treebanks.ops
-        theta = myTheta.Theta(dims=dims, embeddings=None, vocabulary=voc, seed = seed)
+        voc = ['UNKNOWN'] + [str(w) for w in tb.ds] + tb.ops
+        theta = Theta(dims=dims, embeddings=None, vocabulary=voc, seed = seed)
         theta.extend4Classify(2,3,comparison)
         print 'Initialized model from scratch, dims:',dims
     theta.extend4Prediction(-1)

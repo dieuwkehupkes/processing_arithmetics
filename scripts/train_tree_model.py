@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument('-pc','--parsC', type=str, default='', help='Existing model file (TreeRNN)', required=False)
     parser.add_argument('-pp', '--parsP', type=str, default='', help='Existing model file (Keras)', required=False)
     # network hyperparameters TreeRNN:
-    parser.add_argument('-c','--comparison', type=int, default=0, help='Dimensionality of comparison layer (0 is no layer)', required=False)
+    parser.add_argument('-dc','--comparison', type=int, default=0, help='Dimensionality of comparison layer (0 is no layer)', required=False)
     parser.add_argument('-d','--dim', type=int, default = 2, help='Dimensionality of internal representations', required=False)
     parser.add_argument('-dw','--dword', type=int, default = 2, help='Dimensionality of word embeddings', required=False)
     # network hyperparameters Prediction:
