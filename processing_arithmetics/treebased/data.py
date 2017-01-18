@@ -82,14 +82,6 @@ class CompareClassifyTB(TB):
         if verbose > 0: print '\tAverage absolute difference of missclassified examples:', sum(diffs) / len(diffs)
         return {'loss (cross entropy)': loss, 'accuracy': accuracy}
 
-
-# def getTestTBs(seed, kind, comparison=False, debug=False):
-#     for name, mtb in arithmetics.test_treebank(seed,):
-#         if kind == 'comparison':
-#             yield name, CompareClassifyTB(mtb.pairedExamples(), comparison=comparison)
-#         elif kind == 'RNN':
-#             yield name, RNNTB(mtb.examples)
-
 def data4comparison(seed, comparisonLayer=False, debug = False):
     data = {}
     for part in 'train', 'heldout':
@@ -97,23 +89,8 @@ def data4comparison(seed, comparisonLayer=False, debug = False):
         data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
     return data
 
-
-
-# def getTBs(seed, kind='comparison', comparisonLayer=False, debug = False):
-#     data = {}
-#     for part in 'train', 'heldout':
-#         mtb = arithmetics.treebank(seed,kind=part,debug=debug)
-#         if kind == 'comparison':
-#             data[part] = CompareClassifyTB(mtb.pairedExamples(), comparison=comparisonLayer)
-#         elif kind == 'RNN':
-#             data[part] = RNNTB(mtb.examples)
-#     return data
-
 def data4prediction(theta, seed, debug= False):
     allData = defaultdict(lambda: defaultdict(list))
-
-
-
     for part in 'train', 'heldout':
         mtb = arithmetics.treebank(seed, kind=part, debug=debug)
         for nw, target in RNNTB(mtb.examples).examples: #getTBs(seed=seed, kind='RNN',debug=debug)['train'].getExamples():
