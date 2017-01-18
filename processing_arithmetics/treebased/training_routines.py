@@ -50,7 +50,7 @@ def train_comparison(args, theta, dataset):
         plt.plot(xrange(len(toplot)), toplot,label=name)
     plt.legend()
     plt.title([key for key in eval[0].keys() if 'loss' in key][0])
-    plt.savefig(os.path.join(args['out_dir'],'convergenceComparisonTraining.png'))
+    plt.savefig(os.path.join(args['out_dir'],'comparisonConvergence.png'))
 
 '''
 Train for nEpochs epochs on tTreebank.

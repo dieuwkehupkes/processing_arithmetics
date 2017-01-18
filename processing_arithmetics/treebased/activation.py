@@ -10,7 +10,7 @@ def activate(vector, nonlinearity):
         der = 1 - np.square(act)
     elif nonlinearity == 'ReLU':
         act = np.array([max(x, 0) + 0.01 * min(x, 0) for x in vector])
-        der = np.array([1 * (x >= 0) for x in vector])  # +0.01*x<0??
+        der = np.array([1 * (x >= 0)+0.01 * (x <= 0) for x in vector])
     elif nonlinearity == 'sigmoid':
         act = 1 / (1 + np.exp(-1 * vector))
         der = act * (1 - act)
