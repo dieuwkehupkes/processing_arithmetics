@@ -1,9 +1,36 @@
 from __future__ import division
 import numpy as np
 import sys
+import pickle
+
+
+
+''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
+def installTheta(thetaFile, seed, d, comparison):
+    if thetaFile != '':
+        with open(thetaFile, 'rb') as f:
+            theta = pickle.load(f)
+        print 'Initialized model from file:', thetaFile
+        if ('classify','B') not in theta: theta.extend4Classify(2, 3, comparison)
+
+        # legacy; in theta from older versions of the code 'plus' and 'minus' in the vocabulary
+        if '+' not in theta[('word',)].voc:
+            theta[('word',)].extendVocabulary(['+','-'])
+            theta[('word',)]['+'] = theta[('word',)]['plus']
+            theta[('word',)]['-'] = theta[('word',)]['minus']
+
+    else:
+
+        dims = {'inside': d[0], 'word': d[1], 'minArity': 3, 'maxArity': 3}
+        voc = ['UNKNOWN'] + [str(w) for w in data.arithmetics.ds] + treebanks.ops
+        theta = myTheta.Theta(dims=dims, embeddings=None, vocabulary=voc, seed = seed)
+        theta.extend4Classify(2,3,comparison)
+        print 'Initialized model from scratch, dims:',dims
+    theta.extend4Prediction(-1)
+    return theta
 
 '''
- Theta is an object that can hold the parameters of a complex neural network.
+ Theta is an object that holds the parameters of a complex neural network.
  A similar object 'Gradient' can be used to hold gradient values.
  The word embeddings are stored in a special object; WordMatrix
  All objects allow for pickling

@@ -1,41 +1,13 @@
 from __future__ import division
 
 from processing_arithmetics.treebased import data, myTheta
-import pickle
 from processing_arithmetics.treebased import trainingRoutines as ctr
 from processing_arithmetics.treebased import predictionTraining as ptr
-from processing_arithmetics.arithmetics import treebanks
 import argparse
-import os
-
-''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
-def installTheta(thetaFile, seed, d, comparison):
-    if thetaFile != '':
-        with open(thetaFile, 'rb') as f:
-            theta = pickle.load(f)
-        print 'Initialized model from file:', thetaFile
-        if ('classify','B') not in theta: theta.extend4Classify(2, 3, comparison)
-
-        # legacy; in theta from older versions of the code 'plus' and 'minus' in the vocabulary
-        if '+' not in theta[('word',)].voc:
-            theta[('word',)].extendVocabulary(['+','-'])
-            theta[('word',)]['+'] = theta[('word',)]['plus']
-            theta[('word',)]['-'] = theta[('word',)]['minus']
-
-    else:
-
-        dims = {'inside': d[0], 'word': d[1], 'minArity': 3, 'maxArity': 3}
-        voc = ['UNKNOWN'] + [str(w) for w in data.arithmetics.ds] + treebanks.ops
-        theta = myTheta.Theta(dims=dims, embeddings=None, vocabulary=voc, seed = seed)
-        theta.extend4Classify(2,3,comparison)
-        print 'Initialized model from scratch, dims:',dims
-    theta.extend4Prediction(-1)
-    return theta
 
 def main(args):
-    #print args
     # initialize theta (object with model parameters)
-    theta = installTheta(args['parsC'],seed=args['seed'],d=(args['dim'],args['dword']),comparison=args['comparison'])
+    theta = myTheta.installTheta(args['parsC'],seed=args['seed'],d=(args['dim'],args['dword']),comparison=args['comparison'])
 
     # generate training and heldout data for comparion training and train model
     datasetC = data.data4comparison(seed=args['seed'], comparisonLayer=args['comparison'],debug=args['debug'])
@@ -86,7 +58,6 @@ if __name__ == "__main__":
     parser.add_argument('-bp', '--bSizeP', type=int, default=50, help='Batch size for prediction training', required=False)
     parser.add_argument('-lp','--lambdaP', type=float, default=0.0001, help='Regularization parameter lambdaL2', required=False)
     parser.add_argument('-lrp','--learningRateP', type=float, default=0.01, help='Learning rate parameter', required=False)
-
 
     args = vars(parser.parse_args())
 
