@@ -15,7 +15,7 @@ def colorscale(n, color=None):
         return plt.get_cmap('spring', n)
 
 
-def scatterAndAnnotate(ax, point, color, label, size=12, txtcolor='black', pos=None, alpha = 1):
+def scatter_and_annotate(ax, point, color, label, size=12, txtcolor='black', pos=None, alpha = 1):
     if len(point) > 2: print 'Only plotting first two dims'
     sc = ax.scatter(float(point[0]), float(point[1]), color=color, s=25, zorder=5, alpha = alpha)
 
@@ -54,9 +54,9 @@ def showmat(M, ax=None, cb=False):
         return ax.matshow(M, vmin=-1, vmax=1, cmap='bwr')
 
 
-def drawArrow(ax, fr, to, label, style='solid', color='black', head=0.05, txtsize=15, txtcolor='black', alpha=1):
+def draw_arrow(ax, fr, to, label, style='solid', color='black', head=0.05, txtsize=15, txtcolor='black', alpha=1):
     if fr[0] == to[0] and fr[1] == to[1]:
-        raise Exception('Not drawing an arrow from and to the same point! Exit function drawArrow')
+        raise Exception('Not drawing an arrow from and to the same point! Exit function draw_arrow')
 
     dx = to[0] - fr[0]
     dy = to[1] - fr[1]
@@ -66,14 +66,14 @@ def drawArrow(ax, fr, to, label, style='solid', color='black', head=0.05, txtsiz
     
     try: rotation = int(round(np.rad2deg(np.arctan(dy / dx))))
     except: rotation = 1
-    anLoc = (fr[0]+rotation*0.2*dx, fr[1]+rotation*0.2*dy+0.1)
+    an_loc = (fr[0]+rotation*0.2*dx, fr[1]+rotation*0.2*dy+0.1)
 
-    an = ax.text(anLoc[0], anLoc[1], label, color=txtcolor, ha="center", va="center", rotation=1,
+    an = ax.text(an_loc[0], an_loc[1], label, color=txtcolor, ha="center", va="center", rotation=1,
                  size=txtsize, zorder=1)  # ,bbox=dict(facecolor='white', edgecolor='none', fill=True, alpha=0.8))
     return [ar, an]
 
 
-def newFig(limits=None):
+def new_fig(limits=None):
     plt.close()
     fig, ax = plt.subplots()
     if limits:
@@ -88,7 +88,7 @@ def newFig(limits=None):
     return fig, ax
 
 
-def putOrigin(ax):
+def put_origin(ax):
     y = ax.get_ylim()
     ax.set_ylim(min(y[0], -1.2), y[1])
 
@@ -98,7 +98,7 @@ def putOrigin(ax):
     # print x,y
 
 
-def minimalTicks(ax):
+def minimal_ticks(ax):
     ax.set_xticks([-1.0, 1.0])
     ax.set_yticks([-1.0, 1.0])
     ax.spines['left'].set_position('zero')
@@ -114,7 +114,7 @@ def minimalTicks(ax):
     ax.tick_params(axis='y', colors='grey')
 
 
-def improveTicks(ax, scale=1):
+def improve_ticks(ax, scale=1):
     horizontal = 0. in ax.get_yticks()
     vertical = 0. in ax.get_xticks()
     if vertical: ax.spines['left'].set_position('zero')
@@ -135,14 +135,14 @@ def improveTicks(ax, scale=1):
     ax.xaxis.tick_bottom()
 
 
-def equalAspects(ax):
+def equal_aspects(ax):
     ax.axis('equal')
 
 def show(ax, improve=True):
-    if improve: improveTicks(ax)
+    if improve: improve_ticks(ax)
     plt.show()
 
 
-def saveFigure(ax, improve, outdir, name):
-    if improve: improveTicks(ax)
+def save_figure(ax, improve, outdir, name):
+    if improve: improve_ticks(ax)
     plt.savefig(os.path.join(outdir, name))

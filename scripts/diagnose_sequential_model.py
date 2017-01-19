@@ -4,7 +4,7 @@ import pickle
 import re
 import numpy as np
 from processing_arithmetics.sequential.architectures import DiagnosticClassifier
-from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank, small_training_treebank, small_test_treebank
+from processing_arithmetics.arithmetics.treebanks import treebank
 from argument_transformation import max_length
 
 """
@@ -43,14 +43,9 @@ args = parser.parse_args()
 
 ####################################################
 # Set some params
-if args.debug:
-    languages_train             = small_training_treebank()
-    languages_val              = small_training_treebank()
-    languages_test              = [(name, treebank) for name, treebank in small_test_treebank()]
-else:
-    languages_train             = training_treebank(seed=args.seed)
-    languages_val              = heldout_treebank(seed=args.seed)
-    languages_test              = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
+languages_train             = treebank(seed=args.seed, kind='train')
+languages_val              = treebank(seed=args.seed, kind='train')
+languages_test              = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='train')]
 
 results_all = {}
 

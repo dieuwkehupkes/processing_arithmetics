@@ -4,7 +4,7 @@ from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, M
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
-from .callbacks import TrainingHistory, PlotEmbeddings
+from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
 import copy
@@ -190,12 +190,12 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, plot_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
                                         after training.
-        :param plot_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
+        :param visualise_embeddings:        Set to N to plot the embeddings every N epochs, only available for 2D
                                         embeddings.
         """
         X_train, Y_train = training_data
@@ -208,7 +208,7 @@ class Training(object):
         # compile model
         self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
 
-        callbacks = self.generate_callbacks(plot_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
+        callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
         sample_weight = self.get_sample_weights(training_data, sample_weight)
 
@@ -435,7 +435,7 @@ class Training(object):
         """
         Generate sequence of callbacks to use during training
         :param recurrent_id:
-        :param weights_animation:        set to true to generate visualisation of embeddings
+        :param weights_animation:           set to true to generate visualisation of embeddings
         :param plot_embeddings:             generate scatter plot of embeddings every plot_embeddings epochs
         :param print_every:                 print summary of results every print_every epochs
         :return:
@@ -446,10 +446,10 @@ class Training(object):
 
         if plot_embeddings:
             if plot_embeddings is True:
-                pass
-            else:
-                embeddings_plot = PlotEmbeddings(plot_embeddings, self.dmap, embeddings_id=embeddings_id)
+                embeddings_plot = VisualiseEmbeddings(self.dmap, embeddings_id=embeddings_id)
                 callbacks.append(embeddings_plot)
+            else:
+                pass
 
         return callbacks
 
@@ -515,7 +515,12 @@ class ScalarPrediction(Training):
         X, Y = [], []
         pad_to = pad_to or self.input_length
         for expression, answer in treebank.examples:
+<<<<<<< HEAD
             input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+=======
+            # str_expression = expression.to_string(format).split()
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+>>>>>>> 5d5cb7b1d63cc188f1f922637e1592a951c98e0f
             answer = answer
             X.append(input_seq)
             Y.append(answer)
@@ -608,9 +613,9 @@ class ComparisonTraining(Training):
         pad_to = self.input_length
 
         # loop over examples
-        for example1, example2, compare in treebank.pairedExamples:
-            input_seq1 = [self.dmap[i] for i in example1.toString(format).split()]
-            input_seq2 = [self.dmap[i] for i in example2.toString(format).split()]
+        for example1, example2, compare in treebank.paired_examples():
+            input_seq1 = [self.dmap[i] for i in example1.to_string(format).split()]
+            input_seq2 = [self.dmap[i] for i in example2.to_string(format).split()]
             answer = np.zeros(3)
             answer[np.argmax([compare == '<', compare == '=',  compare == '>'])] = 1
             X1.append(input_seq1)
@@ -697,8 +702,13 @@ class Seq2Seq(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
+<<<<<<< HEAD
             expression.get_targets(format=format)
             input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+=======
+            expression.get_targets()
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+>>>>>>> 5d5cb7b1d63cc188f1f922637e1592a951c98e0f
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
 
@@ -840,7 +850,7 @@ class DiagnosticClassifier(Training):
         # loop over examples
         for expression, answer in treebank.examples:
             expression.get_targets(format=format)
-            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             for classifier in self.classifiers:
                 target = expression.targets[classifier]

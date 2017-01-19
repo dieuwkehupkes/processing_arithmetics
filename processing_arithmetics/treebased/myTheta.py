@@ -1,9 +1,36 @@
 from __future__ import division
 import numpy as np
 import sys
+import pickle
+import processing_arithmetics.arithmetics.treebanks as tb
+
+
+''' instantiate parameters (theta object): obtain theta from file or create a new theta'''
+def install_theta(theta_file, seed, d, comparison):
+    if theta_file != '':
+        with open(theta_file, 'rb') as f:
+            theta = pickle.load(f)
+        print 'Initialized model from file:', theta_file
+        if ('classify','B') not in theta: theta.extend4Classify(2, 3, comparison)
+
+        # legacy; in theta from older versions of the code 'plus' and 'minus' in the vocabulary
+        if '+' not in theta[('word',)].voc:
+            theta[('word',)].extend_vocabulary(['+','-'])
+            theta[('word',)]['+'] = theta[('word',)]['plus']
+            theta[('word',)]['-'] = theta[('word',)]['minus']
+
+    else:
+
+        dims = {'inside': d[0], 'word': d[1], 'min_arity': 3, 'max_arity': 3}
+        voc = ['UNKNOWN'] + [str(w) for w in tb.ds] + tb.ops
+        theta = Theta(dims=dims, embeddings=None, vocabulary=voc, seed = seed)
+        theta.extend4Classify(2,3,comparison)
+        print 'Initialized model from scratch, dims:',dims
+    theta.extend4Prediction(-1)
+    return theta
 
 '''
- Theta is an object that can hold the parameters of a complex neural network.
+ Theta is an object that holds the parameters of a complex neural network.
  A similar object 'Gradient' can be used to hold gradient values.
  The word embeddings are stored in a special object; WordMatrix
  All objects allow for pickling
@@ -16,72 +43,69 @@ class Theta(dict):
             sys.exit()
         np.random.seed(seed)
         self.dims = dims
-        self.compositionMatrices()
+        self.composition_matrices()
 
-        # vocabulary = None, default = ('UNKNOWN', 0), dicItems = {}):
+        # vocabulary = None, default = ('UNKNOWN', 0), dic_items = {}):
         # Install word embeddings as a WordMatrix object
         if embeddings is None:
             default = ('UNKNOWN', np.random.random_sample(self.dims['word']) * .2 - .1)
-            self[('word',)] = WordMatrix(vocabulary, default = default, dicItems=[(word, np.random.random_sample(self.dims['word']) * .2 - .1) for word in vocabulary])
+            self[('word',)] = WordMatrix(vocabulary, default = default, dic_items=[(word, np.random.random_sample(self.dims['word']) * .2 - .1) for word in vocabulary])
         else:
             self[('word',)] = embeddings
 
-        print 'initialized Theta. Dims:', self.dims
 
-
-    def removeAll(self, toRemove=[]):
-        # Remove all matrices and biases that belong to the categories in toRemove
+    def remove_all(self, to_remove=[]):
+        # Remove all matrices and biases that belong to the categories in to_remove
         for key in self.keys():
-            if key[0] in toRemove: del self[key]
+            if key[0] in to_remove: del self[key]
 
 
-    def extend4Classify(self, nChildren, nClasses, dComparison=0):
+    def extend4Classify(self, n_children, n_classes, d_comparison=0):
         # Add (or replace) all matices involved in classification
-        self.removeAll(['classify', 'comparison'])
-        if dComparison == 0:
-            self.newMatrix(('classify', 'M'), None, (nClasses, nChildren * self.dims['inside']))
-            self.newMatrix(('classify', 'B'), None, (nClasses,))
+        self.remove_all(['classify', 'comparison'])
+        if d_comparison == 0:
+            self.new_matrix(('classify', 'M'), None, (n_classes, n_children * self.dims['inside']))
+            self.new_matrix(('classify', 'B'), None, (n_classes,))
         else:
-            if dComparison == -1:
+            if d_comparison == -1:
                 try:
-                    dComparison = self.dims['comparison']
+                    d_comparison = self.dims['comparison']
                 except:
-                    dComparison = (nChildren + 1) * self.dims['inside']
-            self.newMatrix(('comparison', 'M'), None, (dComparison, nChildren * self.dims['inside']))
-            self.newMatrix(('classify', 'M'), None, (nClasses, dComparison))
-            self.newMatrix(('comparison', 'B'), None, (dComparison,))
-            self.newMatrix(('classify', 'B'), None, (nClasses,))
+                    d_comparison = (n_children + 1) * self.dims['inside']
+            self.new_matrix(('comparison', 'M'), None, (d_comparison, n_children * self.dims['inside']))
+            self.new_matrix(('classify', 'M'), None, (n_classes, d_comparison))
+            self.new_matrix(('comparison', 'B'), None, (d_comparison,))
+            self.new_matrix(('classify', 'B'), None, (n_classes,))
 
-    def extend4Prediction(self, dHidden=0):
+    def extend4Prediction(self, d_hidden=0):
         # Add (or replace) all matices involved in prediction
-        self.removeAll(['predict', 'predictH'])
-        if dHidden < 0:
-            self.newMatrix(('predict', 'M'), None, (1, self.dims['inside']))
-            self.newMatrix(('predict', 'B'), None, (1,))
+        self.remove_all(['predict', 'predict_h'])
+        if d_hidden < 0:
+            self.new_matrix(('predict', 'M'), None, (1, self.dims['inside']))
+            self.new_matrix(('predict', 'B'), None, (1,))
         else:
-            if dHidden == 0:
+            if d_hidden == 0:
                 try:
-                    dHidden = self.dims['hidden']
+                    d_hidden = self.dims['hidden']
                 except:
-                    dHidden = self.dims['inside']
-            self.newMatrix(('predict', 'M'), None, (1, dHidden))
-            self.newMatrix(('predict', 'B'), None, (1,))
-            self.newMatrix(('predictH', 'M'), None, (dHidden, self.dims['inside']))
-            self.newMatrix(('predictH', 'B'), None, (dHidden,))
+                    d_hidden = self.dims['inside']
+            self.new_matrix(('predict', 'M'), None, (1, d_hidden))
+            self.new_matrix(('predict', 'B'), None, (1,))
+            self.new_matrix(('predict_h', 'M'), None, (d_hidden, self.dims['inside']))
+            self.new_matrix(('predict_h', 'B'), None, (d_hidden,))
 
-    def compositionMatrices(self):
+    def composition_matrices(self):
         din = self.dims['inside'] # local dimensionality variable
-        print '\tCreate composition matrices of all kinds'
         try:
-            minArity = self.dims['minArity']
+            min_arity = self.dims['min_arity']
         except:
-            minArity = 1
-        for arity in xrange(minArity, self.dims['maxArity'] + 1):
+            min_arity = 1
+        for arity in xrange(min_arity, self.dims['max_arity'] + 1):
             lhs = '#X#'
             rhs = '(' + ', '.join(['#X#'] * arity) + ')'
             cat = 'composition'
-            self.newMatrix((cat, lhs, rhs, 'I', 'M'), None, (din, arity * din))
-            self.newMatrix((cat, lhs, rhs, 'I', 'B'), None, (din,))
+            self.new_matrix((cat, lhs, rhs, 'I', 'M'), None, (din, arity * din))
+            self.new_matrix((cat, lhs, rhs, 'I', 'B'), None, (din,))
 
     def reset(self, cats):
         for cat in cats:
@@ -93,7 +117,7 @@ class Theta(dict):
                 size = self[cat].shape
                 self[cat] = np.random.random_sample(size) * .2 - .1
 
-    def newMatrix(self, name, M=None, size=(0, 0), replace = False):
+    def new_matrix(self, name, M=None, size=(0, 0), replace = False):
         if not replace and name in self:
             return
 
@@ -115,13 +139,13 @@ class Theta(dict):
         voc = self[('word',)].keys()
         defaultkey = 'UNKNOWN'
         defaultvalue = np.zeros_like(self[('word',)][defaultkey])
-        wordM = WordMatrix(vocabulary=voc, default=(defaultkey, defaultvalue))
-        return Gradient(molds, wordM)
+        word_m = WordMatrix(vocabulary=voc, default=(defaultkey, defaultvalue))
+        return Gradient(molds, word_m)
 
     def __missing__(self, key):
-        for fakeKey in generalizeKey(key): # find a more general version of key that is in theta (used with grammar rule specialized parameter)
-            if fakeKey in self.keys():
-                return self[fakeKey]
+        for fake_key in generalize_key(key): # find a more general version of key that is in theta (used with grammar rule specialized parameter)
+            if fake_key in self.keys():
+                return self[fake_key]
                 break
         else:
             raise KeyError(str(key) + ' not in theta (missing).')
@@ -148,22 +172,22 @@ class Theta(dict):
     def __add__(self, other):
         scalar = isinstance(other, int)
 
-        newT = self.gradient()
+        new_t = self.gradient()
         for key in self:
             if isinstance(self[key], np.ndarray):
                 if scalar:
-                    newT[key] = self[key] + other
+                    new_t[key] = self[key] + other
                 else:
-                    newT[key] = self[key] + other[key]
+                    new_t[key] = self[key] + other[key]
             elif isinstance(self[key], dict):
                 for word in self[key]:
                     if scalar:
-                        newT[key][word] = self[key][word] + other
-                    else: newT[key][word] = self[key][word] + other[key][word]
+                        new_t[key][word] = self[key][word] + other
+                    else: new_t[key][word] = self[key][word] + other[key][word]
             else:
                 print 'Inplace addition of theta failed:', key, 'of type', str(type(self[key]))
                 sys.exit()
-        return newT
+        return new_t
 
     def __itruediv__(self, other):
         if isinstance(other, dict):
@@ -194,7 +218,7 @@ class Theta(dict):
     def __idiv__(self, other):
         return self.__itruediv__(other)
 
-    def printDims(self):
+    def print_dims(self):
         print 'Model dimensionality:'
         for key, value in self.dims.iteritems():
             print '\t' + key + ' - ' + str(value)
@@ -206,9 +230,9 @@ class Theta(dict):
 
 
 class Gradient(Theta):
-    def __init__(self, molds, wordM, kvs={}):
+    def __init__(self, molds, word_m, kvs={}):
         self.molds = molds
-        dict.__setitem__(self, ('word',), wordM)
+        dict.__setitem__(self, ('word',), word_m)
         self.update(kvs)
 
     def __reduce__(self):
@@ -216,13 +240,13 @@ class Gradient(Theta):
 
     def __missing__(self, key):
         if key in self.molds:
-            self.newMatrix(key, np.zeros(self.molds[key]))
+            self.new_matrix(key, np.zeros(self.molds[key]))
             return self[key]
         else:
-            for fakeKey in generalizeKey(key):
-                if fakeKey in self.molds:
-                    self.newMatrix(fakeKey, np.zeros(self.molds[fakeKey]))
-                    return self[fakeKey]
+            for fake_key in generalize_key(key):
+                if fake_key in self.molds:
+                    self.new_matrix(fake_key, np.zeros(self.molds[fake_key]))
+                    return self[fake_key]
             else:
                 print key, 'not in gradient(missing), and not able to create it.'
                 return None
@@ -231,24 +255,24 @@ class Gradient(Theta):
         if key in self.molds:
             dict.__setitem__(self, key, val)
         else:
-            for fakeKey in generalizeKey(key):
-                if fakeKey in self.molds: dict.__setitem__(self, fakeKey, val)
+            for fake_key in generalize_key(key):
+                if fake_key in self.molds: dict.__setitem__(self, fake_key, val)
                 break
             else:
                 raise KeyError(str(key) + 'not in gradient(setting), and not able to create it.')
 
 
 class WordMatrix(dict):
-    def __init__(self, vocabulary=None, default=('UNKNOWN', 0), dicItems=[]):
+    def __init__(self, vocabulary=None, default=('UNKNOWN', 0), dic_items=[]):
         self.voc = vocabulary
         dkey, dval = default
         if dkey not in self.voc: raise AttributeError("'default' must be in the vocabulary")
         self.default = dkey
         dict.__setitem__(self, self.default, dval)
-        [dicItems.remove((k, v)) for (k, v) in dicItems if k == dkey]
-        self.update(dicItems)
+        [dic_items.remove((k, v)) for (k, v) in dic_items if k == dkey]
+        self.update(dic_items)
 
-    def extendVocabulary(self, wordlist):
+    def extend_vocabulary(self, wordlist):
         for word in wordlist:
             self.voc.append(word)
             self[word] = self[self.default]
@@ -295,12 +319,12 @@ class WordMatrix(dict):
                 self[key] += val
 
 
-def generalizeKey(key):
+def generalize_key(key):
     if key[0] == 'composition' or key[0] == 'reconstruction':
         lhs = key[1]
         rhs = key[2]
-        generalizedHead = '#X#'
-        generalizedTail = '(' + ', '.join(['#X#'] * len(rhs[1:-1].split(', '))) + ')'
-        return [key[:2] + (generalizedTail,) + key[3:], key[:1] + (generalizedHead, generalizedTail,) + key[3:]]
+        generalized_head = '#X#'
+        generalized_tail = '(' + ', '.join(['#X#'] * len(rhs[1:-1].split(', '))) + ')'
+        return [key[:2] + (generalized_tail,) + key[3:], key[:1] + (generalized_head, generalized_tail,) + key[3:]]
     else:
         return []

@@ -63,8 +63,8 @@ def compute_baseline_noise(treebank, digit_noise, operator_noise):
         ans1 = expr1.solve()
 
         # generate number within certain range of outckkome of example
-        gen_ans1 = eval(expr1.toString(digit_noise=digit_noise, operator_noise=operator_noise))
-        gen_ans2 = eval(expr2.toString(digit_noise=digit_noise, operator_noise=operator_noise))
+        gen_ans1 = eval(expr1.to_string(digit_noise=digit_noise, operator_noise=operator_noise))
+        gen_ans2 = eval(expr2.to_string(digit_noise=digit_noise, operator_noise=operator_noise))
         # gen_ans1 = np.random.normal(loc=ans1, scale=random_range)
         # gen_ans2 = np.random.normal(loc=ans2, scale=random_range)
 

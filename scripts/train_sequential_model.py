@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
 from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
-from processing_arithmetics.arithmetics.treebanks import training_treebank, test_treebank, heldout_treebank, small_training_treebank, small_test_treebank
+from processing_arithmetics.arithmetics.treebanks import treebank
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re
 import os
@@ -46,6 +46,7 @@ parser.add_argument("--loss_function", "-loss", help="Loss for training", choice
 parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
 parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
 parser.add_argument("--val_split", help="Set validation split", default=0.1)
+parser.add_argument("--test", action="store_true", help="Test model after training")
 
 parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=max_length(15))
 
@@ -61,10 +62,12 @@ parser.add_argument("--debug", action="store_true", help="Run with small treeban
 
 parser.add_argument("-N", type=int, help="Train multiple models, write to single file, incrementing seed from --seed", default=1)
 
-args = parser.parse_args()
+parser.add_argument("--visualise_embeddings", action="store_true", help="Visualise embeddings after training")
 
+args = parser.parse_args()
 save_to = args.hidden.__name__+'_'+args.format+'_'
 
+languages_test = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test',debug=args.debug)]
 
 # Open file to write results
 eval_filename = save_to+'evaluation'
@@ -73,15 +76,8 @@ eval_file = open(eval_filename, 'w')
 # generate training object
 training = args.architecture(digits=digits, operators=operators)
 
-
 # generate test data used for all files
-if args.debug:
-    languages_test = [(name, treebank) for name, treebank in small_test_treebank()]
-else:
-    languages_test = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
-
-test_data = training.generate_test_data(data=languages_test, digits=digits, format=args.format, pad_to=args.maxlen) 
-
+languages_test = [(name, treebank) for name, treebank in test_treebank(seed=args.seed_test)]
 
 
 #################################################################
@@ -92,15 +88,10 @@ results_all = {}
 for seed in xrange(args.seed, args.seed+args.N):
 
     print("\nTrain model for seed %i" %seed)
-    
-    # generate training data
-    if not args.debug:
-        languages_train             = training_treebank(seed=seed)
-        languages_val              = heldout_treebank(seed=seed)
-    else:
-        languages_train             = small_training_treebank()
-        languages_val              = small_training_treebank()
 
+    languages_train = treebank(seed=args.seed, kind='train', debug=args.debug)
+    languages_val = treebank(seed=args.seed, kind='heldout', debug=args.debug)
+    
     # Add pretrained model if this is given in arguments
     if args.model:
         training.add_pretrained_model(model=args.model, 

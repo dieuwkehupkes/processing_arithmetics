@@ -75,9 +75,12 @@ class MathTreebank():
         """
         self.examples += self.generate_examples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths)
+
+
+    def paired_examples(self):
         examples2 = self.examples[:]
         np.random.shuffle(examples2)
-        self.pairedExamples = [(ex1[0],ex2[0],('<' if ex1[1] < ex2[1] else ('>' if ex1[1] > ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
+        return [(ex1[0],ex2[0],('<' if ex1[1] < ex2[1] else ('>' if ex1[1] > ex2[1] else '='))) for (ex1,ex2) in zip(self.examples,examples2)]
 
     def add_example_from_string(self, example):
         """
@@ -103,24 +106,24 @@ class MathTreebank():
 
 class IndexedTreebank(MathTreebank):
     def __init__(self, languages={}, digits=[]):
-        self.index = {'length':defaultdict(list),'maxDepth':defaultdict(list),'accumDepth':defaultdict(list)}
+        self.index = {'length':defaultdict(list),'max_depth':defaultdict(list),'accum_depth':defaultdict(list)}
         MathTreebank.__init__(self,languages,digits)
         self.examples = tuple(self.examples)
-        self.updateIndex()
+        self.update_index()
 
-    def updateIndex(self,fromPoint = 0,keys=[]):
-        for i, (tree, label) in enumerate(self.examples[fromPoint:]):
+    def update_index(self,from_point = 0,keys=[]):
+        for i, (tree, label) in enumerate(self.examples[from_point:]):
             for key in (self.index.keys() if keys == [] else keys):
                 value = tree.property(key)
-                if i+fromPoint not in self.index[key][value]:
-                    self.index[key][value].append(i+fromPoint)
+                if i+from_point not in self.index[key][value]:
+                    self.index[key][value].append(i+from_point)
 
     def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
                      n=1000, lengths=range(1, 6)):
-        fromPoint = len(self.examples)
+        from_point = len(self.examples)
         self.examples += tuple(self.generate_examples(operators=operators, digits=digits, branching=branching,
                                                min=min_answ, max=max_answ, n=n, lengths=lengths))
-        self.updateIndex(fromPoint)
+        self.update_index(from_point)
 
     def get_examples_property(self, property):
         if property not in self.index.keys(): raise KeyError('not a valid property in this IndexedTreebank')
