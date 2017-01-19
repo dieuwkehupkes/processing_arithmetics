@@ -1,9 +1,8 @@
 - schrijf meer tests
-    - verplaats tests uit arithmetics
     - tests voor Sara?
     - check if weights remain the same for diagnostic classifier
 
-- add also format to arithmetics model
+- add also format (prefix, infix) to arithmetics model
 - seq2seq generate training data slaat niet echt ergens op nu vrees ik...
 
 - do something with matplotlib warning
@@ -16,15 +15,7 @@
     - implement simulation weight changes?
     - write tests for different functionalities
 
-move optimizer to train instead of add model, makes more sense, then recompile before train
-test treebased gedeelte
-
-- something with readme, readme.rts? in setup.py
-- add readme to scripts folder
-
 - make tests shorter?
-- change name arithmetics folder
-
 - fix all _untested funcs in scripts
 
 
