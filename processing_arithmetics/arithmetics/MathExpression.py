@@ -28,17 +28,11 @@ class MathExpression(Tree):
 
 
     def __init__(self, label, children):
-        if True: #len(children)>1:
-            Tree.__init__(self, label, children)
-            if len(children) > 1:
-                self.max_depth = max([child.max_depth for child in children]) + 1
-                self.length = sum([child.length for child in children])
-            else:
-                self.max_depth = 0
-                self.length = 1
-
+        Tree.__init__(self, label, children)
+        if len(children) > 1:
+            self.max_depth = max([child.max_depth for child in children]) + 1
+            self.length = sum([child.length for child in children])
         else:
-            Tree.__init__(self, '', )
             self.max_depth = 0
             self.length = 1
 
@@ -72,11 +66,11 @@ class MathExpression(Tree):
         elif propname == 'accum_depth': return self.length-1  #number of left brackets, len(re.findall('\(', str(self)))
         else: raise KeyError(propname+' is not a valid property of MathExpression')
 
-    def solve(self):
+    def solve(self, digit_noise=None, operator_noise=None):
         """
         Evaluate the expression
         """
-        return eval(self.__str__())
+        return eval(self.__str__(digit_noise=digit_noise, operator_noise=operator_noise))
 
 
     def to_string(self, format='infix', digit_noise=None, operator_noise=None):
@@ -102,24 +96,24 @@ class MathExpression(Tree):
                     return str(np.random.normal(loc=int(self.label()), scale=digit_noise))
                 else: return str(self.label())
 
-    def __str__(self):
+    def __str__(self, digit_noise=None, operator_noise=None):
         """
         Return string representation of tree.
         """
-        return self.to_string()
+        return self.to_string(digit_noise=digit_noise, operator_noise=operator_noise)
 
-    def solve_recursively(self, format='infix', return_sequences=False):
+    def solve_recursively(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
         """
         Solve expression recursively.
         """
 
-        symbols = self.iterate(format)
+        symbols = self.iterate(format=format, digit_noise=digit_noise, operator_noise=operator_noise)
 
         if format == "infix":
-            return self.recursively_infix(symbols=symbols, return_sequences=return_sequences)
+            return self.recursively_infix(symbols=symbols, return_sequences=return_sequences, stack_noise=stack_noise)
 
         elif format == "prefix":
-            return self.recursively_prefix(symbols=symbols, return_sequences=return_sequences)
+            return self.recursively_prefix(symbols=symbols, return_sequences=return_sequences, stack_noise=stack_noise)
 
         elif format == "postfix":
             return self.recursively_postfix(symbols=symbols, return_sequences=return_sequences)
@@ -127,13 +121,15 @@ class MathExpression(Tree):
         else:
             assert ValueError("Invalid postfix")
 
-    def recursively_infix(self, symbols, return_sequences=False):
+    def recursively_infix(self, symbols, return_sequences=False, stack_noise=None):
         """
         Solve recursively for infix operator.
         """
-        stack = []
-        op = operator.add
-        cur = 0
+        op_dict = {-1: operator.sub, 1: operator.add}
+
+        digit_stack, operator_stack = [], []
+        op = 1
+        result = 0
 
         # return arrays
         stack_list = []
@@ -142,185 +138,198 @@ class MathExpression(Tree):
 
 
         for symbol in symbols:
+            if stack_noise:
+                # apply noise to stack
+                operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
+                digit_stack = self.add_noise(digit_stack, stack_noise=stack_noise)
+
             if symbol == '(':
                 # push new element on stack
-                stack.append([op, cur])
-                op = operator.add
-                cur = 0         # reset current computation
+                operator_stack.append(op)
+                digit_stack.append(result)
+                op = 1
+                result = 0         # reset current computation
             elif symbol == ')':
                 # combine last stack item with
                 # one but last stack item
-                stack_op, prev = stack.pop()
-                cur = stack_op(prev, cur)
+                op = np.power(-1, np.floor(operator_stack.pop()/2))
+                prev = digit_stack.pop()
+                result = op_dict[op](prev, result)
             elif symbol == '+':
-                op = operator.add
+                op = 1
             elif symbol == '-':
-                op = operator.sub
+                op = -1
             else:
                 # number is digit
-                cur = op(cur, int(symbol))
+                result = op_dict[op](result, int(symbol))
             # store state
 
-            if stack == []:
-                stack_list.append([(-12345, -12345)])     # empty stack representation
+            if digit_stack == []:
+                stack_list.append([0, 0])     # empty stack representation TODO change this
             else:
-                stack_list.append(stack[:])
+                stack_list.append([digit_stack[:], operator_stack[:]])
 
-            intermediate_results.append(cur)
-            operators.append({operator.add:True, operator.sub: False}[op])
+            intermediate_results.append(result)
+            operators.append({1: True, -1: False}[op])
 
-        assert len(stack) == 0, "expression not grammatical"
+        assert len(digit_stack) == 0, "expression not grammatical"
 
         if return_sequences:
             return intermediate_results, stack_list, operators
 
-        return cur
+        return result
 
-    def recursively_prefix(self, symbols, return_sequences=False):
+    def recursively_prefix(self, symbols, return_sequences=False, stack_noise=None):
         operator_stack = []
-        number_stack = []
-        cur = 0
+        digit_stack = []
+        result = 0
         intermediate_results, stack_list, operator_list = [], [], []
 
+        op_dict = {-1: operator.sub, 1: operator.add}
+
         for symbol in symbols:
+            if stack_noise:
+                # apply noise to stack
+                operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
+                digit_stack = self.add_noise(digit_stack, stack_noise=stack_noise)
+
             if symbol in ['+', '-']:
-                op = {'+':operator.add, '-':operator.sub}[symbol]
+                op = {'+':1, '-':-1}[symbol]
                 operator_stack.append(op)
             elif symbol == '(':
                 pass
             elif symbol == ')':
-                op = operator_stack.pop()
-                prev = number_stack.pop()
-                cur = op(prev, cur)
+                op = np.power(-1, np.floor(operator_stack.pop()/2))
+                prev = digit_stack.pop()
+                result = op_dict[op](prev, result)
             else:
                 # is digit
                 digit = int(symbol)
-                number_stack.append(cur)
-                cur = digit
+                digit_stack.append(result)
+                result = digit
 
-            intermediate_results.append(cur)
+            intermediate_results.append(result)
             # operator_list.append[{operator.add:True, operator.sub: False}[op]]
 
         if return_sequences:
             return intermediate_results, stack_list, operator_list
 
-        return cur
+        return result
 
-    def recursively_postfix(self, symbols, return_sequences=False):
+    def recursively_postfix(self, symbols, return_sequences=False, stack_noise=None):
 
         stack = []
-        cur = 0
+        result = 0
         stack_list, intermediate_results, operator_list = [], [], []
         op = None
 
         for symbol in symbols:
+            if stack_noise:
+                # apply noise to stack
+                stack = self.add_noise(stack, stack_noise=stack_noise)
             if symbol in ['+', '-']:
                 op = {'+':operator.add, '-':operator.sub}[symbol]
                 prev = stack.pop()
-                cur = op(prev, cur)
+                result = op(prev, result)
             elif symbol in ['(', ')']:
                 pass
             else:
                 # is digit
-                stack.append(cur)
-                cur = int(symbol)
+                stack.append(result)
+                result = int(symbol)
 
             if stack == []:
-                stack_list.append([(-12345, -12345)])
+                stack_list.append([])
             else:
                 stack_list.append(stack[:])
 
-            intermediate_results.append(cur)
+            intermediate_results.append(result)
 
         if return_sequences:
             return intermediate_results, stack_list, operator_list
 
-        return cur
+        return result
                 
 
-    def solve_locally(self, format='infix', return_sequences=False):
+    def solve_locally(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
         """
         Input a syntactically correct bracketet
         expression, solve by counting brackets
         and depth.
         """
 
-        symbols = self.iterate(format=format)
+        symbols = self.iterate(format=format, digit_noise=digit_noise, operator_noise=operator_noise)
 
         if format == 'infix':
-            return self.solve_locally_infix(symbols, return_sequences=return_sequences)
+            return self.solve_locally_infix(symbols, return_sequences=return_sequences, stack_noise=stack_noise)
 
         elif format == 'prefix':
-            return self.solve_locally_prefix(symbols, return_sequences=return_sequences)
+            return self.solve_locally_prefix(symbols, return_sequences=return_sequences, stack_noise=stack_noise)
 
 
-    def solve_locally_infix(self, symbols, return_sequences=False):
+    def solve_locally_infix(self, symbols, return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
 
         result = 0
-        bracket_stack = []
-        subtracting = False
+        operator_stack = []
+        op = 1
 
         # return arrays
         intermediate_results = []
         brackets = []
-        subtracting_list = []
+        operator_list = []
+        op_dict = {-1: operator.sub, 1: operator.add}
 
-        symbols = self.iterate(format='infix')
+        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
 
         for symbol in symbols:
+            if stack_noise:
+                # apply noise to stack
+                operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
             
             if symbol[-1].isdigit():
                 digit = int(symbol)
-                if subtracting:
-                    result -= digit
-                else:
-                    result += digit
+                result = op_dict[op](result, digit)
 
             elif symbol == '(':
-                bracket_stack.append(subtracting)
+                operator_stack.append(op)
 
             elif symbol == ')':
-                subtracting = bracket_stack.pop(-1)
-#                 bracket_stack.pop(-1)         git 
-#                 try:
-#                     subtracting = bracket_stack[-1]
-#                 except IndexError:
-#                     # end of sequence
-#                     pass
+                op = np.power(-1, np.floor(operator_stack.pop()/2))
 
             elif symbol == '+':
                 pass
 
             elif symbol == '-':
-                subtracting = not subtracting
+                op = - op
 
             intermediate_results.append(result)
-            brackets.append(bracket_stack)
-            subtracting_list.append({True: [1], False:[0]}[subtracting])
+            brackets.append(operator_stack)
+            operator_list.append({-1: [1], 1:[0]}[op])
 
         if return_sequences:
-            return intermediate_results, brackets, subtracting_list
+            return intermediate_results, brackets, operator_list
         
         else:
             return result
 
-    def solve_locally_prefix(self, symbols, return_sequences=False):
+    def solve_locally_prefix(self, symbols, return_sequences=False, stack_noise=None):
 
-        ops = {'+':operator.add, '-': operator.sub, False: operator.add, True: operator.sub}
+        op_dict = {-1: operator.sub, 1: operator.add}
 
-        subtracting = False
-        cur = 0
-        stack = [False]
+        op = 1
+        result = 0
+        stack = [1]
 
         for symbol in symbols:
+            if stack_noise:
+                # apply noise to stack
+                stack = self.add_noise(stack, stack_noise=stack_noise)
+
             if symbol in ['+', '-']:
-                sub = {'+': False, '-': True}[symbol]
-                subtracting = stack.pop()
-                if subtracting is False:
-                    stack.append(sub)
-                elif subtracting is True:
-                    stack.append(not sub)
-                stack.append(subtracting)
+                prev_op = np.power(-1, np.floor(stack.pop()/2))
+                op = eval(symbol+'1')
+                stack.append(op*prev_op)
+                stack.append(prev_op)
 
             elif symbol in ['(', ')']:
                 pass
@@ -328,20 +337,19 @@ class MathExpression(Tree):
             else:
                 # is digit
                 digit = int(symbol)
-                subtracting = stack.pop()
-                op = ops[subtracting]
-                cur = op(cur, digit)
+                op = np.power(-1, np.floor(stack.pop()/2))
+                result = op_dict[op](result, digit)
 
-        return cur
+        return result
 
-    def solve_almost(self, format='infix', return_sequences=False):
+    def solve_almost(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None):
         """
         Solve expression with a simpel completely 
         local strategy that almost always gives the
         right answer, but not always.
         """
 
-        symbols = self.iterate(format='infix')
+        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
     
         result = 0
         subtracting = False
@@ -362,7 +370,16 @@ class MathExpression(Tree):
     
         return result
 
-    
+    def add_noise(self, stack, stack_noise):
+        # check if stack is empty
+        if len(stack) == 0:
+            return stack[:]
+
+        noise = np.random.normal(0, stack_noise, len(stack))
+        noisy_stack = list(stack[:] + noise)
+
+        return noisy_stack[:]
+        
     def get_targets(self, format='infix'):
         """
         Compute all intermediate state variables
@@ -400,11 +417,11 @@ class MathExpression(Tree):
             print(target)
 
 
-    def iterate(self, format):
+    def iterate(self, format, digit_noise=None, operator_noise=None):
         """
         Iterate over symbols in expression.
         """
-        for symbol in self.to_string(format=format).split():
+        for symbol in self.to_string(format=format, digit_noise=None, operator_noise=None).split():
             yield symbol
 
 # TODO this should perhaps go in a script instead of here
@@ -423,8 +440,8 @@ def make_noise_plots():
         sae[name] = 0
         sse[name] = 0
         for expression, answer in m.examples:
-            results_locally = np.array([expression.solve_locally(format="infix", return_sequences=True)[0]])
-            results_recursively = np.array([expression.solve_recursively(format="infix", return_sequences=True)[0]])
+            results_locally = np.array([expression.solve_locally(format="infix", return_sequences=True)[0]], stack_noise=0.2)
+            results_recursively = np.array([expression.solve_recursively(format="infix", return_sequences=False)[0]], stack_noise=0.2)
 
             sae[name] += np.mean(np.absolute(results_locally-results_recursively))
             sse[name] += np.mean(np.square(results_locally-results_recursively))
