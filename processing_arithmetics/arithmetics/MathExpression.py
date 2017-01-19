@@ -348,7 +348,7 @@ class MathExpression(Tree):
 
             intermediate_results.append(result)
             operators.append(stack[:])
-            operator_list.append({1: [1], -1:[0]}[operator])
+            operator_list.append({1: [1], -1:[0]}[op])
 
         if return_sequences:
             return intermediate_results, operators, operator_list
