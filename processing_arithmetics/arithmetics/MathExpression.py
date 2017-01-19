@@ -266,6 +266,9 @@ class MathExpression(Tree):
         elif format == 'prefix':
             return self.solve_locally_prefix(symbols, return_sequences=return_sequences, stack_noise=stack_noise)
 
+        elif format == 'postfix':
+            return None, None, None
+
 
     def solve_locally_infix(self, symbols, return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
 
@@ -278,8 +281,6 @@ class MathExpression(Tree):
         brackets = []
         operator_list = []
         op_dict = {-1: operator.sub, 1: operator.add}
-
-        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
 
         for symbol in symbols:
             if stack_noise:
@@ -320,6 +321,11 @@ class MathExpression(Tree):
         result = 0
         stack = [1]
 
+        # return arrays
+        intermediate_results = []
+        operators = []
+        operator_list = []
+
         for symbol in symbols:
             if stack_noise:
                 # apply noise to stack
@@ -340,7 +346,15 @@ class MathExpression(Tree):
                 op = np.power(-1, np.floor(stack.pop()/2))
                 result = op_dict[op](result, digit)
 
-        return result
+            intermediate_results.append(result)
+            operators.append(stack[:])
+            operator_list.append({1: [1], -1:[0]}[operator])
+
+        if return_sequences:
+            return intermediate_results, operators, operator_list
+
+        else:
+            return result
 
     def solve_almost(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None):
         """
@@ -392,12 +406,15 @@ class MathExpression(Tree):
         self.targets = {}
 
         # grammaticality of sequence
-        grammatical = [[0]]*len(intermediate_locally)
+        grammatical = [[0]]*len(intermediate_recursively)
         grammatical[-1] = [1]
         self.targets['grammatical'] = grammatical
 
         # intermediate outcomes local computation
-        self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
+        try:
+            self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
+        except TypeError:
+            self.targets['intermediate_locally'] = None
 
         # subtracting
         self.targets['subtracting'] = subtracting

@@ -8,6 +8,8 @@ from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
 import copy
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -133,7 +135,7 @@ class Training(object):
 
         return dmap
 
-    def generate_training_data(self, data, digits=np.arange(-10, 11), format='infix'):
+    def generate_training_data(self, data, digits=np.arange(-10, 11), format='infix', pad_to=None):
         """
         Generate training data
         """
@@ -145,13 +147,14 @@ class Training(object):
             random.shuffle(data.examples)
 
         return self.data_from_treebank(treebank=data,
-                                       format=format)
+                                       format=format,
+                                       pad_to=pad_to)
 
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         raise NotImplementedError("Should be implemented in subclass")
 
-    def generate_test_data(self, data, digits, test_separately=True, format='infix'):
+    def generate_test_data(self, data, digits, test_separately=True, format='infix', pad_to=None):
         """
         Take a dictionary that maps language names to number of sentences for 
         which to create test data. Return dictionary with classifier name 
@@ -167,21 +170,21 @@ class Training(object):
         if isinstance(data, list):
             test_data = []
             for name, treebank in data:
-                X_test, Y_test = self.data_from_treebank(treebank, format=format)
+                X_test, Y_test = self.data_from_treebank(treebank, format=format, pad_to=pad_to)
                 test_data.append((name, X_test, Y_test))
 
         elif isinstance(data, MathTreebank):
-            X_test, Y_test = self.data_from_treebank(data, format=format)
+            X_test, Y_test = self.data_from_treebank(data, format=format, pad_to=None)
             test_data = [('test treebank', X_test, Y_test)]
 
         elif test_separately:
             test_data = []
             for name, N in data.items():
-                X, Y = self.generate_training_data(data={name: N}, digits=digits, format=format)
+                X, Y = self.generate_training_data(data={name: N}, digits=digits, format=format, pad_to=pad_to)
                 test_data.append((name, X, Y))
 
         else:
-            X, Y = self.generate_training_data(data=data, digits=digits, format=format)
+            X, Y = self.generate_training_data(data=data, digits=digits, format=format, pad_to=pad_to)
             name = ', '.join(data.keys())
             test_data = [(name, X, Y)]
 
@@ -253,13 +256,16 @@ class Training(object):
             evaluation[name] = dict([(self.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
         return evaluation
 
-    def print_evaluation(self, evaluation):
+    def evaluation_string(self, evaluation):
         """
         Print evaluation results in a readable fashion.
         """
+        eval_str = ''
         for name in evaluation:
-            print("Test set %s:" % name)
-            print('\t'.join(['%s: %f' % (metric, value) for metric, value in evaluation[name]]))
+            eval_str += "\n%s:" % name
+            eval_str += '\t'.join(['%s: %f' % (metric, value) for metric, value in evaluation[name].items()])
+
+        return eval_str
 
     def get_sample_weights(self, training_data, sample_weight):
         """
@@ -447,7 +453,7 @@ class Training(object):
 
         return callbacks
 
-    def data_from_treebank(self, treebank, format='infix'):
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
         raise NotImplementedError("Should be implemented in subclass")
 
     @staticmethod
@@ -502,15 +508,19 @@ class ScalarPrediction(Training):
         # create model
         self.model = ArithmeticModel(input=input_layer, output=output_layer, dmap=self.dmap)
 
-    def data_from_treebank(self, treebank, format='infix'):
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
         Generate test data from a MathTreebank object.
         """
         X, Y = [], []
-        pad_to = self.input_length
+        pad_to = pad_to or self.input_length
         for expression, answer in treebank.examples:
+<<<<<<< HEAD
+            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+=======
             # str_expression = expression.to_string(format).split()
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+>>>>>>> 5d5cb7b1d63cc188f1f922637e1592a951c98e0f
             answer = answer
             X.append(input_seq)
             Y.append(answer)
@@ -682,18 +692,23 @@ class Seq2Seq(Training):
 
         self.model = ArithmeticModel(input=input_layer, output=output, dmap=self.dmap)
 
-    def data_from_treebank(self, treebank, format='infix'):
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
         Generate test data from a MathTreebank object.
         """
         # create dictionary with outputs
         X, Y = [], []
-        pad_to = self.input_length
+        pad_to = pad_to or self.input_length
 
         # loop over examples
         for expression, answer in treebank.examples:
+<<<<<<< HEAD
+            expression.get_targets(format=format)
+            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
+=======
             expression.get_targets()
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+>>>>>>> 5d5cb7b1d63cc188f1f922637e1592a951c98e0f
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
 
@@ -824,13 +839,13 @@ class DiagnosticClassifier(Training):
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
 
-    def data_from_treebank(self, treebank, format='infix'):
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
         Generate test data from a MathTreebank object.
         """
         # create dictionary with outputs
         X, Y = [], dict([(classifier, []) for classifier in self.classifiers]) 
-        pad_to = self.input_length
+        pad_to = None or self.input_length
 
         # loop over examples
         for expression, answer in treebank.examples:

@@ -108,7 +108,6 @@ def test_dc_testing(dc_model, data):
 
 
 
-
 # test dmap
 def test_dmap(data):
     # generate architecture
