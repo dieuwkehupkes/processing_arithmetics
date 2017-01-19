@@ -30,12 +30,3 @@ def treebank(seed, kind, digits=ds,debug=False):
 def test_treebank(digits = ds, debug = False):
     for name, N in languages['test' + ('_small' if debug else '')].items():
         yield name, MathTreebank(languages={name: N}, digits=digits)
-
-def small_training_treebank(languages=train_languages_small, digits=ds):
-    m = MathTreebank(languages, digits=digits)
-    return m
-
-def small_test_treebank(languages=test_languages_small, digits=ds):
-    for name, N in languages.items():
-        yield name, MathTreebank(languages={name: N}, digits=digits)
-

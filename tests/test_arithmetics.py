@@ -23,7 +23,7 @@ def test_solve_recursively_postfix():
 
 
 def _test_solve_locally(format):
-    digits = np.arange(-10,10)
+    digits = np.arange(-10,11)
     operators = ['+', '-']
     m = MathTreebank()
     incorrect = 0
