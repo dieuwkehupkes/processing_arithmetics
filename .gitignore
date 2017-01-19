@@ -8,3 +8,4 @@
 /treebasedDebug/keras_model/kerasTrainedModels/*
 /keras
 /processing_arithmetics.egg-info
+/.*
