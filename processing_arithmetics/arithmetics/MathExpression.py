@@ -252,6 +252,9 @@ class MathExpression(Tree):
         elif format == 'prefix':
             return self.solve_locally_prefix(symbols, return_sequences=return_sequences)
 
+        elif format == 'postfix':
+            return None, None, None
+
 
     def solve_locally_infix(self, symbols, return_sequences=False):
 
@@ -263,8 +266,6 @@ class MathExpression(Tree):
         intermediate_results = []
         brackets = []
         subtracting_list = []
-
-        symbols = self.iterate(format='infix')
 
         for symbol in symbols:
             
@@ -280,12 +281,6 @@ class MathExpression(Tree):
 
             elif symbol == ')':
                 subtracting = bracket_stack.pop(-1)
-#                 bracket_stack.pop(-1)         git 
-#                 try:
-#                     subtracting = bracket_stack[-1]
-#                 except IndexError:
-#                     # end of sequence
-#                     pass
 
             elif symbol == '+':
                 pass
@@ -308,18 +303,23 @@ class MathExpression(Tree):
         ops = {'+':operator.add, '-': operator.sub, False: operator.add, True: operator.sub}
 
         subtracting = False
-        cur = 0
-        stack = [False]
+        result = 0
+        bracket_stack = [False]
+
+        # return arrays
+        intermediate_results = []
+        brackets = []
+        subtracting_list = []
 
         for symbol in symbols:
             if symbol in ['+', '-']:
                 sub = {'+': False, '-': True}[symbol]
-                subtracting = stack.pop()
+                subtracting = bracket_stack.pop()
                 if subtracting is False:
-                    stack.append(sub)
+                    bracket_stack.append(sub)
                 elif subtracting is True:
-                    stack.append(not sub)
-                stack.append(subtracting)
+                    bracket_stack.append(not sub)
+                bracket_stack.append(subtracting)
 
             elif symbol in ['(', ')']:
                 pass
@@ -327,11 +327,19 @@ class MathExpression(Tree):
             else:
                 # is digit
                 digit = int(symbol)
-                subtracting = stack.pop()
+                subtracting = bracket_stack.pop()
                 op = ops[subtracting]
-                cur = op(cur, digit)
+                result = op(result, digit)
 
-        return cur
+            intermediate_results.append(result)
+            brackets.append(bracket_stack[:])
+            subtracting_list.append({True: [1], False:[0]}[subtracting])
+
+        if return_sequences:
+            return intermediate_results, brackets, subtracting_list
+
+        else:
+            return result
 
     def solve_almost(self, format='infix', return_sequences=False):
         """
@@ -368,18 +376,21 @@ class MathExpression(Tree):
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally, subtracting = self.solveLocally(return_sequences=True)
+        intermediate_locally, brackets_locally, subtracting = self.solveLocally(format=format, return_sequences=True)
         intermediate_recursively, stack_recursively, subtracting_recursively = self.solveRecursively(return_sequences=True, format=format)
 
         self.targets = {}
 
         # grammaticality of sequence
-        grammatical = [[0]]*len(intermediate_locally)
+        grammatical = [[0]]*len(intermediate_recursively)
         grammatical[-1] = [1]
         self.targets['grammatical'] = grammatical
 
         # intermediate outcomes local computation
-        self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
+        try:
+            self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
+        except TypeError:
+            self.targets['intermediate_locally'] = None
 
         # subtracting
         self.targets['subtracting'] = subtracting
