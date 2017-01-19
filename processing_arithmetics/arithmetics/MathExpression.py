@@ -8,10 +8,11 @@ from numpy import random as random
 
 class MathExpression(Tree):
     @classmethod
-    def generateME(cls,length, operators, digits, branching=None):
-        if length < 1: print('whatup?')
+    def generateME(cls, length, operators, digits, branching=None):
+        if length < 1:
+            print('This case should not happen')
         elif length == 1:
-            this = cls(random.choice(digits),[])
+            this = cls(random.choice(digits), [])
         else:
             if branching == 'left':
                 left, right = length-1, 1
@@ -20,8 +21,8 @@ class MathExpression(Tree):
             else:
                 left = random.randint(1, length)
                 right = length - left
-            children = [cls.generateME(length=l,operators=operators, digits=digits, branching=branching) for l in [left,right]]
-            children.insert(1,cls(np.random.choice(operators), []))
+            children = [cls.generateME(length=l, operators=operators, digits=digits, branching=branching) for l in [left, right]]
+            children.insert(1, cls(np.random.choice(operators), []))
             this = cls('dummy', children)
         return this
 
@@ -37,7 +38,7 @@ class MathExpression(Tree):
                 self.length = 1
 
         else:
-            Tree.__init__(self, '',)
+            Tree.__init__(self, '', )
             self.max_depth = 0
             self.length = 1
 
@@ -63,12 +64,12 @@ class MathExpression(Tree):
         if type(tree) is Tree:
             children = [cls.from_tree(c) for c in tree]
             return cls(tree.label(), children)
-        else: return cls(tree,[])
+        else: return cls(tree, [])
 
     def property(self, propname):
         if propname == 'length': return self.length
         elif propname == 'max_depth': return self.max_depth
-        elif propname == 'accum_depth': return self.length-1  #number of left brackets, len(re.findall('\(',str(self)))
+        elif propname == 'accum_depth': return self.length-1  #number of left brackets, len(re.findall('\(', str(self)))
         else: raise KeyError(propname+' is not a valid property of MathExpression')
 
     def solve(self):
@@ -83,11 +84,11 @@ class MathExpression(Tree):
         :param numbers noise: standard deviation of digit noise
         :param operator_noise: change of changing operator
         """
-        operators = ['+','-']
+        operators = ['+', '-']
         if self.label() == 'dummy':
-            children_str = [c.to_string(format,digit_noise,operator_noise) for c in self]
-            if format == 'infix': return '( '+' '.join([children_str[0],children_str[1]]+children_str[2:])+' )'
-            elif format == 'prefix': return '( '+' '.join([children_str[1],children_str[0]] + children_str[2:])+' )'
+            children_str = [c.to_string(format, digit_noise, operator_noise) for c in self]
+            if format == 'infix': return '( '+' '.join([children_str[0], children_str[1]]+children_str[2:])+' )'
+            elif format == 'prefix': return '( '+' '.join([children_str[1], children_str[0]] + children_str[2:])+' )'
             elif format == 'postfix': return '( '+' '.join([children_str[0]]+children_str[2:] + [children_str[1]])+' )'
             else: raise ValueError("%s Unexisting format" % format)
         else:
@@ -411,8 +412,8 @@ def make_noise_plots():
     import matplotlib.pylab as plt
     from .MathTreebank import MathTreebank
     from .treebanks import test_treebank
-    digits = np.arange(-5,5)
-    languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4',150) , ('L5',150)])
+    digits = np.arange(-5, 5)
+    languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4', 150) , ('L5', 150)])
     m = MathTreebank(languages=languages, digits=digits)
     sae = {}
     sse = {}
