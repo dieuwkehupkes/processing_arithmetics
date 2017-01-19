@@ -697,7 +697,7 @@ class Seq2Seq(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-            expression.get_targets()
+            expression.get_targets(format=format)
             input_seq = [self.dmap[i] for i in expression.toString(format).split()]
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
