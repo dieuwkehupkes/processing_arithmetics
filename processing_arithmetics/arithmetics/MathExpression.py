@@ -161,7 +161,7 @@ class MathExpression(Tree):
                 op = -1
             else:
                 # number is digit
-                result = op_dict[op](result, int(symbol))
+                result = op_dict[op](result, float(symbol))
             # store state
 
             if digit_stack == []:
@@ -204,7 +204,7 @@ class MathExpression(Tree):
                 result = op_dict[op](prev, result)
             else:
                 # is digit
-                digit = int(symbol)
+                digit = float(symbol)
                 digit_stack.append(result)
                 result = digit
 
@@ -236,7 +236,7 @@ class MathExpression(Tree):
             else:
                 # is digit
                 stack.append(result)
-                result = int(symbol)
+                result = float(symbol)
 
             if stack == []:
                 stack_list.append([])
@@ -288,7 +288,7 @@ class MathExpression(Tree):
                 operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
             
             if symbol[-1].isdigit():
-                digit = int(symbol)
+                digit = float(symbol)
                 result = op_dict[op](result, digit)
 
             elif symbol == '(':
@@ -342,7 +342,7 @@ class MathExpression(Tree):
 
             else:
                 # is digit
-                digit = int(symbol)
+                digit = float(symbol)
                 op = np.power(-1, np.floor(stack.pop()/2))
                 result = op_dict[op](result, digit)
 
@@ -370,7 +370,7 @@ class MathExpression(Tree):
     
         for symbol in symbols:
             if symbol[-1].isdigit():
-                digit = int(symbol)
+                digit = float(symbol)
                 if subtracting:
                     result -= digit
                 else:
