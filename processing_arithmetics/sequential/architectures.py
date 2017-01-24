@@ -515,12 +515,7 @@ class ScalarPrediction(Training):
         X, Y = [], []
         pad_to = pad_to or self.input_length
         for expression, answer in treebank.examples:
-<<<<<<< HEAD
-            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
-=======
-            # str_expression = expression.to_string(format).split()
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
->>>>>>> 5d5cb7b1d63cc188f1f922637e1592a951c98e0f
             answer = answer
             X.append(input_seq)
             Y.append(answer)
@@ -702,13 +697,8 @@ class Seq2Seq(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-<<<<<<< HEAD
             expression.get_targets(format=format)
-            input_seq = [self.dmap[i] for i in expression.toString(format).split()]
-=======
-            expression.get_targets()
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
->>>>>>> 5d5cb7b1d63cc188f1f922637e1592a951c98e0f
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
 
