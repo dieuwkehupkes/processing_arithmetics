@@ -599,13 +599,13 @@ class ComparisonTraining(Training):
         # create model
         self.model = ArithmeticModel(input=[input1, input2], output=output_layer, dmap=self.dmap)
 
-    def data_from_treebank(self, treebank, format='infix'):
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
         Generate data from MathTreebank object.
         """
         # create empty input and targets
         X1, X2, Y = [], [], []
-        pad_to = self.input_length
+        pad_to = pad_to or self.input_length
 
         # loop over examples
         for example1, example2, compare in treebank.paired_examples():
@@ -835,7 +835,7 @@ class DiagnosticClassifier(Training):
         """
         # create dictionary with outputs
         X, Y = [], dict([(classifier, []) for classifier in self.classifiers]) 
-        pad_to = None or self.input_length
+        pad_to = pad_to or self.input_length
 
         # loop over examples
         for expression, answer in treebank.examples:
