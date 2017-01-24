@@ -89,7 +89,7 @@ class MathExpression(Tree):
             if self.label() in operators:
                 if operator_noise:
                     del operators[operators.index(self.label())]
-                    return (self.label() if np.random.uniform() < operator_noise else np.random.choice(operators))
+                    return (self.label() if np.random.uniform() > operator_noise else np.random.choice(operators))
                 else: return self.label()
             else:
                 if digit_noise > 0:
