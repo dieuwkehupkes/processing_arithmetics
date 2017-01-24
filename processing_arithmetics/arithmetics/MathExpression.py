@@ -438,7 +438,7 @@ class MathExpression(Tree):
         """
         Iterate over symbols in expression.
         """
-        for symbol in self.to_string(format=format, digit_noise=None, operator_noise=None).split():
+        for symbol in self.to_string(format=format, digit_noise=digit_noise, operator_noise=operator_noise).split():
             yield symbol
 
 # TODO this should perhaps go in a script instead of here
