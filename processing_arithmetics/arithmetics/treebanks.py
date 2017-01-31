@@ -23,10 +23,11 @@ ops = ['+', '-']
 def treebank(seed, kind, digits=ds,debug=False):
     np.random.seed(seed)
     if kind == 'test':
-        return test_treebank(digits, debug)
+        return test_treebank(seed, digits, debug)
     else:
         return MathTreebank(languages[kind+('_small'if debug else '')], digits=digits)
 
-def test_treebank(digits = ds, debug = False):
+def test_treebank(seed, digits = ds, debug = False):
+    np.random.seed(seed)
     for name, N in languages['test' + ('_small' if debug else '')].items():
         yield name, MathTreebank(languages={name: N}, digits=digits)
