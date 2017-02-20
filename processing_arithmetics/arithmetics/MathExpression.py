@@ -356,7 +356,7 @@ class MathExpression(Tree):
         else:
             return result
 
-    def solve_almost(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None):
+    def solve_almost(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
         """
         Solve expression with a simpel completely 
         local strategy that almost always gives the
@@ -382,6 +382,32 @@ class MathExpression(Tree):
                 if subtracting:
                     subtracting = False
     
+        return result
+
+    def solve_directly(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
+        """
+        Solve expression by just taking taking the value of every
+        operator.
+        """
+
+        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
+
+        # print(self.to_string())
+    
+        result = 0
+        op = operator.add
+    
+        for symbol in symbols:
+            if symbol[-1].isdigit():
+                digit = float(symbol)
+                result = op(result, digit)
+            elif symbol == '-':
+                op = operator.sub
+            elif symbol == '+':
+                op = operator.add
+
+        # raw_input(result)
+
         return result
 
     def add_noise(self, stack, stack_noise):
