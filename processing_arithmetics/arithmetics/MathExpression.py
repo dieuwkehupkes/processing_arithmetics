@@ -286,16 +286,19 @@ class MathExpression(Tree):
             if stack_noise:
                 # apply noise to stack
                 operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
-            
+                # apply noise to memory
+                op = op + np.random.normal(0, stack_noise)
+                result = result + np.random.normal(0, stack_noise)
+
             if symbol[-1].isdigit():
                 digit = float(symbol)
-                result = op_dict[op](result, digit)
+                result = op_dict[np.power(-1, np.floor(op/2))](result, digit)
 
             elif symbol == '(':
                 operator_stack.append(op)
 
             elif symbol == ')':
-                op = np.power(-1, np.floor(operator_stack.pop()/2))
+                op = operator_stack.pop()
 
             elif symbol == '+':
                 pass
@@ -303,9 +306,10 @@ class MathExpression(Tree):
             elif symbol == '-':
                 op = - op
 
-            intermediate_results.append(result)
-            brackets.append(operator_stack)
-            operator_list.append({-1: [1], 1:[0]}[op])
+            if return_sequences:
+                intermediate_results.append(result)
+                brackets.append(operator_stack)
+                operator_list.append({-1: [1], 1:[0]}[op])
 
         if return_sequences:
             return intermediate_results, brackets, operator_list
@@ -395,6 +399,7 @@ class MathExpression(Tree):
         # print(self.to_string())
     
         result = 0
+        results = []
         op = operator.add
     
         for symbol in symbols:
@@ -406,7 +411,10 @@ class MathExpression(Tree):
             elif symbol == '+':
                 op = operator.add
 
-        # raw_input(result)
+            results.append(result)
+
+        if return_sequences:
+            return results
 
         return result
 
@@ -420,7 +428,7 @@ class MathExpression(Tree):
 
         return noisy_stack[:]
         
-    def get_targets(self, format='infix'):
+    def get_targets(self, format='infix', **kwargs):
         """
         Compute all intermediate state variables
         that different approaches of computing the outcome
@@ -428,6 +436,7 @@ class MathExpression(Tree):
         """
         intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
         intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
+        intermediate_directly = self.solve_directly(return_sequences=True, format=format)
 
         self.targets = {}
 
@@ -447,9 +456,9 @@ class MathExpression(Tree):
 
         # intermediate outcomes recursive computation
         self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
-
-        # element on top of stack
-        # self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
+        
+        # intermediate outcomes direct computation
+        self.targets['intermediate_directly'] = [[val] for val in intermediate_directly]
 
 
     def print_all_targets(self):
