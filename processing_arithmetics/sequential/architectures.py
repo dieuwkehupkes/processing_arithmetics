@@ -9,7 +9,7 @@ from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
 import copy
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -207,6 +207,8 @@ class Training(object):
 
         # compile model
         self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
+
+        print "compiled model"
 
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
@@ -697,7 +699,7 @@ class Seq2Seq(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-            expression.get_targets(format=format)
+            expression.get_targets(format, 'intermediate_locally')
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
@@ -760,7 +762,7 @@ class DiagnosticClassifier(Training):
                 'subtracting': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'depth': ['mean_squared_error'],
+                'depth': ['mean_squared_error', 'binary_accuracy'],
                 }  
 
         self.activations = {
@@ -845,7 +847,7 @@ class DiagnosticClassifier(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-            expression.get_targets(format=format)
+            expression.get_targets(format, *self.classifiers)
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             for classifier in self.classifiers:

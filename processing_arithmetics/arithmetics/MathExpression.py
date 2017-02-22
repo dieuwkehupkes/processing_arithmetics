@@ -418,7 +418,7 @@ class MathExpression(Tree):
 
         return result
 
-    def get_depth(self, format='infix'):
+    def get_depths(self, format='infix'):
         """
         Return a sequence with the depth of
         the tree at each point in time.
@@ -461,7 +461,7 @@ class MathExpression(Tree):
         # create target dict
         self.targets = {}
 
-        if intermediate_locally in classifiers or 'subtracting' in classifiers:
+        if 'intermediate_locally' in classifiers or 'subtracting' in classifiers:
             intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
 
             # intermediate outcomes incremental computation
@@ -470,7 +470,7 @@ class MathExpression(Tree):
             # subtracting
             self.targets['subtracting'] = subtracting
         
-        if intermediate_recursively in classifiers or grammatical in classifiers:
+        if 'intermediate_recursively' in classifiers or 'grammatical' in classifiers:
             intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
 
             # sequence grammaticality
@@ -481,10 +481,8 @@ class MathExpression(Tree):
             # intermediate outcomes recursive computation
             self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
 
-        if depth in classifiers:
+        if 'depth' in classifiers:
             self.targets['depth'] = [[val] for val in self.get_depths()]
-
-
 
     def print_all_targets(self):
         """
