@@ -21,7 +21,7 @@ operators = ['+', '-']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-models", type=str, nargs="*", help="Models to diagnose")
-parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical'])
+parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth'])
 parser.add_argument("--nb_epochs", type=int, required=True)
 parser.add_argument("--save_to", help="Save model to filename")
 
@@ -45,7 +45,7 @@ args = parser.parse_args()
 # Set some params
 languages_train             = treebank(seed=args.seed, kind='train')
 languages_val              = treebank(seed=args.seed, kind='train')
-languages_test              = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='train')]
+languages_test              = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test')]
 
 results_all = {}
 

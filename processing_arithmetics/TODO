@@ -1,6 +1,3 @@
-- schrijf meer tests
-    - tests voor Sara?
-    - check if weights remain the same for diagnostic classifier
 
 - add also format (prefix, infix) to arithmetics model
 - seq2seq generate training data slaat niet echt ergens op nu vrees ik...
@@ -15,16 +12,11 @@
     - implement simulation weight changes?
     - write tests for different functionalities
 
-- make tests shorter?
-- fix all _untested funcs in scripts
-
-
 What is tested:
  - compileren en trainen van verschillende architecturen
  - train()
  - test() (ook met hercompilatie versch metrics)
 
+vervang alle 'subtracting'
 
-Wat is nog niet getest:
- - de rest ehe
-- verander namen A1, A4 in niet geteste
+verander targets implementation (voeg 'get_function' method toe die functie kan fetchen met een string)
