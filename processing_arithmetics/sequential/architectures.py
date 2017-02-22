@@ -751,7 +751,8 @@ class DiagnosticClassifier(Training):
                 'subtracting':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
                 'intermediate_directly': 'mean_squared_error',
-                'top_stack':'mean_squared_error_ignore'}
+                'depth': 'mse',
+                }
 
         self.metrics = {
                 'grammatical': ['binary_accuracy'], 
@@ -759,7 +760,8 @@ class DiagnosticClassifier(Training):
                 'subtracting': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
+                'depth': ['mean_squared_error'],
+                }  
 
         self.activations = {
                 'grammatical':'sigmoid',
@@ -767,7 +769,7 @@ class DiagnosticClassifier(Training):
                 'intermediate_directly': 'linear',
                 'subtracting': 'sigmoid',
                 'intermediate_recursively':'linear',
-                'top_stack': 'linear'}
+                'depth': 'linear'}
 
         self.output_size = {
                 'grammatical':1,
@@ -775,7 +777,7 @@ class DiagnosticClassifier(Training):
                 'intermediate_directly': 1,
                 'subtracting':1,
                 'intermediate_recursively':1,
-                'top_stack':1}
+                'depth':1}
 
         # set classifiers and attributes
         self.classifiers = classifiers
