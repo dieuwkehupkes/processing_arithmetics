@@ -438,6 +438,34 @@ class MathExpression(Tree):
 
         return depth_array
 
+    def get_modes(self, format='infix'):
+        """
+        Return the sequences of modes the model
+        goes through.
+        """
+
+        assert format == 'infix', "I did not implement this for formats other than infix"
+        symbols = self.iterate(format=format)
+
+        operator_stack = []
+        op = 1
+        operator_list = []
+
+        for symbol in symbols:
+
+            if symbol == '(':
+                operator_stack.append(op)
+
+            elif symbol == ')':
+                op = operator_stack.pop()
+
+            elif symbol == '-':
+                op = - op
+
+            operator_list.append({-1: '-', 1:'+'}[op])
+
+        return operator_list
+
 
     def add_noise(self, stack, stack_noise):
         # check if stack is empty
