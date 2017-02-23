@@ -208,8 +208,6 @@ class Training(object):
         # compile model
         self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
 
-        print "compiled model"
-
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
         sample_weight = self.get_sample_weights(training_data, sample_weight)

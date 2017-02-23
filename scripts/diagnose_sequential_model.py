@@ -44,7 +44,7 @@ args = parser.parse_args()
 ####################################################
 # Set some params
 languages_train             = treebank(seed=args.seed, kind='train')
-languages_val              = treebank(seed=args.seed, kind='train')
+languages_val              = treebank(seed=args.seed, kind='heldout')
 languages_test              = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test')]
 
 results_all = {}
@@ -68,7 +68,7 @@ for model in args.models:
     training = DiagnosticClassifier(digits=digits, operators=operators, model=model, classifiers=args.classifiers)
 
     training_data = training_data or training.generate_training_data(languages_train, format=format)
-    validation_data = training_data or training.generate_training_data(languages_val, format=format)
+    validation_data = validation_data or training.generate_training_data(languages_val, format=format)
 
     training.train(training_data=training_data, validation_data=validation_data, 
             validation_split=args.val_split, batch_size=args.batch_size,
