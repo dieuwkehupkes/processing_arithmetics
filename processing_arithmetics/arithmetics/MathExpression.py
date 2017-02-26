@@ -384,6 +384,27 @@ class MathExpression(Tree):
     
         return result
 
+    def get_depth(self, format='infix'):
+        """
+        Return a sequence with the depth of
+        the tree at each point in time.
+        """
+        symbols = self.iterate(format=format)
+
+        depth = 0
+        depth_array = []
+
+        for symbol in symbols:
+            if symbol == '(':
+                depth += 1
+            elif symbol == ')':
+                depth -= 1
+
+            depth_array.append(depth)
+
+        return depth_array
+
+
     def add_noise(self, stack, stack_noise):
         # check if stack is empty
         if len(stack) == 0:
@@ -394,42 +415,48 @@ class MathExpression(Tree):
 
         return noisy_stack[:]
         
-    def get_targets(self, format='infix'):
+    def get_targets(self, format='infix', *classifiers):
         """
         Compute all intermediate state variables
         that different approaches of computing the outcome
         of the equation would need.
         """
-        intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
-        intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
 
+        if not classifiers:
+            classifiers = ['intermediate_locally', 'intermediate_recursively']
+        # create target dict
         self.targets = {}
 
-        # grammaticality of sequence
-        grammatical = [[0]]*len(intermediate_recursively)
-        grammatical[-1] = [1]
-        self.targets['grammatical'] = grammatical
+        if intermediate_locally in classifiers or 'subtracting' in classifiers:
+            intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
 
-        # intermediate outcomes local computation
-        try:
+            # intermediate outcomes incremental computation
             self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
-        except TypeError:
-            self.targets['intermediate_locally'] = None
 
-        # subtracting
-        self.targets['subtracting'] = subtracting
+            # subtracting
+            self.targets['subtracting'] = subtracting
+        
+        if intermediate_recursively in classifiers or grammatical in classifiers:
+            intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
 
-        # intermediate outcomes recursive computation
-        self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
+            # sequence grammaticality
+            grammatical = [[0]]*len(intermediate_recursively)
+            grammatical[-1] = [1]
+            self.targets['grammatical'] = grammatical
 
-        # element on top of stack
-        # self.targets['top_stack'] = [[stack[-1][-1]] for stack in stack_recursively]
+            # intermediate outcomes recursive computation
+            self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
+
+        if depth in classifiers:
+            self.targets['depth'] = [[val] for val in self.get_depths()]
 
 
-    def print_all_targets(self):
+
+    def print_all_targets(self, format='infix'):
         """
         List all possible targets
         """
+        self.get_targets(format)
         for target in self.targets:
             print(target)
 
@@ -441,34 +468,3 @@ class MathExpression(Tree):
         for symbol in self.to_string(format=format, digit_noise=digit_noise, operator_noise=operator_noise).split():
             yield symbol
 
-# TODO this should perhaps go in a script instead of here
-def make_noise_plots():
-    import matplotlib.pylab as plt
-    from .MathTreebank import MathTreebank
-    from .treebanks import test_treebank
-    digits = np.arange(-5, 5)
-    languages = OrderedDict([('L1', 30), ('L2', 150), ('L3', 150), ('L4', 150) , ('L5', 150)])
-    m = MathTreebank(languages=languages, digits=digits)
-    sae = {}
-    sse = {}
-    mae = []
-    mse = []
-    for name, m in test_treebank(seed=5, languages=languages):
-        sae[name] = 0
-        sse[name] = 0
-        for expression, answer in m.examples:
-            results_locally = np.array([expression.solve_locally(format="infix", return_sequences=True)[0]], stack_noise=0.2)
-            results_recursively = np.array([expression.solve_recursively(format="infix", return_sequences=False)[0]], stack_noise=0.2)
-
-            sae[name] += np.mean(np.absolute(results_locally-results_recursively))
-            sse[name] += np.mean(np.square(results_locally-results_recursively))
-
-        mse.append(sse[name]/len(m.examples))
-        mae.append(sae[name]/len(m.examples))
-
-    fig, ax = plt.subplots()
-    ax.plot(range(5), mse, label='mse')
-    ax.plot(range(5), mae, label='mae')
-    ax.set_xticklabels(languages.keys())
-    plt.legend()
-    plt.show()
