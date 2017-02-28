@@ -286,16 +286,19 @@ class MathExpression(Tree):
             if stack_noise:
                 # apply noise to stack
                 operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
-            
+                # apply noise to memory
+                op = op + np.random.normal(0, stack_noise)
+                result = result + np.random.normal(0, stack_noise)
+
             if symbol[-1].isdigit():
                 digit = float(symbol)
-                result = op_dict[op](result, digit)
+                result = op_dict[np.power(-1, np.floor(op/2))](result, digit)
 
             elif symbol == '(':
                 operator_stack.append(op)
 
             elif symbol == ')':
-                op = np.power(-1, np.floor(operator_stack.pop()/2))
+                op = operator_stack.pop()
 
             elif symbol == '+':
                 pass
@@ -303,9 +306,10 @@ class MathExpression(Tree):
             elif symbol == '-':
                 op = - op
 
-            intermediate_results.append(result)
-            brackets.append(operator_stack)
-            operator_list.append({-1: [1], 1:[0]}[op])
+            if return_sequences:
+                intermediate_results.append(result)
+                brackets.append(operator_stack[:])
+                operator_list.append({-1: [1], 1:[0]}[op])
 
         if return_sequences:
             return intermediate_results, brackets, operator_list
@@ -356,7 +360,7 @@ class MathExpression(Tree):
         else:
             return result
 
-    def solve_almost(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None):
+    def solve_almost(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
         """
         Solve expression with a simpel completely 
         local strategy that almost always gives the
@@ -384,7 +388,37 @@ class MathExpression(Tree):
     
         return result
 
-    def get_depth(self, format='infix'):
+    def solve_directly(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
+        """
+        Solve expression by just taking taking the value of every
+        operator.
+        """
+
+        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
+
+        # print(self.to_string())
+    
+        result = 0
+        results = []
+        op = operator.add
+    
+        for symbol in symbols:
+            if symbol[-1].isdigit():
+                digit = float(symbol)
+                result = op(result, digit)
+            elif symbol == '-':
+                op = operator.sub
+            elif symbol == '+':
+                op = operator.add
+
+            results.append(result)
+
+        if return_sequences:
+            return results
+
+        return result
+
+    def get_depths(self, format='infix'):
         """
         Return a sequence with the depth of
         the tree at each point in time.
@@ -403,6 +437,34 @@ class MathExpression(Tree):
             depth_array.append(depth)
 
         return depth_array
+
+    def get_modes(self, format='infix'):
+        """
+        Return the sequences of modes the model
+        goes through.
+        """
+
+        assert format == 'infix', "I did not implement this for formats other than infix"
+        symbols = self.iterate(format=format)
+
+        operator_stack = []
+        op = 1
+        operator_list = []
+
+        for symbol in symbols:
+
+            if symbol == '(':
+                operator_stack.append(op)
+
+            elif symbol == ')':
+                op = operator_stack.pop()
+
+            elif symbol == '-':
+                op = - op
+
+            operator_list.append({-1: '-', 1:'+'}[op])
+
+        return operator_list
 
 
     def add_noise(self, stack, stack_noise):
@@ -427,7 +489,7 @@ class MathExpression(Tree):
         # create target dict
         self.targets = {}
 
-        if intermediate_locally in classifiers or 'subtracting' in classifiers:
+        if 'intermediate_locally' in classifiers or 'subtracting' in classifiers:
             intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
 
             # intermediate outcomes incremental computation
@@ -436,7 +498,7 @@ class MathExpression(Tree):
             # subtracting
             self.targets['subtracting'] = subtracting
         
-        if intermediate_recursively in classifiers or grammatical in classifiers:
+        if 'intermediate_recursively' in classifiers or 'grammatical' in classifiers:
             intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
 
             # sequence grammaticality
@@ -447,10 +509,8 @@ class MathExpression(Tree):
             # intermediate outcomes recursive computation
             self.targets['intermediate_recursively'] = [[val] for val in intermediate_recursively]
 
-        if depth in classifiers:
+        if 'depth' in classifiers:
             self.targets['depth'] = [[val] for val in self.get_depths()]
-
-
 
     def print_all_targets(self, format='infix'):
         """

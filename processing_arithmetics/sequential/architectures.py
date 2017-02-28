@@ -7,6 +7,7 @@ import os
 from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
 from keras.models import ArithmeticModel
+import theano
 import copy
 import matplotlib
 # matplotlib.use('Agg')
@@ -33,6 +34,7 @@ class Training(object):
         self.input_dim = len(self.dmap)+1
         self.digits = digits
         self.operators = operators
+        self.activation_func = None
 
     def generate_model(self, recurrent_layer, input_size, input_length, size_hidden,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
@@ -121,7 +123,7 @@ class Training(object):
     @staticmethod
     def _dmap(digits, operators):
         """
-        Generate a mapp from integers to digits
+        Generate a map from integers to digits
         and operators. Be very careful changing this map,
         using different dmaps across training and testing
         will not give sensible results.
@@ -256,6 +258,21 @@ class Training(object):
             evaluation[name] = dict([(self.model.metrics_names[i], acc[i]) for i in xrange(len(acc))])
         return evaluation
 
+    def get_activations(self, input_data):
+        """
+        Get the activation values of the hidden layer
+        given an input.
+        """
+        if not self.activation_func:
+            self._make_activation_func()
+
+        return self.activations_func(input_data)
+
+    def _make_activation_func(self):
+
+        self.activations_func = theano.function([self.model.layers[0].input], [self.model.layers[self.get_recurrent_layer_id()].output])
+
+
     def evaluation_string(self, evaluation):
         """
         Print evaluation results in a readable fashion.
@@ -297,7 +314,8 @@ class Training(object):
     def model_summary(self):
         print(self.model.summary())
 
-    def get_model_info(self, model):
+    @staticmethod
+    def get_model_info(model):
         """
         Get different type of weights from a json model. Check
         if network falls in family of networks that we are
@@ -697,7 +715,7 @@ class Seq2Seq(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-            expression.get_targets(format=format)
+            expression.get_targets(format, 'intermediate_locally')
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
@@ -750,28 +768,34 @@ class DiagnosticClassifier(Training):
                 'intermediate_locally': 'mean_squared_error',
                 'subtracting':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
-                'top_stack':'mean_squared_error_ignore'}
+                'intermediate_directly': 'mean_squared_error',
+                'depth': 'mse',
+                }
 
         self.metrics = {
                 'grammatical': ['binary_accuracy'], 
                 'intermediate_locally': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'subtracting': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'top_stack': ['mean_squared_error_ignore', 'mean_squared_prediction_error_ignore']}  
+                'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
+                'depth': ['mean_squared_error', 'binary_accuracy'],
+                }  
 
         self.activations = {
                 'grammatical':'sigmoid',
                 'intermediate_locally': 'linear',
+                'intermediate_directly': 'linear',
                 'subtracting': 'sigmoid',
                 'intermediate_recursively':'linear',
-                'top_stack': 'linear'}
+                'depth': 'linear'}
 
         self.output_size = {
                 'grammatical':1,
                 'intermediate_locally': 1,
+                'intermediate_directly': 1,
                 'subtracting':1,
                 'intermediate_recursively':1,
-                'top_stack':1}
+                'depth':1}
 
         # set classifiers and attributes
         self.classifiers = classifiers
@@ -839,7 +863,7 @@ class DiagnosticClassifier(Training):
 
         # loop over examples
         for expression, answer in treebank.examples:
-            expression.get_targets(format=format)
+            expression.get_targets(format, *self.classifiers)
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             for classifier in self.classifiers:
