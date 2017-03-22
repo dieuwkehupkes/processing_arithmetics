@@ -32,9 +32,6 @@ class GRU_output_gates(GRU):
         :return:
         """
 
-        # split x into gate values, input and prev hidden layer?
-        x = x[:self.output_dim, :]
-
         h_tm1 = states[0]  # previous memory
         B_U = states[1]  # dropout matrices for recurrent units
         B_W = states[2]
@@ -74,8 +71,6 @@ class GRU_output_gates(GRU):
 
         # concatenate hidden layer activation and gate values
         all = K.concatenate([h, z, r])
-
-        # TODO create matrix that is a concatenation of input and gate values
 
         return all, [h]
 
