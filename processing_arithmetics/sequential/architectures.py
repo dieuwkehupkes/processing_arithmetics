@@ -6,6 +6,7 @@ import keras.preprocessing.sequence
 import os
 from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
+from GRU_output_gates import GRU_output_gates
 from keras.models import ArithmeticModel
 import theano
 import copy
@@ -35,6 +36,7 @@ class Training(object):
         self.digits = digits
         self.operators = operators
         self.activation_func = None
+        self.gate_activation_func = None
 
     def generate_model(self, recurrent_layer, input_size, input_length, size_hidden,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
@@ -115,6 +117,7 @@ class Training(object):
 
 
         input_length = kwargs.get('input_length', model_info['input_length'])
+        kwargs.pop('input_length', None)
 
         # run build function
         self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, **kwargs)
@@ -266,11 +269,53 @@ class Training(object):
         if not self.activation_func:
             self._make_activation_func()
 
-        return self.activations_func(input_data)
+        return self.activations_func(input_data)[0]
+
+    def get_gate_activations(self, input_data):
+        """
+        Get the gate activations of the hidden
+        layer given an array with input data.
+        """
+        if not self.gate_activation_func:
+            self._make_gate_activation_func()
+
+        all_activations = self.gate_activation_func(input_data)[0]
+
+        hl_activations = all_activations[:,:,:self.rec_dim]
+        z = all_activations[:,:,self.rec_dim:2*self.rec_dim]
+        r = all_activations[:,:,2*self.rec_dim:]
+        return hl_activations, z, r
 
     def _make_activation_func(self):
 
         self.activations_func = theano.function([self.model.layers[0].input], [self.model.layers[self.get_recurrent_layer_id()].output])
+
+    def _make_gate_activation_func(self):
+
+        rec_id = self.get_recurrent_layer_id()
+
+        recurrent_layer = self.model.layers[rec_id]
+
+        assert recurrent_layer.__class__.__name__ == 'GRU', "get gate activations only implemented for GRU"
+
+        # get config of recurrent layer, set config
+        rec_config = recurrent_layer.get_config()
+        self.rec_dim = rec_config['output_dim']
+
+        gate_output_layer = GRU_output_gates(output_dim=rec_config['output_dim'],
+                                             input_length=rec_config['input_length'],
+                                             activation=rec_config['activation'],
+                                             weights=recurrent_layer.get_weights(),
+                                             return_sequences=True)(
+                                                     self.model.layers[rec_id-1].get_output_at(0))
+
+        self.gate_activation_func = theano.function([self.model.layers[0].input], [gate_output_layer])
+
+
+
+
+
+
 
 
     def evaluation_string(self, evaluation):
@@ -759,9 +804,6 @@ class DiagnosticClassifier(Training):
         # run superclass init
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
 
-        assert model is not None, "Call constructor on a model to diagnose"
-        assert classifiers is not None, "Add diagnostic classifiers to diagnose model"
-
         # set loss and metric functions
         self.loss = {
                 'grammatical': 'binary_crossentropy',
@@ -802,7 +844,7 @@ class DiagnosticClassifier(Training):
         self.set_attributes()
 
         # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings'], classifiers=classifiers)
+        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifiers'], classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
