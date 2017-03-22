@@ -308,7 +308,7 @@ class MathExpression(Tree):
 
             if return_sequences:
                 intermediate_results.append(result)
-                brackets.append(operator_stack)
+                brackets.append(operator_stack[:])
                 operator_list.append({-1: [1], 1:[0]}[op])
 
         if return_sequences:
@@ -512,10 +512,11 @@ class MathExpression(Tree):
         if 'depth' in classifiers:
             self.targets['depth'] = [[val] for val in self.get_depths()]
 
-    def print_all_targets(self):
+    def print_all_targets(self, format='infix'):
         """
         List all possible targets
         """
+        self.get_targets(format)
         for target in self.targets:
             print(target)
 
