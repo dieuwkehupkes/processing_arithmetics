@@ -809,6 +809,10 @@ class DiagnosticClassifier(Training):
                 'grammatical': 'binary_crossentropy',
                 'intermediate_locally': 'mean_squared_error',
                 'subtracting':'binary_crossentropy',
+                'minus1depth':'binary_crossentropy',
+                'minus2depth':'binary_crossentropy',
+                'minus3depth':'binary_crossentropy',
+                'minus4depth':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
                 'intermediate_directly': 'mean_squared_error',
                 'depth': 'mse',
@@ -818,6 +822,10 @@ class DiagnosticClassifier(Training):
                 'grammatical': ['binary_accuracy'], 
                 'intermediate_locally': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'subtracting': ['binary_accuracy'],
+                'minus1depth': ['binary_accuracy'],
+                'minus2depth': ['binary_accuracy'],
+                'minus3depth': ['binary_accuracy'],
+                'minus4depth': ['binary_accuracy'],
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'depth': ['mean_squared_error', 'binary_accuracy'],
@@ -828,6 +836,10 @@ class DiagnosticClassifier(Training):
                 'intermediate_locally': 'linear',
                 'intermediate_directly': 'linear',
                 'subtracting': 'sigmoid',
+                'minus1depth': 'sigmoid',
+                'minus2depth': 'sigmoid',
+                'minus3depth': 'sigmoid',
+                'minus4depth': 'sigmoid',
                 'intermediate_recursively':'linear',
                 'depth': 'linear'}
 
@@ -836,6 +848,10 @@ class DiagnosticClassifier(Training):
                 'intermediate_locally': 1,
                 'intermediate_directly': 1,
                 'subtracting':1,
+                'minus1depth':1,
+                'minus2depth':1,
+                'minus3depth':1,
+                'minus4depth':1,
                 'intermediate_recursively':1,
                 'depth':1}
 
