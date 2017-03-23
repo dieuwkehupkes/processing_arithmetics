@@ -418,6 +418,58 @@ class MathExpression(Tree):
 
         return result
 
+    def get_minus_depths(self, depth, format='infix'):
+        """
+        Return a sequence that has value 1 for every
+        point where the symbol is in a depth level deep
+        embedded minus sequence.
+        """
+        assert format == 'infix', "minus depth non sensible target for %s" % format
+
+        try:
+            return self.depths[depth]
+        except:
+            pass
+
+        symbols = self.iterate(format=format)
+
+        l = len(str(self).split())
+
+        self.depths = dict(zip([1, 2, 3, 4], np.zeros(4*l).reshape(4,l)))
+        stack_depth = []
+        count_brackets = False
+
+        i = 0
+        for symbol in symbols:
+            if symbol == '-':
+                stack_depth.append(1)
+                count_brackets = True
+
+            elif count_brackets:
+                if symbol == '(':
+                    stack_depth[-1] += 1
+                elif symbol == ')':
+                    stack_depth = [d-1 for d in stack_depth]
+                    
+                    if stack_depth[-1] == 0:
+                        stack_depth.pop(-1)
+
+                        if len(stack_depth) == 0:
+                            count_brackets = False
+
+            # change values for cur depths and lower
+            for d in xrange(1, len(stack_depth)+1):
+                try:
+                    self.depths[d][i] = 1
+                except KeyError:
+                    self.depths[d] = np.zeros(l)
+                    self.depths[d][i] = 1
+
+            i += 1
+
+        return self.depths[depth]
+
+            
     def get_depths(self, format='infix'):
         """
         Return a sequence with the depth of
@@ -512,6 +564,19 @@ class MathExpression(Tree):
         if 'depth' in classifiers:
             self.targets['depth'] = [[val] for val in self.get_depths()]
 
+        if 'minus1depth' in classifiers:
+            self.targets['depth1minus'] = [[val] for val in self.get_minus_depths(1)]
+
+        if 'minus2depth' in classifiers:
+            self.targets['depth2minus'] = [[val] for val in self.get_minus_depths(2)]
+
+        if 'minus3depth' in classifiers:
+            self.targets['depth3minus'] = [[val] for val in self.get_minus_depths(3)]
+
+        if 'minus4depth' in classifiers:
+            self.targets['depth4minus'] = [[val] for val in self.get_minus_depths(4)]
+
+
     def print_all_targets(self, format='infix'):
         """
         List all possible targets
@@ -520,11 +585,11 @@ class MathExpression(Tree):
         for target in self.targets:
             print(target)
 
-
     def iterate(self, format, digit_noise=None, operator_noise=None):
         """
         Iterate over symbols in expression.
         """
+
         for symbol in self.to_string(format=format, digit_noise=digit_noise, operator_noise=operator_noise).split():
             yield symbol
 
