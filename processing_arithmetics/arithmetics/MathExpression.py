@@ -565,16 +565,16 @@ class MathExpression(Tree):
             self.targets['depth'] = [[val] for val in self.get_depths()]
 
         if 'minus1depth' in classifiers:
-            self.targets['depth1minus'] = [[val] for val in self.get_minus_depths(1)]
+            self.targets['minus1depth'] = [[val] for val in self.get_minus_depths(1)]
 
         if 'minus2depth' in classifiers:
-            self.targets['depth2minus'] = [[val] for val in self.get_minus_depths(2)]
+            self.targets['minus2depth'] = [[val] for val in self.get_minus_depths(2)]
 
         if 'minus3depth' in classifiers:
-            self.targets['depth3minus'] = [[val] for val in self.get_minus_depths(3)]
+            self.targets['minus3depth'] = [[val] for val in self.get_minus_depths(3)]
 
         if 'minus4depth' in classifiers:
-            self.targets['depth4minus'] = [[val] for val in self.get_minus_depths(4)]
+            self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(4)]
 
 
     def print_all_targets(self, format='infix'):
