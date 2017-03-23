@@ -21,7 +21,7 @@ operators = ['+', '-']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-models", type=str, nargs="*", help="Models to diagnose")
-parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth'])
+parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth'])
 parser.add_argument("--nb_epochs", type=int, required=True)
 parser.add_argument("--save_to", help="Save model to filename")
 
