@@ -308,7 +308,7 @@ class MathExpression(Tree):
 
             if return_sequences:
                 intermediate_results.append(result)
-                brackets.append(operator_stack)
+                brackets.append(operator_stack[:])
                 operator_list.append({-1: [1], 1:[0]}[op])
 
         if return_sequences:
@@ -596,6 +596,7 @@ class MathExpression(Tree):
         """
         List all possible targets
         """
+        self.get_targets(format)
         for target in self.targets:
             print(target)
 
