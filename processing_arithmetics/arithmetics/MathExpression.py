@@ -437,33 +437,48 @@ class MathExpression(Tree):
 
         self.depths = dict(zip([1, 2, 3, 4], np.zeros(4*l).reshape(4,l)))
         stack_depth = []
-        count_brackets = False
+        self.depth_counts = dict(zip([1, 2, 3, 4], np.zeros(4*l).reshape(4,l)))
+        expect_left = False
 
         i = 0
         for symbol in symbols:
-            if symbol == '-':
-                stack_depth.append(1)
-                count_brackets = True
 
-            elif count_brackets:
-                if symbol == '(':
+            # check if scope has ended
+            if stack_depth:
+                if stack_depth[-1] == 0 and not expect_left:
+                    stack_depth.pop(-1)
+
+            if symbol == '-':
+                stack_depth.append(0)
+                expect_left = True
+
+            elif stack_depth:
+                if expect_left and symbol != '(':
+                    expect_left = False
+
+                elif symbol == '(':
                     stack_depth[-1] += 1
+
                 elif symbol == ')':
-                    stack_depth = [d-1 for d in stack_depth]
-                    
                     if stack_depth[-1] == 0:
                         stack_depth.pop(-1)
 
-                        if len(stack_depth) == 0:
-                            count_brackets = False
-
+                    if stack_depth:
+                        stack_depth[-1] -= 1
+                                
             # change values for cur depths and lower
             for d in xrange(1, len(stack_depth)+1):
+                # raw_input('\n%s' % symbol)
                 try:
                     self.depths[d][i] = 1
+                    self.depth_counts[d][i] = sum(stack_depth[d-1:])
                 except KeyError:
                     self.depths[d] = np.zeros(l)
                     self.depths[d][i] = 1
+                    self.depth_counts[d] = np.zeros(l)
+                    self.depths[d][i] = 0
+
+            # print(stack_depth)
 
             i += 1
 
