@@ -45,12 +45,12 @@ args = parser.parse_args()
 # Set some params
 languages_train             = treebank(seed=args.seed, kind='train')
 languages_val              = treebank(seed=args.seed, kind='heldout')
-languages_test              = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test')]
+languages_test              = [(name, tb) for name, tb in treebank(seed=args.seed_test, kind='test')]
 
 results_all = {}
 
-training_data=None
-validation_data=None
+training_data = None
+validation_data = None
 
 for model in args.models:
 
