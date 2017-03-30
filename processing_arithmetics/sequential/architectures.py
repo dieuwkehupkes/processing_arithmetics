@@ -815,6 +815,7 @@ class DiagnosticClassifier(Training):
                 'minus4depth':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
                 'intermediate_directly': 'mean_squared_error',
+                'minus1depth_count': 'mean_squared_error',
                 'depth': 'mse',
                 }
 
@@ -826,6 +827,7 @@ class DiagnosticClassifier(Training):
                 'minus2depth': ['binary_accuracy'],
                 'minus3depth': ['binary_accuracy'],
                 'minus4depth': ['binary_accuracy'],
+                'minus1depth_count': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'depth': ['mean_squared_error', 'binary_accuracy'],
@@ -840,6 +842,7 @@ class DiagnosticClassifier(Training):
                 'minus2depth': 'sigmoid',
                 'minus3depth': 'sigmoid',
                 'minus4depth': 'sigmoid',
+                'minus1depth_count':'linear',
                 'intermediate_recursively':'linear',
                 'depth': 'linear'}
 
@@ -852,6 +855,7 @@ class DiagnosticClassifier(Training):
                 'minus2depth':1,
                 'minus3depth':1,
                 'minus4depth':1,
+                'minus1depth_count':1,
                 'intermediate_recursively':1,
                 'depth':1}
 
