@@ -1,7 +1,4 @@
 from keras.callbacks import Callback
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
@@ -95,6 +92,10 @@ class VisualiseEmbeddings(Callback):
         """
         Plot embeddings
         """
+        # import plotting library
+        import matplotlib
+        import matplotlib.pyplot as plt
+        
         self.fig = plt.figure(figsize=(6,6))
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.ax.set_xlim([-1, 1])
@@ -161,6 +162,10 @@ class VisualiseEmbeddings(Callback):
 class DrawWeights(Callback):
 
     def __init__(self, figsize, layer_id=1, param_id=0):
+        # import plotting library
+        import matplotlib
+        import matplotlib.pyplot as plt
+        
         self.layer_id = layer_id
         self.param_id = param_id
         # Initialize the figure and axis
