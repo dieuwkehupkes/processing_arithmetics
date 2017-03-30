@@ -418,7 +418,7 @@ class MathExpression(Tree):
 
         return result
 
-    def get_minus_depths(self, depth, format='infix'):
+    def get_minus_depths(self, depth, counter=False, format='infix'):
         """
         Return a sequence that has value 1 for every
         point where the symbol is in a depth level deep
@@ -481,6 +481,9 @@ class MathExpression(Tree):
             # print(stack_depth)
 
             i += 1
+
+        if counter:
+            return self.depth_counts[depth]
 
         return self.depths[depth]
 
@@ -590,6 +593,9 @@ class MathExpression(Tree):
 
         if 'minus4depth' in classifiers:
             self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(4)]
+
+        if 'minus1depth_count' in classifiers:
+            self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(1, True)]
 
 
     def print_all_targets(self, format='infix'):

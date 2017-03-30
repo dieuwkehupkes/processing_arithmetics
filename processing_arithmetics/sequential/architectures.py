@@ -10,9 +10,6 @@ from GRU_output_gates import GRU_output_gates
 from keras.models import ArithmeticModel
 import theano
 import copy
-import matplotlib
-# matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import numpy as np
 import random
 
@@ -437,6 +434,10 @@ class Training(object):
         Plot loss on the last training
         of the network.
         """
+        # import libraries
+        import matplotlib
+        import matplotlib.pyplot as plt
+
         plt.plot(self.trainings_history.losses, label='Training set')
         plt.plot(self.trainings_history.val_losses, label='Validation set')
         plt.title("Loss during last training")
@@ -452,6 +453,11 @@ class Training(object):
         round of the network
         :param save_to_file:    file name to save file to
         """
+
+        # import libraries
+        import matplotlib
+        import matplotlib.pyplot as plt
+
         for metric in self.metrics:
             plt.plot(self.trainings_history.metrics_train[metric], label="%s training set" % metric)
             plt.plot(self.trainings_history.metrics_val[metric], label="%s validation set" % metric)
@@ -468,6 +474,10 @@ class Training(object):
         Plot the spectral radius of the recurrent connections
         of the network during training
         """
+        # import libraries
+        import matplotlib
+        import matplotlib.pyplot as plt
+
         plt.plot(self.trainings_history.esp)
         plt.title("Spectral radius of recurrent connections")
         plt.xlabel("Epoch")
@@ -480,6 +490,10 @@ class Training(object):
         2 dimensional embeddings)
         :return:
         """
+        # import libraries
+        import matplotlib
+        import matplotlib.pyplot as plt
+
         weights = self.model.layers[1].get_weights()[0]
         assert weights.shape[1] == 2, "visualise embeddings only available for 2d embeddings"
         # find limits
@@ -818,7 +832,8 @@ class DiagnosticClassifier(Training):
                 'minus4depth':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
                 'intermediate_directly': 'mean_squared_error',
-                'depth': 'mse'
+                'minus1depth_count': 'mean_squared_error',
+                'depth': 'mse',
                     }
 
         self.metrics = {
@@ -829,6 +844,7 @@ class DiagnosticClassifier(Training):
                 'minus2depth': ['binary_accuracy'],
                 'minus3depth': ['binary_accuracy'],
                 'minus4depth': ['binary_accuracy'],
+                'minus1depth_count': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'depth': ['mean_squared_error', 'binary_accuracy'],
@@ -843,6 +859,7 @@ class DiagnosticClassifier(Training):
                 'minus2depth': 'sigmoid',
                 'minus3depth': 'sigmoid',
                 'minus4depth': 'sigmoid',
+                'minus1depth_count':'linear',
                 'intermediate_recursively':'linear',
                 'depth': 'linear'}
 
@@ -855,6 +872,7 @@ class DiagnosticClassifier(Training):
                 'minus2depth':1,
                 'minus3depth':1,
                 'minus4depth':1,
+                'minus1depth_count':1,
                 'intermediate_recursively':1,
                 'depth':1}
 
