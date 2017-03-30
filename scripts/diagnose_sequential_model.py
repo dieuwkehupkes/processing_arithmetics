@@ -89,5 +89,5 @@ for model in args.models:
 
 
 # dump all results
-pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'.results','wb'))
+pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results','wb'))
 
