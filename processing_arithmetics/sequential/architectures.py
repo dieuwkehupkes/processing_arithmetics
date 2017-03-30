@@ -255,6 +255,9 @@ class Training(object):
         if metrics:
             self.model.compile(loss=self.loss_function, optimizer='adam', metrics=metrics)
 
+        else:
+            self.model.compile(loss=self.loss_function, optimizer='adam', metrics=self.metrics)
+
         evaluation = OrderedDict()
         for name, X, Y in test_data:
             acc = self.model.evaluate(X, Y)
@@ -815,8 +818,8 @@ class DiagnosticClassifier(Training):
                 'minus4depth':'binary_crossentropy',
                 'intermediate_recursively':'mean_squared_error',
                 'intermediate_directly': 'mean_squared_error',
-                'depth': 'mse',
-                }
+                'depth': 'mse'
+                    }
 
         self.metrics = {
                 'grammatical': ['binary_accuracy'], 
@@ -829,7 +832,7 @@ class DiagnosticClassifier(Training):
                 'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
                 'depth': ['mean_squared_error', 'binary_accuracy'],
-                }  
+                    }  
 
         self.activations = {
                 'grammatical':'sigmoid',
@@ -860,7 +863,7 @@ class DiagnosticClassifier(Training):
         self.set_attributes()
 
         # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifiers'], classifiers=classifiers)
+        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
