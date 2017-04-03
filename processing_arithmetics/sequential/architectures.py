@@ -7,7 +7,7 @@ import os
 from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
 from GRU_output_gates import GRU_output_gates
-from keras.models import ArithmeticModel
+from ArithmeticModel import ArithmeticModel
 import theano
 import theano.tensor as T
 import copy
@@ -88,7 +88,7 @@ class Training(object):
         """
 
         if isinstance(model, str):
-            model = load_model(model)
+            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel})
 
         model_info = self.get_model_info(model)
 
@@ -218,7 +218,7 @@ class Training(object):
         # fit model
         self.model.fit(X_train, Y_train, validation_data=validation_data,
                        validation_split=validation_split, batch_size=batch_size, 
-                       nb_epoch=epochs, sample_weight=sample_weight,
+                       epochs=epochs, sample_weight=sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         hist = callbacks[0]
@@ -301,9 +301,9 @@ class Training(object):
 
         # get config of recurrent layer, set config
         rec_config = recurrent_layer.get_config()
-        self.rec_dim = rec_config['output_dim']
+        self.rec_dim = rec_config['units']
 
-        gate_output_layer = GRU_output_gates(output_dim=rec_config['output_dim'],
+        gate_output_layer = GRU_output_gates(units=rec_config['units'],
                                              input_length=rec_config['input_length'],
                                              activation=rec_config['activation'],
                                              weights=recurrent_layer.get_weights(),
@@ -397,7 +397,7 @@ class Training(object):
                 assert 'type' not in model_info, 'Model has too many recurrent layers' 
                 model_info['recurrent_layer'] = layer_type
                 model_info['weights_recurrent'] = weights
-                model_info['size_hidden'] = layer.output_dim
+                model_info['size_hidden'] = layer.units
 
             elif layer_type in ['Masking', 'Lamdba']:
                 pass
@@ -575,7 +575,7 @@ class ScalarPrediction(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=self.train_embeddings,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         # create output layer
         if W_classifier is not None:
@@ -584,7 +584,7 @@ class ScalarPrediction(Training):
                              trainable=self.train_classifier, name='output')(recurrent)
 
         # create model
-        self.model = ArithmeticModel(input=input_layer, output=output_layer, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=output_layer, dmap=self.dmap)
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
@@ -657,7 +657,7 @@ class ComparisonTraining(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=self.train_recurrent,
-                                         dropout_U=self.dropout_recurrent)
+                                         recurrent_dropout=self.dropout_recurrent)
 
         embeddings1 = embeddings(input1)
         embeddings2 = embeddings(input2)
@@ -675,7 +675,7 @@ class ComparisonTraining(Training):
                              weights=W_classifier, name='output')(concat)
 
         # create model
-        self.model = ArithmeticModel(input=[input1, input2], output=output_layer, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=[input1, input2], outputs=output_layer, dmap=self.dmap)
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
@@ -755,7 +755,7 @@ class Seq2Seq(Training):
                                          weights=W_recurrent,
                                          trainable=True,
                                          return_sequences=True,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
 
@@ -763,7 +763,7 @@ class Seq2Seq(Training):
             W_classifier = W_classifier['output']
         output = TimeDistributed(Dense(1, activation='linear'), name='output')(mask)
 
-        self.model = ArithmeticModel(input=input_layer, output=output, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=output, dmap=self.dmap)
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
@@ -902,7 +902,7 @@ class DiagnosticClassifier(Training):
                                          weights=W_recurrent,
                                          trainable=False,
                                          return_sequences=True,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
         
@@ -913,10 +913,12 @@ class DiagnosticClassifier(Training):
                 weights = W_classifier[classifier]
             except KeyError:
                 weights = None
+            except KeyError:
+                weights = None
             classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(mask))
 
         # create model
-        self.model = ArithmeticModel(input=input_layer, output=classifiers, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
 
     def set_attributes(self):
         """

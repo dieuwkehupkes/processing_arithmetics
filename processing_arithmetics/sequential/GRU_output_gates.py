@@ -12,9 +12,9 @@ class GRU_output_gates(GRU):
     that intermediate values can be monitored.
 
     """
-    def __init__(self, output_dim, **kwargs):
+    def __init__(self, units, **kwargs):
         print("Running network with adapted GRU layer")
-        super(GRU_output_gates, self).__init__(output_dim, **kwargs)
+        super(GRU_output_gates, self).__init__(units, **kwargs)
 
     def build(self, input_shape):
         super(GRU_output_gates, self).build(input_shape)
@@ -39,24 +39,24 @@ class GRU_output_gates(GRU):
         if self.consume_less == 'gpu':
 
             matrix_x = K.dot(x * B_W[0], self.W) + self.b
-            matrix_inner = K.dot(h_tm1 * B_U[0], self.U[:, :2 * self.output_dim])
+            matrix_inner = K.dot(h_tm1 * B_U[0], self.U[:, :2 * self.units])
 
-            x_z = matrix_x[:, :self.output_dim]
-            x_r = matrix_x[:, self.output_dim: 2 * self.output_dim]
-            inner_z = matrix_inner[:, :self.output_dim]
-            inner_r = matrix_inner[:, self.output_dim: 2 * self.output_dim]
+            x_z = matrix_x[:, :self.units]
+            x_r = matrix_x[:, self.units: 2 * self.units]
+            inner_z = matrix_inner[:, :self.units]
+            inner_r = matrix_inner[:, self.units: 2 * self.units]
 
             z = self.inner_activation(x_z + inner_z)
             r = self.inner_activation(x_r + inner_r)
 
-            x_h = matrix_x[:, 2 * self.output_dim:]
-            inner_h = K.dot(r * h_tm1 * B_U[0], self.U[:, 2 * self.output_dim:])
+            x_h = matrix_x[:, 2 * self.units:]
+            inner_h = K.dot(r * h_tm1 * B_U[0], self.U[:, 2 * self.units:])
             hh = self.activation(x_h + inner_h)
         else:
             if self.consume_less == 'cpu':
-                x_z = x[:, :self.output_dim]
-                x_r = x[:, self.output_dim: 2 * self.output_dim]
-                x_h = x[:, 2 * self.output_dim:]
+                x_z = x[:, :self.units]
+                x_r = x[:, self.units: 2 * self.units]
+                x_h = x[:, 2 * self.units:]
             elif self.consume_less == 'mem':
                 x_z = K.dot(x * B_W[0], self.W_z) + self.b_z
                 x_r = K.dot(x * B_W[1], self.W_r) + self.b_r
