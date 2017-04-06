@@ -1,6 +1,6 @@
 from keras.models import load_model
 from collections import OrderedDict
-from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking
+from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking, Lambda
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
@@ -9,6 +9,7 @@ from ..arithmetics import MathTreebank
 from GRU_output_gates import GRU_output_gates
 from keras.models import ArithmeticModel
 import theano
+import theano.tensor as T
 import copy
 import numpy as np
 import random
@@ -312,12 +313,6 @@ class Training(object):
         self.gate_activation_func = theano.function([self.model.layers[0].input], [gate_output_layer])
 
 
-
-
-
-
-
-
     def evaluation_string(self, evaluation):
         """
         Print evaluation results in a readable fashion.
@@ -403,6 +398,9 @@ class Training(object):
                 model_info['recurrent_layer'] = layer_type
                 model_info['weights_recurrent'] = weights
                 model_info['size_hidden'] = layer.output_dim
+
+            elif layer_type in ['Masking', 'Lamdba']:
+                pass
 
             else:
                 if weights != []:
@@ -913,7 +911,7 @@ class DiagnosticClassifier(Training):
         for classifier in self.classifiers:
             try:
                 weights = W_classifier[classifier]
-            except TypeError:
+            except KeyError:
                 weights = None
             classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(mask))
 
@@ -977,3 +975,144 @@ class DiagnosticClassifier(Training):
         """
         return 2
 
+
+class DCgates(DiagnosticClassifier):
+    """
+    Train simple classifiers to predict information from 
+    the gates of an already trained model.
+    """
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None, gates=['r', 'z', 'both']):
+        # run superclass init
+        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
+
+        # set loss and metric functions
+        self.loss = {
+                'switch_mode': 'binary_crossentropy',
+                    }
+
+        self.metrics = {
+                'switch_mode': ['binary_accuracy'], 
+                    }  
+
+        self.activations = {
+                'switch_mode':'sigmoid',
+                    }
+
+        self.output_size = {
+                'switch_mode':1,
+                    }
+
+        # set classifiers and attributes
+        self.classifiers = classifiers
+        self.set_attributes(model)
+
+        # add model
+        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        """
+        Build model with given embeddings and recurrent weights.
+        """
+        # fetch adapted recurrent layer
+        self.recurrent_layer = {'GRU':GRU_output_gates}[self.recurrent_name]
+
+        # create input layer
+        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               trainable=False,
+                               mask_zero=self.mask_zero,
+                               name='embeddings')(input_layer)
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         weights=W_recurrent,
+                                         trainable=False,
+                                         return_sequences=True,
+                                         dropout_U=self.dropout_recurrent)(embeddings)
+
+        # get gate shape values
+        def gate_shape(input_shape):
+            shape = list(input_shape)
+            shape[-1] /= 3
+            return tuple(shape)
+
+        # function to get update gate
+        def get_update_gate(state_concatenations):
+            s = self.size_hidden
+            return T.split(state_concatenations, [s, s, s], 3, axis=-1)[1]
+
+        # function to get reset gate
+        def get_reset_gate(state_concatenations):
+            s = self.size_hidden
+            return T.split(state_concatenations, [s, s, s], 3, axis=-1)[2]
+
+        # create gate layers
+        update_gate = Lambda(get_update_gate, output_shape=gate_shape)(recurrent)
+        reset_gate = Lambda(get_reset_gate, output_shape=gate_shape)(recurrent)
+
+        # add classifier layers
+        classifiers = []
+        for classifier in self.classifiers:
+            try:
+                weights = W_classifier[classifier]
+            except TypeError:
+                weights = None
+            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'update_gate')(update_gate))
+            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'reset_gate')(reset_gate))
+
+        # create model
+        self.model = ArithmeticModel(input=input_layer, output=classifiers, dmap=self.dmap)
+
+    def set_attributes(self, model):
+        """
+        Set the classifiers that should be trained and their
+        corresponding lossfunctions, metrics and output sizes
+        as attributes to the class.
+        """
+        model_info = self.get_model_info(model)
+        self.recurrent_name = model_info['recurrent_layer']
+        try:
+            self.gates = {'GRU':['update_gate', 'reset_gate']}[self.recurrent_name]
+        except KeyError:
+            raise ValueError("output gates not implemented for %s" % self.recurrent_name)
+
+        self.loss_function = dict([(key+'_'+gate, self.loss[key])
+            for key in self.classifiers for gate in self.gates])
+        self.metrics = dict([(key, self.metrics[key])
+            for key in self.classifiers for gate in self.gates])
+        self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
+        self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
+
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
+        """
+        Generate test data from a MathTreebank object.
+        """
+        # create dictionary with outputs
+        X, Y = [], dict([(classifier+'-'+gate, []) for classifier in self.classifiers for gate in self.gates]) 
+        pad_to = pad_to or self.input_length
+
+        classifiers = [clas+'_'+gate for clas in self.classifiers for gate in self.gates]
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            expression.get_targets(format, *self.classifiers)
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+            X.append(input_seq)
+            for classifier in classifiers:
+                target = expression.targets[classifier]
+                Y[classifier].append(target)
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+        # make numpy arrays from Y data
+        for output in Y:
+            Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
+
+        X = {'input': X_padded}
+
+        return X, Y
