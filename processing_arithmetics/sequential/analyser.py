@@ -17,8 +17,6 @@ def visualise_hidden_layer(output_classifier, *inputs):
     :param hl_activations: 2 dimensional np array
 
     """
-
-
     cols = len(inputs)
     col = 1
 
@@ -30,7 +28,7 @@ def visualise_hidden_layer(output_classifier, *inputs):
     for hl_activations, labels, modes in inputs:
 
         # cut off zero activations
-        hl_nonzero = hl_activations[np.any(hl_activations!=0, axis=-1)]
+        hl_nonzero = hl_activations[np.any(hl_activations != 0, axis=-1)]
         
         rows = hl_nonzero.shape[0]
         plt.subplot(1, cols, col)
@@ -39,15 +37,8 @@ def visualise_hidden_layer(output_classifier, *inputs):
             # plot activation values and labels
             plt.text(-1.3, i+0.2, labels[i])
             plt.text(-2.8, i+0.2, modes[i])
-            plt.axis('off')
+        plt.axis('off')
         col += 1
-
-    # plot the output classifier
-    # for i in xrange(cols):
-    #     plt.subplot(2, cols, col)
-    #     plt.imshow(output_classifier, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
-    #     plt.axis('off')
-    #     col += 1
 
     fig.tight_layout(w_pad=0.8)
 
@@ -64,28 +55,30 @@ def plot_gate_values(*inputs):
     :param inputs:
     :return:
     """
-    # GRU has 1 hidden layer and 2 gates
-    cols = 3
     rows, row = len(inputs), 1
+    # maxlen = find_longest(inputs)
 
     # fig = plt.figure(figsize=(10, 5*rows/3))
-    fig = plt.figure()  # TODO find optimal figsize
+    plt.subplots(nrows=len(inputs), ncols=3, sharex=True, sharey=True)
 
-    for hl, z, r, labels in inputs:
+    for hl, z, r, labels, modes in inputs:
 
         # cut off zero activations
-        hl_nonzero = hl[np.any(hl!=0, axis=-1)]
-        z_nonzero = z[np.any(z!=0, axis=-1)]
-        r_nonzero = z[np.any(r!=0, axis=-1)]
+        hl_nonzero = hl[np.any(hl != 0, axis=-1)]
+        z_nonzero = z[np.any(z != 0, axis=-1)]
+        r_nonzero = r[np.any(r != 0, axis=-1)]
 
-        rows = hl_nonzero.shape[0]
+        length = hl_nonzero.shape[0]
 
         # plot hl activation
         plt.subplot(rows, 3, row*3-2)
-        plt.imshow(hl_nonzero, interpolation='nearest', cmap=colourmap(), vmin=-1, vmax=1)
-        for i in xrange(rows):
-            plt.text(-2, i, labels[i])
-            plt.axis('off')
+        plt.imshow(hl_nonzero, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
+        for i in xrange(length):
+            # plot activation values and labels
+            # plt.text(-1.3, i+0.2, labels[i])
+            plt.text(-2.8, i, modes[i])
+            plt.text(-1.8, i, labels[i])
+        plt.axis('off')
 
         # plot gate values
         plt.subplot(rows, 3, row*3-1)
@@ -95,9 +88,11 @@ def plot_gate_values(*inputs):
         plt.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
         plt.axis('off')
 
-        row += 1
+        row += 1 
 
-    # TODO plot colorbars
+    # plt.subplots_adjust(right=0.9, bottom=0.1, top=0.9)
+    # cax = plt.axes([0.95, 0.15, 0.02, 0.7])
+    # plt.colorbar(cax=cax, orientation='vertical')
 
     plt.show()
 
