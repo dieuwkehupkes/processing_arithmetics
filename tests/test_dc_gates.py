@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from processing_arithmetics.arithmetics.MathTreebank import MathTreebank
-from processing_arithmetics.sequential.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training, DCgates
+from processing_arithmetics.sequential.architectures import ScalarPrediction, Seq2Seq, Training, DCgates
 from keras.layers import GRU
 import pickle
 import os
@@ -12,7 +12,7 @@ def data():
     return data
 
 @pytest.fixture(params=[
-    ComparisonTraining,
+    # ScalarPrediction,
     Seq2Seq
 ])
 def architecture(request, data):
@@ -27,12 +27,18 @@ def architecture(request, data):
 @pytest.fixture()
 def dc_gates_model(architecture, data):
     dc_gates_model = DCgates(digits=data['digits'], operators=data['operators'],
-                       classifiers=['switch_mode'],
+                       classifiers=['subtracting'],
                        model=architecture.model)
     return dc_gates_model
 
 
-def test_gates_model(dc_gates_model, data):
+def test_create_model(architecture, data):
+    DCgates(digits=data['digits'], operators=data['operators'],
+            classifiers=['subtracting'],
+            model=architecture.model)
+
+
+def test_save_model(dc_gates_model, data):
     dc_gates_model.save_model('saved_model')
     os.remove('saved_model')
 
@@ -45,7 +51,7 @@ def test_add_pretrained_model(dc_gates_model, data):
 
 def test_training(dc_gates_model, data):
     # test generate training data from dict
-    d = {'L1':5, 'L3l':10, 'L4r':10}
+    d = {'L1':5, 'L3l':5, 'L4r':5}
     training_data = dc_gates_model.generate_training_data(d)
 
     # test generate training data from treebank
