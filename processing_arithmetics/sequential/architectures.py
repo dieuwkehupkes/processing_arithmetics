@@ -88,7 +88,7 @@ class Training(object):
         """
 
         if isinstance(model, str):
-            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel})
+            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates, 'T': theano.tensor})
 
         model_info = self.get_model_info(model)
 
@@ -99,7 +99,7 @@ class Training(object):
             raise ValueError("Model dmap is not identical to architecture dmap")
 
         # find recurrent layer
-        recurrent_layer = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}[model_info['recurrent_layer']]
+        recurrent_layer = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM, 'GRU_output_gates': GRU_output_gates}[model_info['recurrent_layer']]
 
         W_recurrent, W_embeddings, W_classifier = None, None, None
 
@@ -393,7 +393,7 @@ class Training(object):
                 model_info['input_dim'] = layer.get_config()['input_dim']
                 model_info['input_length'] = layer.get_config()['input_length']
 
-            elif layer_type in ['SimpleRNN', 'GRU', 'LSTM']:
+            elif layer_type in ['SimpleRNN', 'GRU', 'LSTM', 'GRU_output_gates']:
                 assert 'type' not in model_info, 'Model has too many recurrent layers' 
                 model_info['recurrent_layer'] = layer_type
                 model_info['weights_recurrent'] = weights
@@ -1141,6 +1141,6 @@ class DCgates(DiagnosticClassifier):
         return X, Y
 
     def save_model(self, filename):
-        custom_objects = {'get_update_gate': self.get_update_gate, 'get_reset_gate': self.get_reset_gate, 'gate_shape': self.gate_shape}
+        custom_objects = {'get_update_gate': self.get_update_gate, 'get_reset_gate': self.get_reset_gate, 'gate_shape': self.gate_shape, 'GRU_output_gates': GRU_output_gates}
         super(DCgates, self).save_model(filename, custom_objects)
 
