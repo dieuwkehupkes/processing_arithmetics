@@ -1033,7 +1033,6 @@ class DCgates(DiagnosticClassifier):
         """
         # fetch adapted recurrent layer
         self.recurrent_layer = {'GRU':GRU_output_gates}[self.recurrent_name]
-        # self.recurrent_layer = {'GRU':GRU}[self.recurrent_name]
 
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
@@ -1054,10 +1053,8 @@ class DCgates(DiagnosticClassifier):
                                          recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         # create gate layers
-        # update_gate = TimeDistributed(Dense(5))(recurrent)
         update_gate = TimeDistributed(Lambda(function=DCgates.get_update_gate, output_shape=DCgates.gate_shape))(recurrent)
-        reset_gate = TimeDistributed(Dense(5))(recurrent)
-        # reset_gate = TimeDistributed(Lambda(get_reset_gate, output_shape=gate_shape))(recurrent)
+        reset_gate = TimeDistributed(Lambda(function=DCgates.get_reset_gate, output_shape=DCgates.gate_shape))(recurrent)
 
         # add classifier layers
         classifiers = []
@@ -1070,25 +1067,28 @@ class DCgates(DiagnosticClassifier):
             classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'_reset_gate')(reset_gate))
 
         # create model
+        # self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
 
     # function to get update gate
     @staticmethod
     def get_update_gate(state_concatenations):
         s = state_concatenations.shape[-1]/3
-        return T.split(state_concatenations, [s, s, s], 3, axis=2)[1]
+        update_gate = T.split(state_concatenations, [s, s, s], 3, axis=-1)[1]
+        return update_gate
 
     # function to get reset gate
     @staticmethod
     def get_reset_gate(state_concatenations):
         s = state_concatenations.shape[-1]/3
-        return T.split(state_concatenations, [s, s, s], 3, axis=2)[2]
+        reset_gate = T.split(state_concatenations, [s, s, s], 3, axis=-1)[2]
+        return reset_gate
 
     # get gate shape values
     @staticmethod
     def gate_shape(input_shape):
         shape = list(input_shape)
-        shape[-1] /= 3
+        shape[-1] = shape[-1]/3
         return tuple(shape)
 
     def set_attributes(self, model):
