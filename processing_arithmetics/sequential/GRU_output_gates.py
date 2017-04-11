@@ -75,3 +75,10 @@ class GRU_output_gates(GRU):
 
         return all, [h]
 
+    def compute_output_shape(self, input_shape):
+        if isinstance(input_shape, list):
+            input_shape = input_shape[0]
+        if self.return_sequences:
+            return (input_shape[0], input_shape[1], self.units*3)
+        else:
+            return (input_shape[0], self.units*3)
