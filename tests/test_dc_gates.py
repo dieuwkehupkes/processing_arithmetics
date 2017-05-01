@@ -27,14 +27,14 @@ def architecture(request, data):
 @pytest.fixture()
 def dc_gates_model(architecture, data):
     dc_gates_model = DCgates(digits=data['digits'], operators=data['operators'],
-                       classifiers=['subtracting'],
+                       classifiers=['switch_mode'],
                        model=architecture.model)
     return dc_gates_model
 
 
 def test_create_model(architecture, data):
     DCgates(digits=data['digits'], operators=data['operators'],
-            classifiers=['subtracting'],
+            classifiers=['switch_mode'],
             model=architecture.model)
 
 

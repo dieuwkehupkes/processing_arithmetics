@@ -3,7 +3,7 @@ import argparse
 import pickle
 import re
 import numpy as np
-from processing_arithmetics.sequential.architectures import DiagnosticClassifier
+from processing_arithmetics.sequential.architectures import DiagnosticClassifier, DCgates
 from processing_arithmetics.arithmetics.treebanks import treebank
 from argument_transformation import max_length
 
@@ -21,13 +21,14 @@ operators = ['+', '-']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-models", type=str, nargs="*", help="Models to diagnose")
-parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth'])
+parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'switch_mode'])
 parser.add_argument("--nb_epochs", type=int, required=True)
 parser.add_argument("--save_to", help="Save model to filename")
 
 parser.add_argument("--seed", type=int, help="Set random seed", default=8)
 parser.add_argument("--format", type=str, help="Set formatting of arithmetic expressions", choices=['infix', 'postfix', 'prefix'], default="infix")
 parser.add_argument("--seed_test", type=int, help="Set random seed for testset", default=100)
+parser.add_argument("--test_gates", action="store_true", help="Run diagnostic classifier on gates instead of hidden layer activations")
 
 parser.add_argument("--optimizer", help="Set optimizer for training", choices=['adam', 'adagrad', 'adamax', 'adadelta', 'rmsprop', 'sgd'], default='adam')
 parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
@@ -49,6 +50,11 @@ languages_test              = [(name, tb) for name, tb in treebank(seed=args.see
 
 results_all = {}
 
+if args.test_gates:
+    DC = DCgates
+else:
+    DC = DiagnosticClassifier
+
 training_data = None
 validation_data = None
 
@@ -65,7 +71,8 @@ for model in args.models:
     # find recurrent layer
     layer_type = re.search('SimpleRNN|GRU|LSTM', model).group(0)
 
-    training = DiagnosticClassifier(digits=digits, operators=operators, model=model, classifiers=args.classifiers)
+    training = DC(digits=digits, operators=operators, model=model, classifiers=args.classifiers)
+    raw_input()
 
     training_data = training_data or training.generate_training_data(languages_train, format=format)
     validation_data = validation_data or training.generate_training_data(languages_val, format=format)

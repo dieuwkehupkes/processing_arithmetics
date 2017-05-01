@@ -87,9 +87,6 @@ class Training(object):
         :param copy_weights:    determines which weights should be copied
         """
 
-        if isinstance(model, str):
-            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates, 'T': theano.tensor})
-
         model_info = self.get_model_info(model)
 
         if model_info['input_dim'] != self.input_dim:
@@ -363,6 +360,10 @@ class Training(object):
         networks that are trained with one of the architectures
         in from the Training type.
         """
+
+        if isinstance(model, str):
+            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates, 'T': theano.tensor})
+
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)
@@ -833,6 +834,57 @@ class DiagnosticClassifier(Training):
         # run superclass init
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
 
+        self.classifiers = classifiers
+        self.attributes()
+        self.set_attributes(model)
+
+
+        # set classifiers and attributes
+        self.set_attributes(model)
+
+        # add model
+        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        """
+        Build model with given embeddings and recurren weights.
+        """
+
+        # create input layer
+        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               trainable=False,
+                               mask_zero=self.mask_zero,
+                               name='embeddings')(input_layer)
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         weights=W_recurrent,
+                                         trainable=False,
+                                         return_sequences=True,
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
+
+        # add classifier layers
+        classifiers = []
+        for classifier in self.classifiers:
+            try:
+                weights = W_classifier[classifier]
+            except KeyError:
+                weights = None
+            except KeyError:
+                weights = None
+            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(recurrent))
+
+        # create model
+        self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
+
+
+    def attributes(self):
+
         # set loss and metric functions
         self.loss = {
                 'grammatical': 'binary_crossentropy',
@@ -888,51 +940,7 @@ class DiagnosticClassifier(Training):
                 'intermediate_recursively':1,
                 'depth':1}
 
-        # set classifiers and attributes
-        self.classifiers = classifiers
-        self.set_attributes()
-
-        # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
-
-    def _build(self, W_embeddings, W_recurrent, W_classifier):
-        """
-        Build model with given embeddings and recurren weights.
-        """
-
-        # create input layer
-        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
-
-
-        # create embeddings
-        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
-                               input_length=self.input_length, weights=W_embeddings,
-                               trainable=False,
-                               mask_zero=self.mask_zero,
-                               name='embeddings')(input_layer)
-
-        # create recurrent layer
-        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
-                                         weights=W_recurrent,
-                                         trainable=False,
-                                         return_sequences=True,
-                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
-
-        # add classifier layers
-        classifiers = []
-        for classifier in self.classifiers:
-            try:
-                weights = W_classifier[classifier]
-            except KeyError:
-                weights = None
-            except KeyError:
-                weights = None
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(recurrent))
-
-        # create model
-        self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
-
-    def set_attributes(self):
+    def set_attributes(self, model):
         """
         Set the classifiers that should be trained and their
         corresponding lossfunctions, metrics and output sizes
@@ -997,35 +1005,10 @@ class DCgates(DiagnosticClassifier):
     """
     def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None):
         # run superclass init
-        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
-
-        # set loss and metric functions
-        self.loss = {
-                'switch_mode': 'binary_crossentropy',
-                'subtracting': 'binary_crossentropy',
-                    }
-
-        self.metrics = {
-                'switch_mode': ['binary_accuracy'], 
-                'subtracting': ['binary_accuracy'], 
-                    }  
-
-        self.activations = {
-                'switch_mode':'sigmoid',
-                'subtracting':'sigmoid',
-                    }
-
-        self.output_size = {
-                'switch_mode':1,
-                'subtracting':1,
-                    }
-
-        # set classifiers and attributes
-        self.classifiers = classifiers
-        self.set_attributes(model)
+        super(DCgates, self).__init__(digits=digits, operators=operators, model=model, classifiers=classifiers)
 
         # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
+        # self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -1069,6 +1052,16 @@ class DCgates(DiagnosticClassifier):
         # create model
         # self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
+
+    def attributes(self):
+        super(DCgates, self).attributes()
+
+        # Add extra classifier options for gates
+        self.loss['switch_mode'] = 'binary_crossentropy'
+        self.metrics['switch_mode'] = 'binary_accuracy'
+        self.activations['switch_mode'] = 'sigmoid'
+        self.output_size['switch_mode'] = 1
+
 
     # function to get update gate
     @staticmethod

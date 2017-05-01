@@ -309,7 +309,7 @@ class MathExpression(Tree):
             if return_sequences:
                 intermediate_results.append(result)
                 brackets.append(operator_stack[:])
-                operator_list.append({-1: [1], 1:[0]}[op])
+                operator_list.append({-1: 1, 1:0}[op])
 
         if return_sequences:
             return intermediate_results, brackets, operator_list
@@ -352,7 +352,7 @@ class MathExpression(Tree):
 
             intermediate_results.append(result)
             operators.append(stack[:])
-            operator_list.append({1: [1], -1:[0]}[op])
+            operator_list.append({1:1, -1:0}[op])
 
         if return_sequences:
             return intermediate_results, operators, operator_list
@@ -559,14 +559,19 @@ class MathExpression(Tree):
         # create target dict
         self.targets = {}
 
-        if 'intermediate_locally' in classifiers or 'subtracting' in classifiers:
+        if 'intermediate_locally' in classifiers or 'subtracting' in classifiers or 'switch_mode' in classifiers:
             intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
+
+            switch_mode = np.array([0] + [0 if subtracting[i] == subtracting[i-1] else 1 for i in xrange(1, len(subtracting))])
 
             # intermediate outcomes incremental computation
             self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
             # subtracting
-            self.targets['subtracting'] = subtracting
+            self.targets['subtracting'] = [[val] for val in subtracting]
+            
+            # switch mode
+            self.targets['switch_mode'] = [[val] for val in switch_mode]
         
         if 'intermediate_recursively' in classifiers or 'grammatical' in classifiers:
             intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
