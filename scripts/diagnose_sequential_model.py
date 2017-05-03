@@ -21,7 +21,7 @@ operators = ['+', '-']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-models", type=str, nargs="*", help="Models to diagnose")
-parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth'])
+parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'minus1depth_count'])
 parser.add_argument("--nb_epochs", type=int, required=True)
 parser.add_argument("--save_to", help="Save model to filename")
 
@@ -38,6 +38,7 @@ parser.add_argument("-maxlen", help="Set maximum number of digits in expression 
 parser.add_argument("--verbosity", type=int, choices=[0, 1, 2], default=2)
 parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
 parser.add_argument("--target_folder", help="Set folder to store models", default="dc_models/")
+parser.add_argument("--output_name", help="Give name to store results")
 
 args = parser.parse_args()
 
@@ -89,5 +90,7 @@ for model in args.models:
 
 
 # dump all results
-pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results','wb'))
+output_name = args.output_name or args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results'
+
+pickle.dump(results_all, open(output_name, 'wb'))
 
