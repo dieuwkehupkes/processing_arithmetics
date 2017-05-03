@@ -72,7 +72,6 @@ for model in args.models:
     layer_type = re.search('SimpleRNN|GRU|LSTM', model).group(0)
 
     training = DC(digits=digits, operators=operators, model=model, classifiers=args.classifiers)
-    raw_input()
 
     training_data = training_data or training.generate_training_data(languages_train, format=format)
     validation_data = validation_data or training.generate_training_data(languages_val, format=format)
@@ -96,5 +95,5 @@ for model in args.models:
 
 
 # dump all results
-pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results','wb'))
+# pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results','wb'))
 
