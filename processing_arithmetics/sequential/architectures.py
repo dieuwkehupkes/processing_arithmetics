@@ -36,6 +36,27 @@ class Training(object):
         self.activation_func = None
         self.gate_activation_func = None
 
+        # set loss functions, metrics and activation functions
+        self.loss_functions = {}
+        self.metrics = {}
+        self.activations = {}
+        for output_name in ['output', 'intermediate_locally', 'intermediate_recursively',
+                            'minus1depth_count', 'depth']:
+            self.loss_functions[output_name] = 'mean_squared_error'
+            self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+            self.activations[output_name] = 'linear'
+
+
+        for output_name in ['grammatical', 'subtracting', 'minus1depth', 'minus2depth',
+                            'minus3depth', 'minus4depth', 'switch_mode']:
+            self.loss_functions[output_name] = 'binary_crossentropy'
+            self.metrics[output_name] = ['binary_accuracy']
+            self.activations[output_name] = 'sigmoid'
+
+        self.loss_functions['compare'] = 'categorical_crossentropy'
+        self.metrics['compare'] = ['categorical_accuracy']
+        self.activations['compare'] = 'softmax'
+
     def generate_model(self, recurrent_layer, input_size, input_length, size_hidden,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
                        fix_classifier_weights=False, fix_embeddings=False, 
@@ -190,7 +211,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_functions=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -202,11 +223,11 @@ class Training(object):
 
         if not metrics:
             metrics = self.metrics
-        if not loss_function:
-            loss_function = self.loss_function
+        if not loss_functions:
+            loss_functions = self.loss_functions
 
         # compile model
-        self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
+        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics)
 
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
@@ -248,10 +269,10 @@ class Training(object):
         """
         # input new metrics
         if metrics:
-            self.model.compile(loss=self.loss_function, optimizer='adam', metrics=metrics)
+            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=metrics)
 
         else:
-            self.model.compile(loss=self.loss_function, optimizer='adam', metrics=self.metrics)
+            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=self.metrics)
 
         evaluation = OrderedDict()
         for name, X, Y in test_data:
@@ -457,7 +478,7 @@ class Training(object):
         plt.plot(self.trainings_history.val_losses, label='Validation set')
         plt.title("Loss during last training")
         plt.xlabel("Epoch")
-        plt.ylabel(self.loss_function)
+        plt.ylabel(self.loss_functions)
         plt.axhline(xmin=0)
         plt.legend()
         plt.show()
@@ -569,8 +590,9 @@ class ScalarPrediction(Training):
         super(ScalarPrediction, self).__init__(digits=digits, operators=operators)
 
         # set loss and metric functions
-        self.loss_function = 'mean_squared_error'
-        self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+        self.loss_functions = self.loss_functions['output']
+        self.metrics = self.metrics['output']
+        self.activations = self.activations['output']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -650,10 +672,8 @@ class ComparisonTraining(Training):
         super(ComparisonTraining, self).__init__(digits=digits, operators=operators)
 
         # set loss and metric functions
-        self.loss_function = 'categorical_crossentropy'
-        # self.loss_function = 'mean_squared_error'
-
-        self.metrics = ['categorical_accuracy']
+        self.loss_functions = self.loss_functions['compare']
+        self.metrics = self.metrics['compare']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier={'output':None}):
         """
@@ -686,10 +706,10 @@ class ComparisonTraining(Training):
 
         # create output layer
         if W_classifier is not None:
-            W_classifier = W_classifier['output']
-        output_layer = Dense(3, activation='softmax', 
+            W_classifier = W_classifier['compare']
+        output_layer = Dense(3, activation=self.activations['compare'], 
                              trainable=self.train_recurrent,
-                             weights=W_classifier, name='output')(concat)
+                             weights=W_classifier, name='compare')(concat)
 
         # create model
         self.model = ArithmeticModel(inputs=[input1, input2], outputs=output_layer, dmap=self.dmap)
@@ -718,7 +738,7 @@ class ComparisonTraining(Training):
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
         X_padded = {'input1':X1_padded, 'input2': X2_padded}
-        Y = {'output': np.array(Y)}
+        Y = {'compare': np.array(Y)}
 
         return X_padded, Y
 
@@ -749,8 +769,8 @@ class Seq2Seq(Training):
 
         # set loss and metric functions
         # set loss function and metrics
-        self.loss_function = {'output': 'mean_squared_error'}
-        self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+        self.loss_functions = self.loss_functions['output']
+        self.metrics = self.metrics['output']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -835,11 +855,6 @@ class DiagnosticClassifier(Training):
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
 
         self.classifiers = classifiers
-        self.attributes()
-        self.set_attributes(model)
-
-
-        # set classifiers and attributes
         self.set_attributes(model)
 
         # add model
@@ -877,68 +892,10 @@ class DiagnosticClassifier(Training):
                 weights = None
             except KeyError:
                 weights = None
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(recurrent))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier], weights=weights), name=classifier)(recurrent))
 
         # create model
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
-
-
-    def attributes(self):
-
-        # set loss and metric functions
-        self.loss = {
-                'grammatical': 'binary_crossentropy',
-                'intermediate_locally': 'mean_squared_error',
-                'subtracting':'binary_crossentropy',
-                'minus1depth':'binary_crossentropy',
-                'minus2depth':'binary_crossentropy',
-                'minus3depth':'binary_crossentropy',
-                'minus4depth':'binary_crossentropy',
-                'intermediate_recursively':'mean_squared_error',
-                'intermediate_directly': 'mean_squared_error',
-                'minus1depth_count': 'mean_squared_error',
-                'depth': 'mse',
-                    }
-
-        self.metrics = {
-                'grammatical': ['binary_accuracy'], 
-                'intermediate_locally': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'subtracting': ['binary_accuracy'],
-                'minus1depth': ['binary_accuracy'],
-                'minus2depth': ['binary_accuracy'],
-                'minus3depth': ['binary_accuracy'],
-                'minus4depth': ['binary_accuracy'],
-                'minus1depth_count': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'depth': ['mean_squared_error', 'binary_accuracy'],
-                    }  
-
-        self.activations = {
-                'grammatical':'sigmoid',
-                'intermediate_locally': 'linear',
-                'intermediate_directly': 'linear',
-                'subtracting': 'sigmoid',
-                'minus1depth': 'sigmoid',
-                'minus2depth': 'sigmoid',
-                'minus3depth': 'sigmoid',
-                'minus4depth': 'sigmoid',
-                'minus1depth_count':'linear',
-                'intermediate_recursively':'linear',
-                'depth': 'linear'}
-
-        self.output_size = {
-                'grammatical':1,
-                'intermediate_locally': 1,
-                'intermediate_directly': 1,
-                'subtracting':1,
-                'minus1depth':1,
-                'minus2depth':1,
-                'minus3depth':1,
-                'minus4depth':1,
-                'minus1depth_count':1,
-                'intermediate_recursively':1,
-                'depth':1}
 
     def set_attributes(self, model):
         """
@@ -946,9 +903,8 @@ class DiagnosticClassifier(Training):
         corresponding lossfunctions, metrics and output sizes
         as attributes to the class.
         """
-        self.loss_function = dict([(key, self.loss[key]) for key in self.classifiers])
+        self.loss_functions = dict([(key, self.loss_functions[key]) for key in self.classifiers])
         self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers])
-        self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
 
@@ -1007,9 +963,6 @@ class DCgates(DiagnosticClassifier):
         # run superclass init
         super(DCgates, self).__init__(digits=digits, operators=operators, model=model, classifiers=classifiers)
 
-        # add model
-        # self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
-
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
         Build model with given embeddings and recurrent weights.
@@ -1046,22 +999,11 @@ class DCgates(DiagnosticClassifier):
                 weights = W_classifier[classifier]
             except KeyError:
                 weights = None
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'_update_gate')(update_gate))
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'_reset_gate')(reset_gate))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier], weights=weights), name=classifier+'_update_gate')(update_gate))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier], weights=weights), name=classifier+'_reset_gate')(reset_gate))
 
         # create model
-        # self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
-
-    def attributes(self):
-        super(DCgates, self).attributes()
-
-        # Add extra classifier options for gates
-        self.loss['switch_mode'] = 'binary_crossentropy'
-        self.metrics['switch_mode'] = 'binary_accuracy'
-        self.activations['switch_mode'] = 'sigmoid'
-        self.output_size['switch_mode'] = 1
-
 
     # function to get update gate
     @staticmethod
@@ -1097,11 +1039,10 @@ class DCgates(DiagnosticClassifier):
         except KeyError:
             raise ValueError("output gates not implemented for %s" % self.recurrent_name)
 
-        self.loss_function = dict([(key+'_'+gate, self.loss[key])
+        self.loss_functions = dict([(key+'_'+gate, self.loss_functions[key])
             for key in self.classifiers for gate in self.gates])
-        self.metrics = dict([(key, self.metrics[key])
+        self.metrics = dict([(key+'_'+gate, self.metrics[key])
             for key in self.classifiers for gate in self.gates])
-        self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
