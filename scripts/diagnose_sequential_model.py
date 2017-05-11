@@ -21,7 +21,7 @@ operators = ['+', '-']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-models", type=str, nargs="*", help="Models to diagnose")
-parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'switch_mode'])
+parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'minus1depth_count', 'switch_mode'])
 parser.add_argument("--nb_epochs", type=int, required=True)
 parser.add_argument("--save_to", help="Save model to filename")
 
@@ -95,5 +95,5 @@ for model in args.models:
 
 
 # dump all results
-# pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results','wb'))
+pickle.dump(results_all, open(args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results','wb'))
 
