@@ -600,7 +600,7 @@ class MathExpression(Tree):
             self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(4)]
 
         if 'minus1depth_count' in classifiers:
-            self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(1, True)]
+            self.targets['minus1depth_count'] = [[val] for val in self.get_minus_depths(1, True)]
 
 
     def print_all_targets(self, format='infix'):
