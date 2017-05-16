@@ -249,6 +249,69 @@ class MathExpression(Tree):
             return intermediate_results, stack_list, operator_list
 
         return result
+
+    def solve_count_minus_brackets(self, return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
+        """
+        Solve by counting minus brackets and keeping
+        track of their depth
+        """
+        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
+
+        result = 0
+        minus_stack = []
+        op = 1
+        expect_left = False
+
+        # return arrays
+        intermediate_results = []
+        minus_stack = []
+        operator_list = []
+        op_dict = {-1: operator.sub, 1: operator.add}
+
+        for symbol in symbols:
+            if stack_noise:
+                pass
+                # apply noise to stack
+                operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
+                # apply noise to memory
+                op = op + np.random.normal(0, stack_noise)
+                result = result + np.random.normal(0, stack_noise)
+
+            if symbol[-1].isdigit():
+                digit = float(symbol)
+                result = op_dict[np.power(-1, np.floor(op/2))](result, digit)
+                expect_left = False
+
+            if symbol == '-':
+                minus_stack.append(0)
+                expect_left = True
+                op = - op
+
+            elif minus_stack:
+                if expect_left and symbol != '(':
+                    expect_left = False
+            
+                elif symbol == '(':
+                    minus_stack[-1] += 1
+
+                elif symbol == ')':
+                    if minus_stack[-1] == 0:
+                        minus_stack.pop(-1)
+                        op = - op
+
+                    if minus_stack:
+                        minus_stack[-1] -= 1
+
+            if return_sequences:
+                intermediate_results.append(result)
+                brackets.append(operator_stack[:])
+                operator_list.append({-1: 1, 1:0}[op])
+
+        if return_sequences:
+            return intermediate_results, brackets, operator_list
+        
+        else:
+            return result
                 
 
     def solve_locally(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
