@@ -796,7 +796,7 @@ class Seq2Seq(Training):
 
         if W_classifier is not None:
             W_classifier = W_classifier['output']
-        output = TimeDistributed(Dense(1, activation='linear'), name='output')(recurrent)
+        output = TimeDistributed(Dense(1, activation='linear'), weights=W_classifier, name='output')(recurrent)
 
         self.model = ArithmeticModel(inputs=input_layer, outputs=output, dmap=self.dmap)
 
@@ -868,7 +868,6 @@ class DiagnosticClassifier(Training):
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
 
-
         # create embeddings
         embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
                                input_length=self.input_length, weights=W_embeddings,
@@ -892,8 +891,8 @@ class DiagnosticClassifier(Training):
                 weights = None
             except KeyError:
                 weights = None
-            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier], weights=weights), name=classifier)(recurrent))
-
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier)(recurrent))
+            
         # create model
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
 
@@ -999,8 +998,8 @@ class DCgates(DiagnosticClassifier):
                 weights = W_classifier[classifier]
             except KeyError:
                 weights = None
-            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier], weights=weights), name=classifier+'_update_gate')(update_gate))
-            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier], weights=weights), name=classifier+'_reset_gate')(reset_gate))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier+'_update_gate')(update_gate))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier+'_reset_gate')(reset_gate))
 
         # create model
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
