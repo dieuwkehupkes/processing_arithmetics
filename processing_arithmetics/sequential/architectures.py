@@ -322,7 +322,6 @@ class Training(object):
         self.rec_dim = rec_config['units']
 
         gate_output_layer = GRU_output_gates(units=rec_config['units'],
-                                             input_length=rec_config['input_length'],
                                              activation=rec_config['activation'],
                                              weights=recurrent_layer.get_weights(),
                                              return_sequences=True)(
