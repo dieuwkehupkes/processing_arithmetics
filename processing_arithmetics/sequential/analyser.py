@@ -71,22 +71,26 @@ def plot_gate_values(*inputs):
         length = hl_nonzero.shape[0]
 
         # plot hl activation
-        plt.subplot(rows, 3, row*3-2)
-        plt.imshow(hl_nonzero, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
+        hidden = plt.subplot(rows, 3, row*3-2)
+        hidden.imshow(hl_nonzero, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
         for i in xrange(length):
             # plot activation values and labels
             # plt.text(-1.3, i+0.2, labels[i])
-            plt.text(-2.8, i, modes[i])
-            plt.text(-1.8, i, labels[i])
-        plt.axis('off')
+            hidden.text(-2.8, i, modes[i])
+            hidden.text(-1.8, i, labels[i])
+        hidden.axis('off')
+        hidden.set_title("Hidden layer")
 
         # plot gate values
-        plt.subplot(rows, 3, row*3-1)
-        plt.imshow(z_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
-        plt.axis('off')
-        plt.subplot(rows, 3, row*3)
-        plt.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
-        plt.axis('off')
+        update_gate = plt.subplot(rows, 3, row*3-1)
+        update_gate.imshow(z_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
+        update_gate.axis('off')
+        update_gate.set_title("Update gate")
+
+        reset_gate = plt.subplot(rows, 3, row*3)
+        reset_gate.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
+        reset_gate.axis('off')
+        reset_gate.set_title("Reset gate")
 
         row += 1 
 
