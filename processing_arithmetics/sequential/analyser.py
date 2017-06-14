@@ -56,9 +56,7 @@ def plot_gate_values(*inputs):
     :return:
     """
     rows, row = len(inputs), 1
-    # maxlen = find_longest(inputs)
 
-    # fig = plt.figure(figsize=(10, 5*rows/3))
     plt.subplots(nrows=len(inputs), ncols=3, sharex=True, sharey=True)
 
     for hl, z, r, labels, modes in inputs:
@@ -70,29 +68,35 @@ def plot_gate_values(*inputs):
 
         length = hl_nonzero.shape[0]
 
+        y_labels = ['%i\t%s'.expandtabs(2) % (modes[i], labels[i]) for i in xrange(length)]
+
         # plot hl activation
         hidden = plt.subplot(rows, 3, row*3-2)
         hidden.imshow(hl_nonzero, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
-        for i in xrange(length):
-            # plot activation values and labels
-            # plt.text(-1.3, i+0.2, labels[i])
-            hidden.text(-2.8, i, modes[i])
-            hidden.text(-1.8, i, labels[i])
-        hidden.axis('off')
         hidden.set_title("Hidden layer")
 
         # plot gate values
         update_gate = plt.subplot(rows, 3, row*3-1)
         update_gate.imshow(z_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
-        update_gate.axis('off')
         update_gate.set_title("Update gate")
 
         reset_gate = plt.subplot(rows, 3, row*3)
         reset_gate.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
-        reset_gate.axis('off')
         reset_gate.set_title("Reset gate")
 
         row += 1 
+
+        # set labels
+        for ax in hidden, update_gate, reset_gate:
+            ax.set_xticks([i for i in xrange(15)])
+            ax.set_xticklabels([str(i) for i in xrange(1,16)])
+            ax.set_yticks([i for i in xrange(length)])
+            if ax == hidden:
+                ax.set_yticklabels(y_labels, ha = 'left')
+                ax.get_yaxis().set_tick_params(direction='out', pad=28, length=0)
+            else:
+                ax.set_yticklabels(['' for i in xrange(length)])
+
 
     # plt.subplots_adjust(right=0.9, bottom=0.1, top=0.9)
     # cax = plt.axes([0.95, 0.15, 0.02, 0.7])
