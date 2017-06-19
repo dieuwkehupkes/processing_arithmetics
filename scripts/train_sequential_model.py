@@ -71,8 +71,10 @@ languages_test = [(name, treebank) for name, treebank in treebank(seed=args.seed
 
 training = args.architecture(digits=digits, operators=operators)
 
+print("Initialise model..")
 # Add pretrained model if this is given in arguments
 if args.model:
+    raise ValueError("Add pretrained model not implemented in this script")
     training.add_pretrained_model(model=args.model, 
          copy_weights=None,                                  #TODO change this too!
          fix_classifier_weights=args.fix_classifier_weights,
@@ -90,15 +92,19 @@ else:
 
 
 # train model
+print("Generate training data...")
 training_data = training.generate_training_data(data=languages_train, format=args.format) 
 validation_data = training.generate_training_data(data=languages_val, format=args.format) 
 
+print("Train model..")
+
 training.train(training_data=training_data, validation_data=validation_data,
         validation_split=args.val_split, batch_size=args.batch_size,
-        optimizer=args.optimizer, loss_function=args.loss_function,
+        optimizer=args.optimizer, loss_functions=args.loss_function,
         epochs=args.nb_epochs, verbosity=args.verbosity, filename=args.save_to,
         save_every=False, visualise_embeddings=args.visualise_embeddings)
 
+print("Save model")
 hist = training.trainings_history
 history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
 if not args.remove:
@@ -112,6 +118,12 @@ if not args.test:
     os.remove(args.save_to+'.h5')
     exit()
 
+
+# If model is trained in Seq2Seq mode, recreate model as normal ScalarPrediction model
+if args.architecture == 'Seq2Seq':
+    model = training.model
+    training = ScalarPrediction()
+    test.add_pretrained_model(training.model)
 
 eval_filename = args.save_to+'_evaluation'
 eval_file = open(eval_filename, 'w')
@@ -131,19 +143,23 @@ def sum_settings(args):
     settings_str += '\nTest seed: %s' % args.seed_test
     settings_str += '\nBatch size: %i' % args.batch_size
     settings_str += '\nNumber of epochs: %i' % args.nb_epochs
-    settings_str += '\nOptimizer: %s' % args.optimizer
+    settings_str += '\nOptimizer: %s\n\n' % args.optimizer
 
     return settings_str
 
 eval_file.write(sum_settings(args))
 
+print("Test model")
+
 for name, X, Y in test_data:
     acc = training.model.evaluate(X, Y)
-    eval_file.write(name)
+    eval_file.write('\n'+name)
     print "Accuracy for \n%s:\t\t" % name,
     results = '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(1, len(acc))])
     print results
-    eval_file.write('\n'+results)
+    eval_file.write('\t'+results)
 
 eval_file.close
+
+print("Finished")
 
