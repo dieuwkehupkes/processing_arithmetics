@@ -40,6 +40,8 @@ class Training(object):
         self.loss_functions = {}
         self.metrics = {}
         self.activations = {}
+        self.sample_weight = None
+        self.sample_weight_mode = None
         for output_name in ['output', 'intermediate_locally', 'intermediate_recursively',
                             'minus1depth_count', 'depth']:
             self.loss_functions[output_name] = 'mean_squared_error'
@@ -227,16 +229,14 @@ class Training(object):
             loss_functions = self.loss_functions
 
         # compile model
-        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics)
+        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics, sample_weight_mode=self.sample_weight_mode)
 
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
-
-        sample_weight = self.get_sample_weights(training_data, sample_weight)
 
         # fit model
         self.model.fit(X_train, Y_train, validation_data=validation_data,
                        validation_split=validation_split, batch_size=batch_size, 
-                       epochs=epochs, sample_weight=sample_weight,
+                       epochs=epochs, sample_weight=self.sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         hist = callbacks[0]
@@ -340,33 +340,6 @@ class Training(object):
             eval_str += '\t'.join(['%s: %f' % (metric, value) for metric, value in evaluation[name].items()])
 
         return eval_str
-
-    def get_sample_weights(self, training_data, sample_weight):
-        """
-        Return a matrix with sample weights for the 
-        input data if sample_weight parameter is true.
-        """
-        if not sample_weight:
-            return None
-
-        X_dict, Y_dict = training_data
-
-        if len(X_dict) != 1:
-            raise NotImplementedError("Number of inputs larger than 1, didn't think I'd need this case so I didn't implement it")
-
-        sample_weights = {}
-        for output in Y_dict:
-            dim = Y_dict[output].ndim
-            if dim == 2:
-                # use sample_weight only for seq2seq models
-                return None
-            else:
-                X_padded = X_dict.values()[0]
-                sample_weight = np.zeros_like(X_padded)
-                sample_weight[X_padded != 0] = 1
-                sample_weights[output] = sample_weight
-
-        return sample_weights
 
     def model_summary(self):
         print(self.model.summary())
@@ -770,6 +743,7 @@ class Seq2Seq(Training):
         # set loss function and metrics
         self.loss_functions = self.loss_functions['output']
         self.metrics = self.metrics['output']
+        self.sample_weight_mode = 'temporal'
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -805,6 +779,7 @@ class Seq2Seq(Training):
         """
         # create dictionary with outputs
         X, Y = [], []
+        sample_weights = []
         pad_to = pad_to or self.input_length
 
         # loop over examples
@@ -813,15 +788,16 @@ class Seq2Seq(Training):
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             Y.append(expression.targets['intermediate_locally'])
+            sample_weights.append(expression.sample_weights_numerical)
 
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
         Y_padded = keras.preprocessing.sequence.pad_sequences(Y, maxlen=pad_to, dtype='float32')
+        self.sample_weights = keras.preprocessing.sequence.pad_sequences(sample_weights, maxlen=pad_to)
 
         X = {'input': X_padded}
         Y = {'output': Y_padded}
-
 
         return X, Y
 

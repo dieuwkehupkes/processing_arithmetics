@@ -665,6 +665,16 @@ class MathExpression(Tree):
         if 'minus1depth_count' in classifiers:
             self.targets['minus1depth_count'] = [[val] for val in self.get_minus_depths(1, True)]
 
+        self.sample_weights_numerical = np.concatenate([np.array([[0]]), self.get_digit_positions(self.symbols)[:-1]], axis=0)
+
+        print(self.sample_weights_numerical.shape)
+
+    def get_digit_positions(self, symbols):
+        """
+        Return an array with 1s at positions of
+        the digits in the expression and 0 otherwise.
+        """
+        return np.array([[symbol[-1].isdigit()] for symbol in symbols])
 
     def print_all_targets(self, format='infix'):
         """
@@ -679,6 +689,8 @@ class MathExpression(Tree):
         Iterate over symbols in expression.
         """
 
+        self.symbols = []
         for symbol in self.to_string(format=format, digit_noise=digit_noise, operator_noise=operator_noise).split():
+            self.symbols.append(symbol)
             yield symbol
 
