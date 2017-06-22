@@ -667,7 +667,6 @@ class MathExpression(Tree):
 
         self.sample_weights_numerical = np.concatenate([np.array([[0]]), self.get_digit_positions(self.symbols)[:-1]], axis=0)
 
-        print(self.sample_weights_numerical.shape)
 
     def get_digit_positions(self, symbols):
         """
