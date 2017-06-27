@@ -732,9 +732,11 @@ class ComparisonTraining(Training):
         """
         return 3
 
+
 class Seq2Seq(Training):
     """
-    Class to do sequence to sequence training.
+    Class to do sequence to sequence training, primarily used
+    for recasting diagnostic models to test them.
     """
     def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
         # run superclass init
@@ -831,7 +833,7 @@ class DiagnosticClassifier(Training):
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
 
         self.classifiers = classifiers
-        self.set_attributes(model)
+        self.set_attributes(model=model)
 
         # add model
         self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
@@ -865,14 +867,12 @@ class DiagnosticClassifier(Training):
                 weights = W_classifier[classifier]
             except KeyError:
                 weights = None
-            except KeyError:
-                weights = None
             classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier)(recurrent))
             
         # create model
         self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
 
-    def set_attributes(self, model):
+    def set_attributes(self, **kwargs):
         """
         Set the classifiers that should be trained and their
         corresponding lossfunctions, metrics and output sizes
@@ -1001,13 +1001,16 @@ class DCgates(DiagnosticClassifier):
         shape[-1] = shape[-1]/3
         return tuple(shape)
 
-    def set_attributes(self, model):
+    def set_attributes(self, **kwargs):
         """
         Set the classifiers that should be trained and their
         corresponding lossfunctions, metrics and output sizes
         as attributes to the class.
         """
-        model_info = self.get_model_info(model)
+        try:
+            model_info = self.get_model_info(kwargs['model'])
+        except:
+            raise ValueError("Class should be initialised with model")
         self.recurrent_name = model_info['recurrent_layer']
         try:
             self.gates = {'GRU':['update_gate', 'reset_gate']}[self.recurrent_name]
@@ -1053,3 +1056,112 @@ class DCgates(DiagnosticClassifier):
         custom_objects = {'get_update_gate': self.get_update_gate, 'get_reset_gate': self.get_reset_gate, 'gate_shape': self.gate_shape, 'GRU_output_gates': GRU_output_gates}
         super(DCgates, self).save_model(filename, custom_objects)
 
+
+class DiagnosticTrainer(DiagnosticClassifier):
+    """
+    Class do to sequence to sequence training but while
+    keeping the original scalar target.
+    """
+    def __init__(self, digits=np.arange(-10,11), operators=['+','-'], model=None, classifiers=None):
+        # run Training init
+        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
+
+        self.classifiers = classifiers
+        self.set_attributes()
+
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        """
+        Build model with given embedding and recurrent weights.
+        """
+        # create input layer
+        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               trainable=False,
+                               mask_zero=self.mask_zero,
+                               name='embeddings')(input_layer)
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         weights=W_recurrent,
+                                         trainable=False,
+                                         return_sequences=True,
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
+
+        # add lambda layer to get also non sequential output for output classifier
+        def take_last(x):
+            return x[:,-1,:]
+
+        def take_last_output_shape(input_shape):
+            shape = list(input_shape)
+            assert len(shape) == 3 # input should be 3D tensor
+            return (shape[0], shape[2])
+
+        recurrent_last = Lambda(take_last, output_shape=take_last_output_shape)(recurrent)
+
+        # add classifier layers
+        outputs = []
+        for classifier in self.classifiers:
+            print classifier
+            try:
+                weights = W_classifier[classifier]
+            except TypeError:
+                weights = None
+            outputs.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier)(recurrent))
+
+        # add original target output layer
+        try: output_classifier = W_classifier['output']
+        except TypeError: output_classifier = None
+
+        outputs.append(Dense(1, activation='linear', weights=output_classifier,
+                             trainable=self.train_classifier, name='output')(recurrent_last))
+          
+        # create model
+        self.model = ArithmeticModel(inputs=input_layer, outputs=outputs, dmap=self.dmap)
+
+
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
+        """
+        Generate test data from a MathTreebank object.
+        """
+        # create dictionary with outputs
+        X, Y = [], dict([(classifier, []) for classifier in self.classifiers]+[('output', [])]) 
+        pad_to = pad_to or self.input_length
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            expression.get_targets(format, *self.classifiers)
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+            X.append(input_seq)
+            for classifier in self.classifiers:
+                target = expression.targets[classifier]
+                Y[classifier].append(target)
+            Y['output'].append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+        # make numpy arrays from Y data
+        for output in Y:
+            try:
+                Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
+            except ValueError:
+                Y[output] = np.array(Y[output])
+
+        X = {'input': X_padded}
+
+        return X, Y
+
+    def set_attributes(self, **kwargs):
+        """
+        Set the classifiers that should be trained and their
+        corresponding lossfunctions, metrics and output sizes
+        as attributes to the class.
+        """
+        self.loss_functions = dict([(key, self.loss_functions[key]) for key in self.classifiers+['output']])
+        self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers+['output']])
+        self.activations = dict([(key, self.activations[key]) for key in self.classifiers+['output']])

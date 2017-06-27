@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from processing_arithmetics.arithmetics.MathTreebank import MathTreebank
-from processing_arithmetics.sequential.architectures import ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, Training, DCgates
+from processing_arithmetics.sequential.architectures import ScalarPrediction, ComparisonTraining, DiagnosticTrainer, Seq2Seq, Training, DCgates
 from keras.layers import GRU
 import pickle
 import os
@@ -26,12 +26,14 @@ def architecture(request, data):
 
 
 @pytest.fixture(params=[
-    DiagnosticClassifier
+    DiagnosticTrainer
 ])
 def diagnostic_model(request, architecture, data):
     diagnostic_model = request.param(digits=data['digits'], operators=data['operators'],
                                    classifiers=['subtracting', 'intermediate_locally', 'intermediate_recursively'],
                                    model=architecture.model)
+    diagnostic_model.generate_model(recurrent_layer=GRU, input_length=20,
+                                    input_size=2, size_hidden=3)
     return diagnostic_model
 
 
