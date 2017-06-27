@@ -1,6 +1,6 @@
 from keras.models import load_model
 from collections import OrderedDict
-from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking, Lambda
+from keras.layers import Embedding, Dense, Input, SimpleRNN, GRU, LSTM, Masking, Lambda, concatenate
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
@@ -587,24 +587,13 @@ class ScalarPrediction(Training):
                                          weights=W_recurrent,
                                          trainable=self.train_embeddings,
                                          recurrent_dropout=self.dropout_recurrent,
-                                         return_sequences=True)(embeddings)
-        
-        # add lambda layer to get non sequential output for output classifier
-        def take_last(x):
-            return x[:,-1,:]
-
-        def take_last_output_shape(input_shape):
-            shape = list(input_shape)
-            assert len(shape) == 3  # input should be 3D tensor
-            return (shape[0],shape[2])
-
-        recurrent_last = Lambda(take_last, output_shape=take_last_output_shape)(recurrent)
+                                         return_sequences=False)(embeddings)
 
         # create output layer
         if W_classifier is not None:
             W_classifier = W_classifier['output'] 
         output_layer = Dense(1, activation='linear', weights=W_classifier,
-                             trainable=self.train_classifier, name='output')(recurrent_last)
+                             trainable=self.train_classifier, name='output')(recurrent)
 
         # create model
         self.model = ArithmeticModel(inputs=input_layer, outputs=output_layer, dmap=self.dmap)
@@ -686,7 +675,7 @@ class ComparisonTraining(Training):
         recurrent1 = recurrent(embeddings1)
         recurrent2 = recurrent(embeddings2)
 
-        concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
+        concat = concatenate([recurrent1, recurrent2], axis=-1)
 
         # create output layer
         if W_classifier is not None:
