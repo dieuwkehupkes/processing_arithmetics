@@ -4,7 +4,7 @@ from keras.models import load_model
 import pickle
 import numpy as np
 from processing_arithmetics.arithmetics import MathTreebank
-from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq
+from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, Seq2Seq, DiagnosticTrainer
 from processing_arithmetics.arithmetics.treebanks import treebank
 from argument_transformation import get_architecture, get_hidden_layer, max_length
 import re
@@ -28,12 +28,13 @@ input_size = 2
 parser = argparse.ArgumentParser()
 
 # positional arguments
-parser.add_argument("-architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, Seq2Seq], required=True)
+parser.add_argument("-architecture", type=get_architecture, help="Type of architecture used during training: scalar prediction, comparison training, seq2seq or a diagnostic classifier", choices=[ScalarPrediction, ComparisonTraining, Seq2Seq, DiagnosticTrainer], required=True)
 parser.add_argument("--hidden", required=True, type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
 parser.add_argument("--nb_epochs", required=True, type=int, help="Number of epochs")
 parser.add_argument("--save_to", required=True, help="Save trained model to filename")
 
 # optional arguments
+parser.add_argument("-targets", nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'switch_mode'])
 parser.add_argument("-size_hidden", type=int, help="Size of the hidden layer", default=15)
 parser.add_argument("--seed", type=int, help="Set random seed", default=0)
 parser.add_argument("--format", type=str, help="Set formatting of arithmetic expressions", choices=['infix', 'postfix', 'prefix'], default="infix")
@@ -59,17 +60,24 @@ parser.add_argument("--verbosity", "-v", type=int, choices=[0,1,2])
 parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
 parser.add_argument("--visualise_embeddings", action="store_true", help="Visualise embeddings after training")
 
+#######################################################
+# Parse arguments and perform some basic checks
+
 args = parser.parse_args()
+if args.architecture == DiagnosticTrainer and args.targets is None:
+    parser.error("DiagnosticTrainer requires at least one target")
+
+#######################################################
+# create train, val and test set
 
 languages_train = treebank(seed=args.seed, kind='train', debug=args.debug)
 languages_val = treebank(seed=args.seed, kind='heldout', debug=args.debug)
-languages_test = [(name, treebank) for name, treebank in treebank(seed=args.seed_test, kind='test',debug=args.debug)]
-
+languages_test = [(name, tb) for name, tb in treebank(seed=args.seed_test, kind='test',debug=args.debug)]
 
 #################################################################
 # Train model
 
-training = args.architecture(digits=digits, operators=operators)
+training = args.architecture(digits=digits, operators=operators, classifiers=args.targets)
 
 print("Initialise model..")
 # Add pretrained model if this is given in arguments
@@ -88,7 +96,8 @@ else:
         fix_classifier_weights=args.fix_classifier_weights, 
         fix_embeddings=args.fix_embeddings,
         fix_recurrent_weights=args.fix_recurrent_weights,
-        dropout_recurrent=args.dropout)
+        dropout_recurrent=args.dropout,
+        classifiers=args.targets)
 
 
 # train model
@@ -120,10 +129,10 @@ if not args.test:
 
 
 # If model is trained in Seq2Seq mode, recreate model as normal ScalarPrediction model
-if args.architecture == 'Seq2Seq':
+if args.architecture == 'Seq2Seq' or args.architecture == 'DiagnosticTrainer':
     model = training.model
     training = ScalarPrediction()
-    test.add_pretrained_model(training.model)
+    training.add_pretrained_model(training.model)
 
 eval_filename = args.save_to+'_evaluation'
 eval_file = open(eval_filename, 'w')

@@ -24,7 +24,7 @@ class Training(object):
         - init (set lossfunction and metrics)
         - train
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], **kwargs):
         """
         Create training architecture
         """
@@ -557,9 +557,9 @@ class ScalarPrediction(Training):
     """
     Give description.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], classifiers=None):
         # run superclass init
-        super(ScalarPrediction, self).__init__(digits=digits, operators=operators)
+        super(ScalarPrediction, self).__init__(digits=digits, operators=operators, classifier=None)
 
         # set loss and metric functions
         self.loss_functions = self.loss_functions['output']
@@ -640,7 +640,7 @@ class ComparisonTraining(Training):
     """
     Give description.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], classifiers=None):
         # run superclass init
         super(ComparisonTraining, self).__init__(digits=digits, operators=operators)
 
@@ -738,7 +738,7 @@ class Seq2Seq(Training):
     Class to do sequence to sequence training, primarily used
     for recasting diagnostic models to test them.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], classifiers=None):
         # run superclass init
         super(Seq2Seq, self).__init__(digits=digits, operators=operators)
 
