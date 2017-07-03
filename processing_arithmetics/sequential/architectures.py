@@ -42,9 +42,13 @@ class Training(object):
         self.activations = {}
         self.sample_weight = None
         self.sample_weight_mode = None
-        for output_name in ['output', 'intermediate_locally', 'intermediate_recursively',
-                            'minus1depth_count', 'depth']:
+        for output_name in ['output', 'minus1depth_count', 'depth']:
             self.loss_functions[output_name] = 'mean_squared_error'
+            self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+            self.activations[output_name] = 'linear'
+
+        for output_name in ['intermediate_locally', 'intermediate_recursively']:
+            self.loss_functions[output_name] = 'masked_mean_squared_error'
             self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
             self.activations[output_name] = 'linear'
 
