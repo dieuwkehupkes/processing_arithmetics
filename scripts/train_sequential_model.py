@@ -32,6 +32,7 @@ parser.add_argument("-architecture", type=get_architecture, help="Type of archit
 parser.add_argument("--hidden", required=True, type=get_hidden_layer, help="Hidden layer type", choices=[SimpleRNN, GRU, LSTM])
 parser.add_argument("--nb_epochs", required=True, type=int, help="Number of epochs")
 parser.add_argument("--save_to", required=True, help="Save trained model to filename")
+parser.add_argument("-N", type=int, help="Run script N times", default=1)
 
 # optional arguments
 parser.add_argument("-targets", nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'switch_mode'])
@@ -68,30 +69,30 @@ if args.architecture == DiagnosticTrainer and args.targets is None:
     parser.error("DiagnosticTrainer requires at least one target")
 
 #######################################################
-# create train, val and test set
+# create languages
 
-languages_train = treebank(seed=args.seed, kind='train', debug=args.debug)
-languages_val = treebank(seed=args.seed, kind='heldout', debug=args.debug)
 languages_test = [(name, tb) for name, tb in treebank(seed=args.seed_test, kind='test',debug=args.debug)]
 
 #################################################################
-# Train model
+# Train model N times and store evaluation results
+
+eval_filename = args.save_to+'_evaluation'
+eval_file = open(eval_filename, 'w')
+
 
 training = args.architecture(digits=digits, operators=operators, classifiers=args.targets)
 
-print("Initialise model..")
-# Add pretrained model if this is given in arguments
-if args.model:
-    raise ValueError("Add pretrained model not implemented in this script")
-    training.add_pretrained_model(model=args.model, 
-         copy_weights=None,                                  #TODO change this too!
-         fix_classifier_weights=args.fix_classifier_weights,
-         fix_embeddings=args.fix_embeddings,
-         fix_recurrent_weights=args.fix_recurrent_weights,
-         dropout_recurrent=args.dropout)
+for seed in xrange(args.seed, args.seed+args.N):
 
-else:
+    print("\nTrain model for seed %i" % seed)
+    
+    save_to = args.save_to + '_' + str(seed)
+
+    languages_train = treebank(seed=seed, kind='train', debug=args.debug)
+    languages_val = treebank(seed=seed, kind='heldout', debug=args.debug)
+
     training.generate_model(args.hidden, input_size=input_size,
+
         input_length=args.maxlen, size_hidden=args.size_hidden,
         fix_classifier_weights=args.fix_classifier_weights, 
         fix_embeddings=args.fix_embeddings,
@@ -100,73 +101,66 @@ else:
         classifiers=args.targets)
 
 
-# train model
-print("Generate training data...")
-training_data = training.generate_training_data(data=languages_train, format=args.format) 
-validation_data = training.generate_training_data(data=languages_val, format=args.format) 
+    # train model
+    training_data = training.generate_training_data(data=languages_train, format=args.format) 
+    validation_data = training.generate_training_data(data=languages_val, format=args.format) 
 
-print("Train model..")
+    training.train(training_data=training_data, validation_data=validation_data,
+            validation_split=args.val_split, batch_size=args.batch_size,
+            optimizer=args.optimizer, loss_functions=args.loss_function,
+            epochs=args.nb_epochs, verbosity=args.verbosity, filename=save_to,
+            save_every=False, visualise_embeddings=args.visualise_embeddings)
 
-training.train(training_data=training_data, validation_data=validation_data,
-        validation_split=args.val_split, batch_size=args.batch_size,
-        optimizer=args.optimizer, loss_functions=args.loss_function,
-        epochs=args.nb_epochs, verbosity=args.verbosity, filename=args.save_to,
-        save_every=False, visualise_embeddings=args.visualise_embeddings)
-
-print("Save model")
-hist = training.trainings_history
-history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
-if not args.remove:
-    pickle.dump(history, open(args.save_to + '.history', 'wb'))
+    print("Save model")
+    hist = training.trainings_history
+    history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
+    if not args.remove:
+        pickle.dump(history, open(save_to + '.history', 'wb'))
 
 
-######################################################################################
-# Test model and write to file
+    ###############################################################################
+    # Test model and write to file
 
-if not args.test:
-    os.remove(args.save_to+'.h5')
-    exit()
+    if not args.test:
+        os.remove(save_to+'.h5')
+        exit()
 
 
-# If model is trained in Seq2Seq mode, recreate model as normal ScalarPrediction model
-if args.architecture == 'Seq2Seq' or args.architecture == 'DiagnosticTrainer':
-    model = training.model
-    training = ScalarPrediction()
-    training.add_pretrained_model(training.model)
+    # If model is trained in Seq2Seq mode, recreate model as normal ScalarPrediction model
+    if args.architecture == 'Seq2Seq' or args.architecture == 'DiagnosticTrainer':
+        model = training.model
+        training = ScalarPrediction()
+        training.add_pretrained_model(training.model)
 
-eval_filename = args.save_to+'_evaluation'
-eval_file = open(eval_filename, 'w')
+    # generate test data
+    test_data = training.generate_test_data(data=languages_test, digits=digits, format=args.format) 
 
-# generate test data
-test_data = training.generate_test_data(data=languages_test, digits=digits, format=args.format) 
+    # Helper function to print settings to file
+    def sum_settings(args):
+        # create string of settings
+        settings_str = ''
+        settings_str += '\n\n\nTrainings architecture: %s' % args.architecture
+        settings_str += '\nRecurrent layer: %s' % args.hidden
+        settings_str += '\nSize hidden layer: %i' % args.size_hidden
+        settings_str += '\nFormat: %s' % args.format
+        settings_str += '\nTrain seed: %s' % args.seed
+        settings_str += '\nTest seed: %s' % args.seed_test
+        settings_str += '\nBatch size: %i' % args.batch_size
+        settings_str += '\nNumber of epochs: %i' % args.nb_epochs
+        settings_str += '\nOptimizer: %s\n\n' % args.optimizer
 
-# Helper function to print settings to file
-def sum_settings(args):
-    # create string of settings
-    settings_str = ''
-    settings_str += '\n\n\nTrainings architecture: %s' % args.architecture
-    settings_str += '\nRecurrent layer: %s' % args.hidden
-    settings_str += '\nSize hidden layer: %i' % args.size_hidden
-    settings_str += '\nFormat: %s' % args.format
-    settings_str += '\nTrain seed: %s' % args.seed
-    settings_str += '\nTest seed: %s' % args.seed_test
-    settings_str += '\nBatch size: %i' % args.batch_size
-    settings_str += '\nNumber of epochs: %i' % args.nb_epochs
-    settings_str += '\nOptimizer: %s\n\n' % args.optimizer
+        return settings_str
 
-    return settings_str
+    eval_file.write(sum_settings(args))
 
-eval_file.write(sum_settings(args))
+    print("Test model")
 
-print("Test model")
-
-for name, X, Y in test_data:
-    acc = training.model.evaluate(X, Y)
-    eval_file.write('\n'+name)
-    print "Accuracy for \n%s:\t\t" % name,
-    results = '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(1, len(acc))])
-    print results
-    eval_file.write('\t'+results)
+    for name, X, Y in test_data:
+        acc = training.model.evaluate(X, Y)
+        eval_file.write('\n'+name)
+        print "Accuracy for \n%s:\t\t" % name,
+        results = '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(1, len(acc))])
+        eval_file.write('\t'+results)
 
 eval_file.close
 
