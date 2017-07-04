@@ -78,6 +78,7 @@ languages_test = [(name, tb) for name, tb in treebank(seed=args.seed_test, kind=
 
 eval_filename = args.save_to+'_evaluation'
 eval_file = open(eval_filename, 'w')
+results_all = dict()
 
 
 training = args.architecture(digits=digits, operators=operators, classifiers=args.targets)
@@ -155,14 +156,15 @@ for seed in xrange(args.seed, args.seed+args.N):
 
     print("Test model")
 
-    for name, X, Y in test_data:
-        acc = training.model.evaluate(X, Y)
-        eval_file.write('\n'+name)
-        print "Accuracy for \n%s:\t\t" % name,
-        results = '\t'.join(['%s: %f' % (training.model.metrics_names[i], acc[i]) for i in xrange(1, len(acc))])
-        eval_file.write('\t'+results)
+    results = training.test(test_data)
+    results_str = training.evaluation_string(results) 
+    eval_file.write('\t'+results_str)
+
+    results_all[save_to] = results
 
 eval_file.close
+
+pickle.dump(results_all, open(args.save_to+'.results', 'wb'))
 
 print("Finished")
 
