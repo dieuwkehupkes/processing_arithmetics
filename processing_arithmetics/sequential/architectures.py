@@ -40,6 +40,7 @@ class Training(object):
         self.metrics = {}
         self.activations = {}
         self.sample_weight_mode = None
+        self.loss_weights = None
         for output_name in ['output', 'minus1depth_count', 'depth']:
             self.loss_functions[output_name] = 'mean_squared_error'
             self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
@@ -231,7 +232,7 @@ class Training(object):
             loss_functions = self.loss_functions
 
         # compile model
-        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics, sample_weight_mode=self.sample_weight_mode)
+        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics, sample_weight_mode=self.sample_weight_mode, loss_weights=self.loss_weights)
 
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
@@ -271,10 +272,10 @@ class Training(object):
         """
         # input new metrics
         if metrics:
-            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=metrics)
+            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=metrics, loss_weights=self.loss_weights)
 
         else:
-            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=self.metrics)
+            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=self.metrics, loss_weights=self.loss_weights)
 
         evaluation = OrderedDict()
         for name, X, Y in test_data:
@@ -1132,7 +1133,7 @@ class DiagnosticTrainer(DiagnosticClassifier):
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             for classifier in self.classifiers:
-                target = expression.targets[classifier]
+                target = expression.training_targets[classifier]
                 Y[classifier].append(target)
             Y['output'].append(answer)
 
@@ -1160,3 +1161,8 @@ class DiagnosticTrainer(DiagnosticClassifier):
         self.loss_functions = dict([(key, self.loss_functions[key]) for key in self.classifiers+['output']])
         self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers+['output']])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers+['output']])
+
+        self.loss_weights = dict([(key, 0.2/len(self.classifiers)) for key in self.classifiers])
+
+        if len(self.classifiers) == 0: self.loss_weights['output'] = 1
+        else: self.loss_weights['output'] = 0.8
