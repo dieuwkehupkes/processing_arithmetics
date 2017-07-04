@@ -40,7 +40,6 @@ class Training(object):
         self.loss_functions = {}
         self.metrics = {}
         self.activations = {}
-        self.sample_weight = None
         self.sample_weight_mode = None
         for output_name in ['output', 'intermediate_locally', 'intermediate_recursively',
                             'minus1depth_count', 'depth']:
@@ -236,7 +235,7 @@ class Training(object):
         # fit model
         self.model.fit(X_train, Y_train, validation_data=validation_data,
                        validation_split=validation_split, batch_size=batch_size, 
-                       epochs=epochs, sample_weight=self.sample_weight,
+                       epochs=epochs, sample_weight=sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         hist = callbacks[0]
@@ -746,7 +745,6 @@ class Seq2Seq(Training):
         # set loss function and metrics
         self.loss_functions = self.loss_functions['output']
         self.metrics = self.metrics['output']
-        self.sample_weight_mode = 'temporal'
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -782,7 +780,6 @@ class Seq2Seq(Training):
         """
         # create dictionary with outputs
         X, Y = [], []
-        sample_weights = []
         pad_to = pad_to or self.input_length
 
         # loop over examples
@@ -790,14 +787,12 @@ class Seq2Seq(Training):
             expression.get_targets(format, 'intermediate_locally')
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
-            Y.append(expression.targets['intermediate_locally'])
-            sample_weights.append(expression.sample_weights_numerical)
+            Y.append(expression.training_targets['intermediate_locally'])
 
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
         Y_padded = keras.preprocessing.sequence.pad_sequences(Y, maxlen=pad_to, dtype='float32')
-        self.sample_weights = keras.preprocessing.sequence.pad_sequences(sample_weights, maxlen=pad_to)
 
         X = {'input': X_padded}
         Y = {'output': Y_padded}
@@ -1148,7 +1143,7 @@ class DiagnosticTrainer(DiagnosticClassifier):
         # make numpy arrays from Y data
         for output in Y:
             try:
-                Y[output] = np.array(keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to))
+                Y[output] = keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to)
             except ValueError:
                 Y[output] = np.array(Y[output])
 
