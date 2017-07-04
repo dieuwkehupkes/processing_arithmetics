@@ -12,7 +12,6 @@ import theano
 import theano.tensor as T
 import copy
 import numpy as np
-import random
 
 
 class Training(object):
@@ -166,7 +165,7 @@ class Training(object):
 
         if isinstance(data, dict):
             data = MathTreebank(data, digits=digits)
-            random.shuffle(data.examples)
+            np.random.shuffle(data.examples)
 
         return self.data_from_treebank(treebank=data,
                                        format=format,
@@ -1059,11 +1058,10 @@ class DiagnosticTrainer(DiagnosticClassifier):
     """
     def __init__(self, digits=np.arange(-10,11), operators=['+','-'], model=None, classifiers=None):
         # run Training init
-        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
+        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators, model=model)
 
         self.classifiers = classifiers
         self.set_attributes()
-
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -1075,14 +1073,14 @@ class DiagnosticTrainer(DiagnosticClassifier):
         # create embeddings
         embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
                                input_length=self.input_length, weights=W_embeddings,
-                               trainable=False,
+                               trainable=self.train_embeddings,
                                mask_zero=self.mask_zero,
                                name='embeddings')(input_layer)
 
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
-                                         trainable=False,
+                                         trainable=True,
                                          return_sequences=True,
                                          recurrent_dropout=self.dropout_recurrent)(embeddings)
 
@@ -1100,7 +1098,6 @@ class DiagnosticTrainer(DiagnosticClassifier):
         # add classifier layers
         outputs = []
         for classifier in self.classifiers:
-            print classifier
             try:
                 weights = W_classifier[classifier]
             except TypeError:
@@ -1116,7 +1113,6 @@ class DiagnosticTrainer(DiagnosticClassifier):
           
         # create model
         self.model = ArithmeticModel(inputs=input_layer, outputs=outputs, dmap=self.dmap)
-
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
