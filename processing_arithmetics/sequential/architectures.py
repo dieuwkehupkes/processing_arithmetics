@@ -47,7 +47,7 @@ class Training(object):
             self.activations[output_name] = 'linear'
 
         for output_name in ['intermediate_locally', 'intermediate_recursively']:
-            self.loss_functions[output_name] = 'masked_mean_squared_error'
+            self.loss_functions[output_name] = 'mean_squared_error'
             self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
             self.activations[output_name] = 'linear'
 
@@ -66,7 +66,7 @@ class Training(object):
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
                        fix_classifier_weights=False, fix_embeddings=False, 
                        fix_recurrent_weights=False, mask_zero=True,
-                       dropout_recurrent=0.0, **kwargs):
+                       dropout_recurrent=0.0, recurrent_activation='relu', **kwargs):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -81,6 +81,7 @@ class Training(object):
         :param train_recurrent:     set to false to fix recurrent weights during training
         :param mask_zero:           set to true to mask 0 values
         :param dropout_recurrent:   dropout param for recurrent weights
+        :param recurrent_activation activation function to be used for recurrent layer
         :return:
         """
 
@@ -96,6 +97,8 @@ class Training(object):
         self.dropout_recurrent = dropout_recurrent
         self.trainings_history = None
         self.model = None
+        self.activations['recurrent_layer'] = recurrent_activation
+
         if 'classifiers' in kwargs:
             self.classifiers = kwargs['classifiers']
 
@@ -141,7 +144,7 @@ class Training(object):
         kwargs.pop('input_length', None)
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, **kwargs)
+        self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, recurrent_activation=model_info['recurrent_activation'], **kwargs)
         return
 
     @staticmethod
@@ -395,6 +398,7 @@ class Training(object):
                 model_info['recurrent_layer'] = layer_type
                 model_info['weights_recurrent'] = weights
                 model_info['size_hidden'] = layer.units
+                model_info['recurrent_activation'] = layer.activation
 
             elif layer_type in ['Masking', 'Lamdba']:
                 pass
@@ -565,9 +569,9 @@ class ScalarPrediction(Training):
         super(ScalarPrediction, self).__init__(digits=digits, operators=operators, classifier=None)
 
         # set loss and metric functions
-        self.loss_functions = self.loss_functions['output']
-        self.metrics = self.metrics['output']
-        self.activations = self.activations['output']
+        self.loss_functions = {'output': self.loss_functions['output']}
+        self.metrics = {'output': self.metrics['output']}
+        self.activations = {'output': self.activations['output']}
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -589,6 +593,7 @@ class ScalarPrediction(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=self.train_embeddings,
+                                         activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent,
                                          return_sequences=False)(embeddings)
 
@@ -670,6 +675,7 @@ class ComparisonTraining(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=self.train_recurrent,
+                                         activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent)
 
         embeddings1 = embeddings(input1)
@@ -770,6 +776,7 @@ class Seq2Seq(Training):
                                          weights=W_recurrent,
                                          trainable=True,
                                          return_sequences=True,
+                                         activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         if W_classifier is not None:
@@ -791,7 +798,7 @@ class Seq2Seq(Training):
             expression.get_targets(format, 'intermediate_locally')
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
-            Y.append(expression.training_targets['intermediate_locally'])
+            Y.append(expression.targets['intermediate_locally'])
 
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
@@ -857,6 +864,7 @@ class DiagnosticClassifier(Training):
                                          weights=W_recurrent,
                                          trainable=False,
                                          return_sequences=True,
+                                         activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         # add classifier layers
@@ -960,6 +968,7 @@ class DCgates(DiagnosticClassifier):
                                          weights=W_recurrent,
                                          trainable=False,
                                          return_sequences=True,
+                                         activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         # create gate layers
@@ -1087,7 +1096,9 @@ class DiagnosticTrainer(DiagnosticClassifier):
                                          weights=W_recurrent,
                                          trainable=True,
                                          return_sequences=True,
+                                         activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent)(embeddings)
+
 
         # add lambda layer to get also non sequential output for output classifier
         def take_last(x):
@@ -1133,7 +1144,7 @@ class DiagnosticTrainer(DiagnosticClassifier):
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
             for classifier in self.classifiers:
-                target = expression.training_targets[classifier]
+                target = expression.targets[classifier]
                 Y[classifier].append(target)
             Y['output'].append(answer)
 
@@ -1162,7 +1173,7 @@ class DiagnosticTrainer(DiagnosticClassifier):
         self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers+['output']])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers+['output']])
 
-        self.loss_weights = dict([(key, 0.2/len(self.classifiers)) for key in self.classifiers])
+        self.loss_weights = dict([(key, 0.7/len(self.classifiers)) for key in self.classifiers])
 
         if len(self.classifiers) == 0: self.loss_weights['output'] = 1
-        else: self.loss_weights['output'] = 0.8
+        else: self.loss_weights['output'] = 0.3

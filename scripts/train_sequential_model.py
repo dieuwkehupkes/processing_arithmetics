@@ -40,6 +40,7 @@ parser.add_argument("-size_hidden", type=int, help="Size of the hidden layer", d
 parser.add_argument("--seed", type=int, help="Set random seed", default=0)
 parser.add_argument("--format", type=str, help="Set formatting of arithmetic expressions", choices=['infix', 'postfix', 'prefix'], default="infix")
 parser.add_argument("--seed_test", type=int, help="Set random seed for testset", default=100)
+parser.add_argument("--recurrent_activation", help="Activation function for recurrent layer", default='tanh')
 
 parser.add_argument("--optimizer", help="Set optimizer for training", choices=['adam', 'adagrad', 'adamax', 'adadelta', 'rmsprop', 'sgd'], default='adam')
 parser.add_argument("--loss_function", "-loss", help="Loss for training", choices=['mae', 'mse'], default='mse')
