@@ -11,25 +11,45 @@ def parse_language(language_str):
     a tuple with arguments to generate examples.
     :return:    (#leaves, operators, branching)
     """
+    # var initialisation
+    operators = ['+', '-']
+
     # find # leaves
     nr = re.compile('[0-9]+')
     n = int(nr.search(language_str).group())
 
-    # find operators
+    # compile regular expressions
+    R = re.compile('R')
     plusmin = re.compile('\+|-')
-    op = plusmin.search(language_str)
+    branch = re.compile('left|right')
+
+    # find if there are any root requirements
+    root = R.search(language_str)
+    if root:
+        r = root.span()[0]
+        root_branching = branch.search(language_str, r)
+        if root_branching:
+            root_branching = root_branching.group()
+        root_operator = plusmin.search(language_str, r)
+        if root_operator:
+            root_operator = root_operator.group()
+    else:
+        r = len(language_str)
+        root_operator, root_branching = None, None
+
+    # find operators
+    op = plusmin.search(language_str, 0, r)
     if op:
         operators = [op.group()]
-    else:
-        operators = ['+', '-']
 
     # find branchingness
-    branch = re.compile('left|right')
     branching = branch.search(language_str)
     if branching:
         branching = branching.group()
 
-    return [n], operators, branching
+    # check if there are any root requirements
+
+    return [n], operators, branching, root_operator, root_branching
 
 
 class MathTreebank():
@@ -38,11 +58,15 @@ class MathTreebank():
         self.operators = set([])  # attribute containing operators in the treebank
         self.digits = set([])  # digits in the treebank
         for name, N in languages.items():
-            lengths, operators, branching = parse_language(name)
+            lengths, operators, branching, root_operator, root_branching = parse_language(name)
             [self.operators.add(op) for op in operators]
-            self.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
+            self.add_examples(digits=digits, operators=operators, 
+                              branching=branching, lengths=lengths, n=N,
+                              root_operator=root_operator, root_branching=root_branching)
 
-    def generate_examples(self, operators, digits, branching=None, root_branching=None, root_operator=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+    def generate_examples(self, operators, digits, branching=None,
+                          root_branching=None, root_operator=None, 
+                          min=-60, max=60, n=1000, lengths=range(1,6)):
         """
         :param operators:       operators to be used in
                                 arithmetic expressions \in {+,-,\,*}
@@ -59,7 +83,8 @@ class MathTreebank():
         self.operators = self.operators.union(set(operators))
         while len(examples) < n:
             l = random.choice(lengths)
-            tree = MathExpression.generateME(l, operators, digits, branching=branching, root_branching=root_branching, root_operator=root_operator)
+            tree = MathExpression.generateME(l, operators, digits, branching=branching, 
+                                             root_branching=root_branching, root_operator=root_operator)
             answer = tree.solve()
             if answer is None:
                 continue
@@ -68,13 +93,17 @@ class MathTreebank():
             examples.append((tree,answer))
         return examples
 
-    def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
-                     n=1000, lengths=range(1, 6)):
+    def add_examples(self, digits, operators=['+', '-'], branching=None,
+                     root_branching=None, root_operator=None, 
+                     min_answ=-60, max_answ=60, n=1000,
+                     lengths=range(1, 6)):
         """
         Add examples to treebank.
         """
-        self.examples += self.generate_examples(operators=operators, digits=digits, branching=branching,
-                                               min=min_answ, max=max_answ, n=n, lengths=lengths)
+        self.examples += \
+            self.generate_examples(operators=operators, digits=digits, branching=branching,
+                                   root_branching=root_branching, root_operator=root_operator,
+                                   min=min_answ, max=max_answ, n=n, lengths=lengths)
 
 
     def paired_examples(self):
@@ -118,11 +147,16 @@ class IndexedTreebank(MathTreebank):
                 if i+from_point not in self.index[key][value]:
                     self.index[key][value].append(i+from_point)
 
-    def add_examples(self, digits, operators=['+', '-'], branching=None, min_answ=-60, max_answ=60,
+    def add_examples(self, digits, operators=['+', '-'], branching=None, 
+                     root_branching=None, root_operator=None, 
+                     min_answ=-60, max_answ=60,
                      n=1000, lengths=range(1, 6)):
         from_point = len(self.examples)
-        self.examples += tuple(self.generate_examples(operators=operators, digits=digits, branching=branching,
-                                               min=min_answ, max=max_answ, n=n, lengths=lengths))
+        self.examples += \
+            tuple(self.generate_examples(operators=operators, digits=digits, branching=branching,
+                                         root_branching=root_branching,
+                                         root_operator=root_operator,
+                                         min=min_answ, max=max_answ, n=n, lengths=lengths))
         self.update_index(from_point)
 
     def get_examples_property(self, property):
