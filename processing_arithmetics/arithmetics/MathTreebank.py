@@ -16,7 +16,7 @@ def parse_language(language_str):
     n = int(nr.search(language_str).group())
 
     # find operators
-    plusmin = re.compile('\+')
+    plusmin = re.compile('\+|-')
     op = plusmin.search(language_str)
     if op:
         operators = [op.group()]
@@ -42,7 +42,7 @@ class MathTreebank():
             [self.operators.add(op) for op in operators]
             self.add_examples(digits=digits, operators=operators, branching=branching, lengths=lengths, n=N)
 
-    def generate_examples(self, operators, digits, branching=None, min=-60, max=60, n=1000, lengths=range(1,6)):
+    def generate_examples(self, operators, digits, branching=None, root_branching=None, root_operator=None, min=-60, max=60, n=1000, lengths=range(1,6)):
         """
         :param operators:       operators to be used in
                                 arithmetic expressions \in {+,-,\,*}
@@ -59,7 +59,7 @@ class MathTreebank():
         self.operators = self.operators.union(set(operators))
         while len(examples) < n:
             l = random.choice(lengths)
-            tree = MathExpression.generateME(l, operators, digits, branching=branching)
+            tree = MathExpression.generateME(l, operators, digits, branching=branching, root_branching=root_branching, root_operator=root_operator)
             answer = tree.solve()
             if answer is None:
                 continue

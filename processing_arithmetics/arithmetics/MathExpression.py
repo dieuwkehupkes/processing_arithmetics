@@ -9,21 +9,38 @@ from numpy import random as random
 
 class MathExpression(Tree):
     @classmethod
-    def generateME(cls, length, operators, digits, branching=None):
+    def generateME(cls, length, operators, digits, branching=None, root_branching=None, root_operator=None):
+        """
+        Class method to generate MathExpression
+        :param length:          # of digits in the expression
+        :param operators:       allowed operators (at this point: + and/or -)
+        :param digits:          array with allowed digits
+        :param branching:       branching restrictions (left or right)
+        :param root_branching:  branching of root, set to None for random
+        :param root_operator:   operator of root, set to None for random
+        """
         if length < 1:
             print('This case should not happen')
         elif length == 1:
             this = cls(random.choice(digits), [])
         else:
-            if branching == 'left':
+            # choose branching
+            if root_branching == 'left':
                 left, right = length-1, 1
-            elif branching == 'right':
+            elif root_branching == 'right' or branching == 'right':
                 left, right = 1, length-1
+            elif branching == 'left':
+                left, right = length-1, 1
             else:
                 left = random.randint(1, length)
                 right = length - left
             children = [cls.generateME(length=l, operators=operators, digits=digits, branching=branching) for l in [left, right]]
-            children.insert(1, cls(np.random.choice(operators), []))
+
+            # choose operator
+            if root_operator:
+                children.insert(1, cls(root_operator, []))
+            else:
+                children.insert(1, cls(np.random.choice(operators), []))
             this = cls('dummy', children)
         return this
 
