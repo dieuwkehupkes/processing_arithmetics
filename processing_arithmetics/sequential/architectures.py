@@ -66,7 +66,7 @@ class Training(object):
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
                        fix_classifier_weights=False, fix_embeddings=False, 
                        fix_recurrent_weights=False, mask_zero=True,
-                       dropout_recurrent=0.0, recurrent_activation='relu', **kwargs):
+                       dropout_recurrent=0.0, recurrent_activation='tanh', **kwargs):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -361,8 +361,7 @@ class Training(object):
         """
 
         if isinstance(model, str):
-            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates, 'T': theano.tensor})
-
+            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates})
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)
@@ -394,7 +393,7 @@ class Training(object):
                 model_info['input_length'] = layer.get_config()['input_length']
 
             elif layer_type in ['SimpleRNN', 'GRU', 'LSTM', 'GRU_output_gates']:
-                assert 'type' not in model_info, 'Model has too many recurrent layers' 
+                assert 'recurrent_layer' not in model_info, 'Model has too many recurrent layers' 
                 model_info['recurrent_layer'] = layer_type
                 model_info['weights_recurrent'] = weights
                 model_info['size_hidden'] = layer.units
@@ -587,7 +586,6 @@ class ScalarPrediction(Training):
                                trainable=self.train_embeddings,
                                mask_zero=self.mask_zero,
                                name='embeddings')(input_layer)
-
 
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
