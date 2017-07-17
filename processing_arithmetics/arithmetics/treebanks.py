@@ -25,7 +25,15 @@ languages = {
                         ('L8', 15000),
                         ('L9', 15000),
                         ('L9_left', 15000),
-                        ('L9_right', 15000)
+                        ('L9_right', 15000),
+                        ('L9_right+', 15000),
+                        ('L9_left+_R_right-', 15000),
+                        ('L9_left-_R_right-', 15000),
+                        ('L9_left_R_right-', 15000),
+                        ('L9_right-_R_right-', 15000),
+                        ('L9_right+_R_right-', 15000),
+                        ('L9_right_R_right-', 15000),
+                        ('L9_+_R_right-', 15000)
         ]),
 
         'test_small': OrderedDict([
@@ -39,7 +47,12 @@ languages = {
                         ('L8', 15),
                         ('L9', 15),
                         ('L9_left', 15),
-                        ('L9_right', 15) 
+                        ('L9_right', 15),
+                        ('L9_left+_R_right-', 15),
+                        ('L9_left-_R_right-', 15),
+                        ('L9_right-_R_right-', 15),
+                        ('L9_right+_R_right-', 15),
+                        ('L9_+_R_right-', 15)
         ])
 }
 
