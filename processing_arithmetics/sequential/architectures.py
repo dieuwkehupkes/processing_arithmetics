@@ -590,7 +590,7 @@ class ScalarPrediction(Training):
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
-                                         trainable=self.train_embeddings,
+                                         trainable=self.train_recurrent,
                                          activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent,
                                          return_sequences=False)(embeddings)
