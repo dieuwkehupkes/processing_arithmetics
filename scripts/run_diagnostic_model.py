@@ -21,7 +21,7 @@ operators = ['+', '-']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-models", type=str, nargs="*", help="Models to test")
-parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth'])
+parser.add_argument("-classifiers", required=True, nargs="*", choices=['subtracting', 'intermediate_locally', 'intermediate_recursively', 'grammatical', 'intermediate_directly', 'depth', 'minus1depth', 'minus2depth', 'minus3depth', 'minus4depth', 'minus1depth_count'])
 
 parser.add_argument("--format", type=str, help="Set formatting of arithmetic expressions", choices=['infix', 'postfix', 'prefix'], default="infix")
 parser.add_argument("--seed_test", type=int, help="Set random seed for testset", default=100)
@@ -29,7 +29,6 @@ parser.add_argument("--seed_test", type=int, help="Set random seed for testset",
 parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=max_length(15))
 parser.add_argument("--verbosity", type=int, choices=[0, 1, 2], default=2)
 parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
-parser.add_argument("--target_folder", help="Set folder to store models", default="dc_models/")
 parser.add_argument("--output_name", help="Set output name")
 
 args = parser.parse_args()
@@ -46,7 +45,7 @@ test_data = None
 
 for model in args.models:
 
-    m = DiagnosticClassifier(model=model, classifiers=args.classifiers)
+    m = DiagnosticClassifier(model=model, classifiers=args.classifiers, copy_weights=['recurrent', 'embeddings', 'classifier'])
 
     # find format (for now assume it is in the title) and assure it is right
     format = re.search('postfix|prefix|infix', model).group(0)

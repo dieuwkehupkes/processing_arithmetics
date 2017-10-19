@@ -5,10 +5,8 @@ the network.
 
 import itertools as it
 import numpy as np
-import matplotlib
-import matplotlib.pylab as plt
-import matplotlib.cm as cm
-from matplotlib import gridspec
+# import matplotlib.cm as cm
+# from matplotlib import gridspec
 from sklearn.decomposition import PCA
 
 def visualise_hidden_layer(output_classifier, *inputs):
@@ -17,6 +15,7 @@ def visualise_hidden_layer(output_classifier, *inputs):
     :param hl_activations: 2 dimensional np array
 
     """
+    import matplotlib.pylab as plt
     cols = len(inputs)
     col = 1
 
@@ -55,6 +54,7 @@ def plot_gate_values(*inputs):
     :param inputs:
     :return:
     """
+    # import matplotlib.pylab as plt
     rows, row = len(inputs), 1
 
     plt.subplots(nrows=len(inputs), ncols=3, sharex=True, sharey=True)
@@ -111,7 +111,7 @@ def visualise_paths(*inputs):
     :param inputs:
     :return:
     """
-
+    import matplotlib.pylab as plt
     print(len(inputs))
 
     # create hl_activations matrix and compute principal components
@@ -170,6 +170,7 @@ def plot_distances(embeddings_matrix):
     Create a plot of the distances between the different
     vectors in the embeddings matrix.
     """
+    import matplotlib.pyplot as plt
     distances = []
     for row1, row2 in it.combinations(embeddings_matrix, 2):
         distance = np.sqrt(np.sum(np.power(row1-row2, 2)))

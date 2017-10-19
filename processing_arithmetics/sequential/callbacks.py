@@ -93,16 +93,17 @@ class VisualiseEmbeddings(Callback):
         Plot embeddings
         """
         # import plotting library
-        import matplotlib
-        import matplotlib.pyplot as plt
+        # import matplotlib
+        # import matplotlib.pyplot as plt
         
-        self.fig = plt.figure(figsize=(6,6))
-        self.ax = self.fig.add_subplot(1, 1, 1)
-        self.ax.set_xlim([-1, 1])
-        self.ax.set_ylim([-1, 1])
+        # self.fig = plt.figure(figsize=(6,6))
+        # self.ax = self.fig.add_subplot(1, 1, 1)
+        # self.ax.set_xlim([-1, 1])
+        # self.ax.set_ylim([-1, 1])
         self.embeddings_id = embeddings_id
         self.dmap = dict(zip(dmap.values(), dmap.keys()))
-        self.cmap = self.make_cmap(self.dmap)
+        # self.cmap = self.make_cmap(self.dmap)
+        self.all_weights = []
 
     def on_train_begin(self, logs={}):
         # check if embeddings have correct dimensionality
@@ -110,35 +111,38 @@ class VisualiseEmbeddings(Callback):
 
         img = []
         weights = self.model.layers[self.embeddings_id].get_weights()[0]
-        for i in xrange(1, len(weights)):
-            xy = tuple(weights[i])
-            x, y = xy
-            img += self.ax.plot(x, y, 'o')
-            img.append(self.ax.annotate(self.dmap[i], xy=xy))
-        plt.plot()
-        self.imgs = [img]
+        self.all_weights.append(weights)
+        # for i in xrange(1, len(weights)):
+        #     xy = tuple(weights[i])
+        #     x, y = xy
+        #     img += self.ax.plot(x, y, 'o')
+        #     img.append(self.ax.annotate(self.dmap[i], xy=xy))
+        # plt.plot()
+        # self.imgs = [img]
         self.i=0
 
     def on_batch_end(self, batch, logs={}):
         # get snapshot of the embedding weights every 20 batches
-        if self.i % 50 == 0:
+        if self.i % 10 == 0:
             weights = self.model.layers[self.embeddings_id].get_weights()[0]
-            img = []
-            for i in xrange(1, len(weights)):
-                xy = tuple(weights[i])
-                x, y = xy
-                img += self.ax.plot(x, y, 'o', color=self.cmap[i])
-                img.append(self.ax.annotate(self.dmap[i], xy=xy))
+            self.all_weights.append(weights)
+            # img = []
+            # for i in xrange(1, len(weights)):
+            #     xy = tuple(weights[i])
+            #     x, y = xy
+            #     img += self.ax.plot(x, y, 'o', color=self.cmap[i])
+            #     img.append(self.ax.annotate(self.dmap[i], xy=xy))
 
-            plt.plot()
-            self.imgs.append(img)
+            # plt.plot()
+            # self.imgs.append(img)
         self.i+=1
 
 
     def on_train_end(self, logs={}):
+        pass
         # Create animation of weight changes
-        anim = animation.ArtistAnimation(self.fig, self.imgs, interval=500, blit=False, repeat_delay=3000)
-        plt.show()
+        # anim = animation.ArtistAnimation(self.fig, self.imgs, interval=500, blit=False, repeat_delay=3000)
+        # plt.show()
 
     def make_cmap(self, dmap):
         N = len(dmap)-4

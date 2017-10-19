@@ -219,7 +219,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_functions=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_functions=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False, loss_weights=None):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -234,8 +234,11 @@ class Training(object):
         if not loss_functions:
             loss_functions = self.loss_functions
 
+        if not loss_weights:
+            loss_weights = self.loss_weights
+
         # compile model
-        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics, sample_weight_mode=self.sample_weight_mode, loss_weights=self.loss_weights)
+        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics, sample_weight_mode=self.sample_weight_mode, loss_weights=loss_weights)
 
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
 
@@ -247,6 +250,11 @@ class Training(object):
 
         hist = callbacks[0]
 
+        try:
+            self.embeddings_anim = callbacks[1].all_weights
+        except:
+            pass
+        
         self.trainings_history = hist                    # set trainings history as attribute
 
     def print_accuracies(self, history=None):
@@ -590,7 +598,7 @@ class ScalarPrediction(Training):
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
-                                         trainable=self.train_embeddings,
+                                         trainable=self.train_recurrent,
                                          activation=self.activations['recurrent_layer'],
                                          recurrent_dropout=self.dropout_recurrent,
                                          return_sequences=False)(embeddings)
@@ -832,7 +840,7 @@ class DiagnosticClassifier(Training):
     test what information is extratable from the representations
     the model generates.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None, copy_weights=['recurrent', 'embeddings', 'classifiers']):
         # run superclass init
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
 
@@ -840,7 +848,8 @@ class DiagnosticClassifier(Training):
         self.set_attributes(model=model)
 
         # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
+        if model:
+            self.add_pretrained_model(model, copy_weights=copy_weights, classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -870,7 +879,9 @@ class DiagnosticClassifier(Training):
         for classifier in self.classifiers:
             try:
                 weights = W_classifier[classifier]
-            except KeyError:
+            except KeyError: 
+                weights = None
+            except TypeError:
                 weights = None
             classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier)(recurrent))
             
@@ -1171,7 +1182,6 @@ class DiagnosticTrainer(DiagnosticClassifier):
         self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers+['output']])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers+['output']])
 
-        self.loss_weights = dict([(key, 0.7/len(self.classifiers)) for key in self.classifiers])
-
+        self.loss_weights = dict([(key, 1/len(self.classifiers)) for key in self.classifiers])
         if len(self.classifiers) == 0: self.loss_weights['output'] = 1
-        else: self.loss_weights['output'] = 0.3
+        else: self.loss_weights['output'] = 0

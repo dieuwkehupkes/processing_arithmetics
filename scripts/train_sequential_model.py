@@ -44,6 +44,7 @@ parser.add_argument("--recurrent_activation", help="Activation function for recu
 
 parser.add_argument("--optimizer", help="Set optimizer for training", choices=['adam', 'adagrad', 'adamax', 'adadelta', 'rmsprop', 'sgd'], default='adam')
 parser.add_argument("--loss_function", "-loss", help="Loss for training", choices=['mae', 'mse'], default='mse')
+parser.add_argument("--loss_weights", help="Dictionary with loss weights for seq2seq training", type=eval)
 parser.add_argument("--dropout", help="Set dropout fraction", default=0.0)
 parser.add_argument("-b", "--batch_size", help="Set batch size", default=24)
 parser.add_argument("--val_split", help="Set validation split", default=0.1)
@@ -102,7 +103,6 @@ for seed in xrange(args.seed, args.seed+args.N):
         dropout_recurrent=args.dropout,
         classifiers=args.targets)
 
-
     # train model
     training_data = training.generate_training_data(data=languages_train, format=args.format) 
     validation_data = training.generate_training_data(data=languages_val, format=args.format) 
@@ -111,13 +111,16 @@ for seed in xrange(args.seed, args.seed+args.N):
             validation_split=args.val_split, batch_size=args.batch_size,
             optimizer=args.optimizer, loss_functions=args.loss_function,
             epochs=args.nb_epochs, verbosity=args.verbosity, filename=save_to,
-            save_every=False, visualise_embeddings=args.visualise_embeddings)
+            save_every=False, visualise_embeddings=args.visualise_embeddings,
+            loss_weights=args.loss_weights)
 
     print("Save model")
     hist = training.trainings_history
     history = (hist.losses, hist.val_losses, hist.metrics_train, hist.metrics_val)
     if not args.remove:
         pickle.dump(history, open(save_to + '.history', 'wb'))
+        if args.visualise_embeddings:
+            pickle.dump(training.embeddings_anim, open(save_to + '.anim', 'wb'))
 
 
     ###############################################################################

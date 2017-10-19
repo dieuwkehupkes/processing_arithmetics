@@ -38,7 +38,7 @@ parser.add_argument("--val_split", help="Set validation split", default=0.1)
 parser.add_argument("-maxlen", help="Set maximum number of digits in expression that network should be able to parse", type=max_length, default=max_length(15))
 parser.add_argument("--verbosity", type=int, choices=[0, 1, 2], default=2)
 parser.add_argument("--debug", action="store_true", help="Run with small treebank for debugging")
-parser.add_argument("--target_folder", help="Set folder to store models", default="dc_models/")
+parser.add_argument("--target_folder", help="Set folder to store models", default="")
 
 args = parser.parse_args()
 
@@ -61,7 +61,7 @@ validation_data = None
 for model in args.models:
 
     print("\nTraining diagnostic classifier for model %s " % model)
-    save_to = args.target_folder+model[:-3]+'_dc'+str(args.seed)
+    save_to = args.target_folder+'/'+model[:-3]+'_dc'+str(args.seed)
 
     # find format (for now assume it is in the title) and assure it is right
     format = re.search('postfix|prefix|infix', model).group(0)
