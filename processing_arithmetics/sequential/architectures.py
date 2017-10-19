@@ -369,7 +369,7 @@ class Training(object):
         """
 
         if isinstance(model, str):
-            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates})
+            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates, 'T': theano.tensor})
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)
