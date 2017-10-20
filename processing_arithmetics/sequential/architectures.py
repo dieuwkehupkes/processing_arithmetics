@@ -117,6 +117,7 @@ class Training(object):
         """
 
         model_info = self.get_model_info(model)
+        
 
         if model_info['input_dim'] != self.input_dim:
             raise ValueError("dmap mismatch: input dimensionality of pretrained model does not match the expected inputs")
@@ -990,6 +991,8 @@ class DCgates(DiagnosticClassifier):
             try:
                 weights = W_classifier[classifier]
             except KeyError:
+                weights = None
+            except TypeError:
                 weights = None
             classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier+'_update_gate')(update_gate))
             classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier+'_reset_gate')(reset_gate))
