@@ -5,10 +5,8 @@ the network.
 
 import itertools as it
 import numpy as np
-import matplotlib
-import matplotlib.pylab as plt
-import matplotlib.cm as cm
-from matplotlib import gridspec
+# import matplotlib.cm as cm
+# from matplotlib import gridspec
 from sklearn.decomposition import PCA
 
 def visualise_hidden_layer(output_classifier, *inputs):
@@ -17,6 +15,7 @@ def visualise_hidden_layer(output_classifier, *inputs):
     :param hl_activations: 2 dimensional np array
 
     """
+    import matplotlib.pylab as plt
     cols = len(inputs)
     col = 1
 
@@ -55,10 +54,9 @@ def plot_gate_values(*inputs):
     :param inputs:
     :return:
     """
+    # import matplotlib.pylab as plt
     rows, row = len(inputs), 1
-    # maxlen = find_longest(inputs)
 
-    # fig = plt.figure(figsize=(10, 5*rows/3))
     plt.subplots(nrows=len(inputs), ncols=3, sharex=True, sharey=True)
 
     for hl, z, r, labels, modes in inputs:
@@ -70,25 +68,35 @@ def plot_gate_values(*inputs):
 
         length = hl_nonzero.shape[0]
 
+        y_labels = ['%i\t%s'.expandtabs(2) % (modes[i], labels[i]) for i in xrange(length)]
+
         # plot hl activation
-        plt.subplot(rows, 3, row*3-2)
-        plt.imshow(hl_nonzero, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
-        for i in xrange(length):
-            # plot activation values and labels
-            # plt.text(-1.3, i+0.2, labels[i])
-            plt.text(-2.8, i, modes[i])
-            plt.text(-1.8, i, labels[i])
-        plt.axis('off')
+        hidden = plt.subplot(rows, 3, row*3-2)
+        hidden.imshow(hl_nonzero, interpolation='nearest', cmap='bwr', vmin=-1, vmax=1)
+        hidden.set_title("Hidden layer")
 
         # plot gate values
-        plt.subplot(rows, 3, row*3-1)
-        plt.imshow(z_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
-        plt.axis('off')
-        plt.subplot(rows, 3, row*3)
-        plt.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
-        plt.axis('off')
+        update_gate = plt.subplot(rows, 3, row*3-1)
+        update_gate.imshow(z_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
+        update_gate.set_title("Update gate")
+
+        reset_gate = plt.subplot(rows, 3, row*3)
+        reset_gate.imshow(r_nonzero, interpolation='nearest', cmap=cm.get_cmap('Greys'), vmin=0, vmax=1)
+        reset_gate.set_title("Reset gate")
 
         row += 1 
+
+        # set labels
+        for ax in hidden, update_gate, reset_gate:
+            ax.set_xticks([i for i in xrange(15)])
+            ax.set_xticklabels([str(i) for i in xrange(1,16)])
+            ax.set_yticks([i for i in xrange(length)])
+            if ax == hidden:
+                ax.set_yticklabels(y_labels, ha = 'left')
+                ax.get_yaxis().set_tick_params(direction='out', pad=28, length=0)
+            else:
+                ax.set_yticklabels(['' for i in xrange(length)])
+
 
     # plt.subplots_adjust(right=0.9, bottom=0.1, top=0.9)
     # cax = plt.axes([0.95, 0.15, 0.02, 0.7])
@@ -103,7 +111,7 @@ def visualise_paths(*inputs):
     :param inputs:
     :return:
     """
-
+    import matplotlib.pylab as plt
     print(len(inputs))
 
     # create hl_activations matrix and compute principal components
@@ -162,6 +170,7 @@ def plot_distances(embeddings_matrix):
     Create a plot of the distances between the different
     vectors in the embeddings matrix.
     """
+    import matplotlib.pyplot as plt
     distances = []
     for row1, row2 in it.combinations(embeddings_matrix, 2):
         distance = np.sqrt(np.sum(np.power(row1-row2, 2)))

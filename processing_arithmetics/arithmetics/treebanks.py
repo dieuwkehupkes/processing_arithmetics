@@ -7,16 +7,55 @@ from .MathTreebank import MathTreebank
 
 languages = {
         'train':{L:3000 for L in ['L1','L2','L4','L5','L7']},
+
         'train_small':{L:3 for L in ['L1','L2','L4','L5','L7']},
+
         'heldout':{'L3':500, 'L6':800, 'L8':800},
+
         'heldout_small':{'L3':5, 'L6':8, 'L8':8},
+
         'test': OrderedDict([
-            ('L1', 50), ('L2', 500), ('L3', 1500), ('L4', 3000), ('L5', 5000), ('L6', 10000), ('L7', 15000), ('L8', 15000), ('L9', 15000), ('L9_left', 15000), ('L9_right', 15000)
+                        ('L1', 50),
+                        ('L2', 500),
+                        ('L3', 1500),
+                        ('L4', 3000),
+                        ('L5', 5000),
+                        ('L6', 10000),
+                        ('L7', 15000),
+                        ('L8', 15000),
+                        ('L9', 15000),
+                        ('L9_left', 15000),
+                        ('L9_right', 15000),
+                        ('L9_right+', 15000),
+                        ('L9_left+_R_right-', 15000),
+                        ('L9_left-_R_right-', 15000),
+                        ('L9_left_R_right-', 15000),
+                        ('L9_right-_R_right-', 15000),
+                        ('L9_right+_R_right-', 15000),
+                        ('L9_right_R_right-', 15000),
+                        ('L9_+_R_right-', 15000)
         ]),
+
         'test_small': OrderedDict([
-            ('L1', 5), ('L2', 5), ('L3', 15), ('L4', 3), ('L5', 5), ('L6', 1), ('L7', 15), ('L8', 15), ('L9', 15), ('L9_left', 15), ('L9_right', 15) 
+                        ('L1', 5),
+                        ('L2', 5),
+                        ('L3', 15),
+                        ('L4', 3),
+                        ('L5', 5),
+                        ('L6', 1),
+                        ('L7', 15),
+                        ('L8', 15),
+                        ('L9', 15),
+                        ('L9_left', 15),
+                        ('L9_right', 15),
+                        ('L9_left+_R_right-', 15),
+                        ('L9_left-_R_right-', 15),
+                        ('L9_right-_R_right-', 15),
+                        ('L9_right+_R_right-', 15),
+                        ('L9_+_R_right-', 15)
         ])
 }
+
 ds = np.arange(-10,11)
 ops = ['+', '-']
 

@@ -12,17 +12,7 @@ class GRU_output_gates(GRU):
     that intermediate values can be monitored.
 
     """
-    def __init__(self, output_dim, **kwargs):
-        print("Running network with adapted GRU layer")
-        super(GRU_output_gates, self).__init__(output_dim, **kwargs)
-
-    def build(self, input_shape):
-        super(GRU_output_gates, self).build(input_shape)
-
-    def call(self, x, mask=None):
-        return super(GRU_output_gates, self).call(x, mask)
-
-    def step(self, x, states):
+    def step(self, inputs, states):
         """
         Step function called to compute the next state of the network
         This step function is equal to the regular GRU step function,
@@ -31,49 +21,64 @@ class GRU_output_gates(GRU):
         :param states:
         :return:
         """
-
         h_tm1 = states[0]  # previous memory
-        B_U = states[1]  # dropout matrices for recurrent units
-        B_W = states[2]
+        dp_mask = states[1]  # dropout matrices for recurrent units
+        rec_dp_mask = states[2]
 
-        if self.consume_less == 'gpu':
+        if self.implementation == 2:
+            matrix_x = K.dot(inputs * dp_mask[0], self.kernel)
+            if self.use_bias:
+                matrix_x = K.bias_add(matrix_x, self.bias)
+            matrix_inner = K.dot(h_tm1 * rec_dp_mask[0],
+                                 self.recurrent_kernel[:, :2 * self.units])
 
-            matrix_x = K.dot(x * B_W[0], self.W) + self.b
-            matrix_inner = K.dot(h_tm1 * B_U[0], self.U[:, :2 * self.output_dim])
+            x_z = matrix_x[:, :self.units]
+            x_r = matrix_x[:, self.units: 2 * self.units]
+            recurrent_z = matrix_inner[:, :self.units]
+            recurrent_r = matrix_inner[:, self.units: 2 * self.units]
 
-            x_z = matrix_x[:, :self.output_dim]
-            x_r = matrix_x[:, self.output_dim: 2 * self.output_dim]
-            inner_z = matrix_inner[:, :self.output_dim]
-            inner_r = matrix_inner[:, self.output_dim: 2 * self.output_dim]
+            z = self.recurrent_activation(x_z + recurrent_z)
+            r = self.recurrent_activation(x_r + recurrent_r)
 
-            z = self.inner_activation(x_z + inner_z)
-            r = self.inner_activation(x_r + inner_r)
-
-            x_h = matrix_x[:, 2 * self.output_dim:]
-            inner_h = K.dot(r * h_tm1 * B_U[0], self.U[:, 2 * self.output_dim:])
-            hh = self.activation(x_h + inner_h)
+            x_h = matrix_x[:, 2 * self.units:]
+            recurrent_h = K.dot(r * h_tm1 * rec_dp_mask[0],
+                                self.recurrent_kernel[:, 2 * self.units:])
+            hh = self.activation(x_h + recurrent_h)
         else:
-            if self.consume_less == 'cpu':
-                x_z = x[:, :self.output_dim]
-                x_r = x[:, self.output_dim: 2 * self.output_dim]
-                x_h = x[:, 2 * self.output_dim:]
-            elif self.consume_less == 'mem':
-                x_z = K.dot(x * B_W[0], self.W_z) + self.b_z
-                x_r = K.dot(x * B_W[1], self.W_r) + self.b_r
-                x_h = K.dot(x * B_W[2], self.W_h) + self.b_h
+            if self.implementation == 0:
+                x_z = inputs[:, :self.units]
+                x_r = inputs[:, self.units: 2 * self.units]
+                x_h = inputs[:, 2 * self.units:]
+            elif self.implementation == 1:
+                x_z = K.dot(inputs * dp_mask[0], self.kernel_z)
+                x_r = K.dot(inputs * dp_mask[1], self.kernel_r)
+                x_h = K.dot(inputs * dp_mask[2], self.kernel_h)
+                if self.use_bias:
+                    x_z = K.bias_add(x_z, self.bias_z)
+                    x_r = K.bias_add(x_r, self.bias_r)
+                    x_h = K.bias_add(x_h, self.bias_h)
             else:
-                raise Exception('Unknown `consume_less` mode.')
-            z = self.inner_activation(x_z + K.dot(h_tm1 * B_U[0], self.U_z))
-            r = self.inner_activation(x_r + K.dot(h_tm1 * B_U[1], self.U_r))
+                raise ValueError('Unknown `implementation` mode.')
+            z = self.recurrent_activation(x_z + K.dot(h_tm1 * rec_dp_mask[0],
+                                                      self.recurrent_kernel_z))
+            r = self.recurrent_activation(x_r + K.dot(h_tm1 * rec_dp_mask[1],
+                                                      self.recurrent_kernel_r))
 
-            hh = self.activation(x_h + K.dot(r * h_tm1 * B_U[2], self.U_h))
+            hh = self.activation(x_h + K.dot(r * h_tm1 * rec_dp_mask[2],
+                                             self.recurrent_kernel_h))
         h = z * h_tm1 + (1 - z) * hh
+        if 0 < self.dropout + self.recurrent_dropout:
+            h._uses_learning_phase = True
 
         # concatenate hidden layer activation and gate values
         all = K.concatenate([h, z, r])
 
         return all, [h]
 
-
-    def get_output_shape_for(self, input_shape):
-        return super(GRU_output_gates, self).get_output_shape_for(input_shape)
+    def compute_output_shape(self, input_shape):
+        if isinstance(input_shape, list):
+            input_shape = input_shape[0]
+        if self.return_sequences:
+            return (input_shape[0], input_shape[1], self.units*3)
+        else:
+            return (input_shape[0], self.units*3)

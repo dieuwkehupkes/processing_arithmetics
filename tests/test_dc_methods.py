@@ -13,7 +13,7 @@ def data():
 
 @pytest.fixture(params=[
     ScalarPrediction,
-    ComparisonTraining,
+    # ComparisonTraining,
     Seq2Seq
 ])
 def architecture(request, data):
@@ -25,45 +25,47 @@ def architecture(request, data):
     return architecture
 
 
-@pytest.fixture()
-def dc_model(architecture, data):
-    dc_model = DiagnosticClassifier(digits=data['digits'], operators=data['operators'],
+@pytest.fixture(params=[
+    DiagnosticClassifier
+])
+def diagnostic_model(request, architecture, data):
+    diagnostic_model = request.param(digits=data['digits'], operators=data['operators'],
                                    classifiers=['subtracting', 'intermediate_locally', 'intermediate_recursively'],
                                    model=architecture.model)
-    return dc_model
+    return diagnostic_model
 
 
-def test_save_model(dc_model, data):
-    dc_model.save_model('saved_model')
+def test_save_model(diagnostic_model, data):
+    diagnostic_model.save_model('saved_model')
     os.remove('saved_model')
 
 
-def test_add_pretrained_model(dc_model, data):
-    dc_model.save_model('saved_model')
-    dc_model.add_pretrained_model('saved_model')
+def test_add_pretrained_model(diagnostic_model, data):
+    diagnostic_model.save_model('saved_model')
+    diagnostic_model.add_pretrained_model('saved_model')
     os.remove('saved_model')
 
 
-def test_training(dc_model, data):
+def test_training(diagnostic_model, data):
     # test generate training data from dict
     d = {'L1':5, 'L3l':10, 'L4r':10}
-    training_data = dc_model.generate_training_data(d)
+    training_data = diagnostic_model.generate_training_data(d)
 
     # test generate training data from treebank
     m = MathTreebank(d, digits=data['digits'])
-    val_data = dc_model.generate_training_data(m)
+    val_data = diagnostic_model.generate_training_data(m)
 
     if os.path.exists('temp.h5'):
         os.remove('temp.h5')
-    dc_model.train(training_data, batch_size=2, epochs=1, filename='temp', 
+    diagnostic_model.train(training_data, batch_size=2, epochs=1, filename='temp', 
                    validation_data=val_data, optimizer='adam')
 
     os.remove('temp.h5')
 
 
-def test_testing(dc_model, data):
+def test_testing(diagnostic_model, data):
     languages = {'L1':10, 'L2':15, 'L3':20}
-    test_data = dc_model.generate_test_data(data=languages, digits=data['digits'], test_separately=True)
+    test_data = diagnostic_model.generate_test_data(data=languages, digits=data['digits'], test_separately=True)
 
     # test model testing
-    dc_model.test(test_data, metrics=['mse', 'mspe', 'binary_accuracy'])
+    diagnostic_model.test(test_data, metrics=['mse', 'mspe', 'binary_accuracy'])

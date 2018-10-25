@@ -1,6 +1,5 @@
 from keras.models import Model
-from collections import OrderedDict
-import numpy as np
+import copy
 
 class ArithmeticModel(Model):
     """
@@ -9,7 +8,16 @@ class ArithmeticModel(Model):
     in the arithmetic language to integers that
     the model assumes.
     """
-    def __init__(self, input, output, dmap, name=None):
+    def __init__(self, inputs, outputs, dmap, name=None):
         # call __init__ of superclass
-        super(ArithmeticModel, self).__init__(input, output, name)
+        super(ArithmeticModel, self).__init__(inputs, outputs, name)
         self.dmap = dmap
+
+    def get_config(self):
+        """
+        Retuns the model configuration as a
+        dictionary.
+        """
+        config = super(ArithmeticModel, self).get_config()
+        config['dmap'] = self.dmap
+        return copy.deepcopy(config)

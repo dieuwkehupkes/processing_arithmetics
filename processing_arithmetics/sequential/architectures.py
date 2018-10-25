@@ -1,18 +1,17 @@
 from keras.models import load_model
 from collections import OrderedDict
-from keras.layers import Embedding, Dense, Input, merge, SimpleRNN, GRU, LSTM, Masking, Lambda
+from keras.layers import Embedding, Dense, Input, SimpleRNN, GRU, LSTM, Masking, Lambda, concatenate
 from keras.layers.wrappers import TimeDistributed
 import keras.preprocessing.sequence
 import os
 from .callbacks import TrainingHistory, VisualiseEmbeddings
 from ..arithmetics import MathTreebank
 from GRU_output_gates import GRU_output_gates
-from keras.models import ArithmeticModel
+from ArithmeticModel import ArithmeticModel
 import theano
 import theano.tensor as T
 import copy
 import numpy as np
-import random
 
 
 class Training(object):
@@ -24,7 +23,7 @@ class Training(object):
         - init (set lossfunction and metrics)
         - train
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], **kwargs):
         """
         Create training architecture
         """
@@ -36,11 +35,38 @@ class Training(object):
         self.activation_func = None
         self.gate_activation_func = None
 
+        # set loss functions, metrics and activation functions
+        self.loss_functions = {}
+        self.metrics = {}
+        self.activations = {}
+        self.sample_weight_mode = None
+        self.loss_weights = None
+        for output_name in ['output', 'minus1depth_count', 'depth']:
+            self.loss_functions[output_name] = 'mean_squared_error'
+            self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+            self.activations[output_name] = 'linear'
+
+        for output_name in ['intermediate_locally', 'intermediate_recursively']:
+            self.loss_functions[output_name] = 'mean_squared_error'
+            self.metrics[output_name] = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+            self.activations[output_name] = 'linear'
+
+
+        for output_name in ['grammatical', 'subtracting', 'minus1depth', 'minus2depth',
+                            'minus3depth', 'minus4depth', 'switch_mode']:
+            self.loss_functions[output_name] = 'binary_crossentropy'
+            self.metrics[output_name] = ['binary_accuracy']
+            self.activations[output_name] = 'sigmoid'
+
+        self.loss_functions['compare'] = 'categorical_crossentropy'
+        self.metrics['compare'] = ['categorical_accuracy']
+        self.activations['compare'] = 'softmax'
+
     def generate_model(self, recurrent_layer, input_size, input_length, size_hidden,
                        W_embeddings=None, W_recurrent=None, W_classifier=None,
                        fix_classifier_weights=False, fix_embeddings=False, 
                        fix_recurrent_weights=False, mask_zero=True,
-                       dropout_recurrent=0.0, **kwargs):
+                       dropout_recurrent=0.0, recurrent_activation='tanh', **kwargs):
         """
         Generate the model to be trained
         :param recurrent_layer:     type of recurrent layer (from keras.layers SimpleRNN, GRU or LSTM)
@@ -55,6 +81,7 @@ class Training(object):
         :param train_recurrent:     set to false to fix recurrent weights during training
         :param mask_zero:           set to true to mask 0 values
         :param dropout_recurrent:   dropout param for recurrent weights
+        :param recurrent_activation activation function to be used for recurrent layer
         :return:
         """
 
@@ -70,6 +97,8 @@ class Training(object):
         self.dropout_recurrent = dropout_recurrent
         self.trainings_history = None
         self.model = None
+        self.activations['recurrent_layer'] = recurrent_activation
+
         if 'classifiers' in kwargs:
             self.classifiers = kwargs['classifiers']
 
@@ -87,10 +116,8 @@ class Training(object):
         :param copy_weights:    determines which weights should be copied
         """
 
-        if isinstance(model, str):
-            model = load_model(model)
-
         model_info = self.get_model_info(model)
+        
 
         if model_info['input_dim'] != self.input_dim:
             raise ValueError("dmap mismatch: input dimensionality of pretrained model does not match the expected inputs")
@@ -99,7 +126,7 @@ class Training(object):
             raise ValueError("Model dmap is not identical to architecture dmap")
 
         # find recurrent layer
-        recurrent_layer = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM}[model_info['recurrent_layer']]
+        recurrent_layer = {'SimpleRNN': SimpleRNN, 'GRU': GRU, 'LSTM': LSTM, 'GRU_output_gates': GRU_output_gates}[model_info['recurrent_layer']]
 
         W_recurrent, W_embeddings, W_classifier = None, None, None
 
@@ -118,7 +145,7 @@ class Training(object):
         kwargs.pop('input_length', None)
 
         # run build function
-        self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, **kwargs)
+        self.generate_model(recurrent_layer=recurrent_layer, input_size=model_info['input_size'], input_length=input_length, size_hidden=model_info['size_hidden'], W_embeddings=W_embeddings, W_recurrent=W_recurrent, W_classifier=W_classifier, fix_classifier_weights=fix_classifier_weights, fix_embeddings=fix_embeddings, fix_recurrent_weights=fix_recurrent_weights, recurrent_activation=model_info['recurrent_activation'], **kwargs)
         return
 
     @staticmethod
@@ -147,7 +174,7 @@ class Training(object):
 
         if isinstance(data, dict):
             data = MathTreebank(data, digits=digits)
-            random.shuffle(data.examples)
+            np.random.shuffle(data.examples)
 
         return self.data_from_treebank(treebank=data,
                                        format=format,
@@ -193,7 +220,7 @@ class Training(object):
 
         return test_data
 
-    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_function=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False):
+    def train(self, training_data, batch_size, epochs, filename, optimizer='adam', metrics=None, loss_functions=None, validation_split=0.1, validation_data=None, sample_weight=None, verbosity=2, visualise_embeddings=False, logger=False, save_every=False, loss_weights=None):
         """
         Fit the model.
         :param weights_animation:    Set to true to create an animation of the development of the embeddings
@@ -205,24 +232,30 @@ class Training(object):
 
         if not metrics:
             metrics = self.metrics
-        if not loss_function:
-            loss_function = self.loss_function
+        if not loss_functions:
+            loss_functions = self.loss_functions
+
+        if not loss_weights:
+            loss_weights = self.loss_weights
 
         # compile model
-        self.model.compile(loss=loss_function, optimizer=optimizer, metrics=metrics)
+        self.model.compile(loss=loss_functions, optimizer=optimizer, metrics=metrics, sample_weight_mode=self.sample_weight_mode, loss_weights=loss_weights)
 
         callbacks = self.generate_callbacks(visualise_embeddings, logger, recurrent_id=self.get_recurrent_layer_id(), embeddings_id=self.get_embeddings_layer_id(), save_every=save_every, filename=filename)
-
-        sample_weight = self.get_sample_weights(training_data, sample_weight)
 
         # fit model
         self.model.fit(X_train, Y_train, validation_data=validation_data,
                        validation_split=validation_split, batch_size=batch_size, 
-                       nb_epoch=epochs, sample_weight=sample_weight,
+                       epochs=epochs, sample_weight=sample_weight,
                        callbacks=callbacks, verbose=verbosity, shuffle=True)
 
         hist = callbacks[0]
 
+        try:
+            self.embeddings_anim = callbacks[1].all_weights
+        except:
+            pass
+        
         self.trainings_history = hist                    # set trainings history as attribute
 
     def print_accuracies(self, history=None):
@@ -251,10 +284,10 @@ class Training(object):
         """
         # input new metrics
         if metrics:
-            self.model.compile(loss=self.loss_function, optimizer='adam', metrics=metrics)
+            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=metrics, loss_weights=self.loss_weights)
 
         else:
-            self.model.compile(loss=self.loss_function, optimizer='adam', metrics=self.metrics)
+            self.model.compile(loss=self.loss_functions, optimizer='adam', metrics=self.metrics, loss_weights=self.loss_weights)
 
         evaluation = OrderedDict()
         for name, X, Y in test_data:
@@ -301,10 +334,9 @@ class Training(object):
 
         # get config of recurrent layer, set config
         rec_config = recurrent_layer.get_config()
-        self.rec_dim = rec_config['output_dim']
+        self.rec_dim = rec_config['units']
 
-        gate_output_layer = GRU_output_gates(output_dim=rec_config['output_dim'],
-                                             input_length=rec_config['input_length'],
+        gate_output_layer = GRU_output_gates(units=rec_config['units'],
                                              activation=rec_config['activation'],
                                              weights=recurrent_layer.get_weights(),
                                              return_sequences=True)(
@@ -324,33 +356,6 @@ class Training(object):
 
         return eval_str
 
-    def get_sample_weights(self, training_data, sample_weight):
-        """
-        Return a matrix with sample weights for the 
-        input data if sample_weight parameter is true.
-        """
-        if not sample_weight:
-            return None
-
-        X_dict, Y_dict = training_data
-
-        if len(X_dict) != 1:
-            raise NotImplementedError("Number of inputs larger than 1, didn't think I'd need this case so I didn't implement it")
-
-        sample_weights = {}
-        for output in Y_dict:
-            dim = Y_dict[output].ndim
-            if dim == 2:
-                # use sample_weight only for seq2seq models
-                return None
-            else:
-                X_padded = X_dict.values()[0]
-                sample_weight = np.zeros_like(X_padded)
-                sample_weight[X_padded != 0] = 1
-                sample_weights[output] = sample_weight
-
-        return sample_weights
-
     def model_summary(self):
         print(self.model.summary())
 
@@ -363,6 +368,9 @@ class Training(object):
         networks that are trained with one of the architectures
         in from the Training type.
         """
+
+        if isinstance(model, str):
+            model = load_model(model, custom_objects={"ArithmeticModel": ArithmeticModel, 'GRU_output_gates': GRU_output_gates, 'T': theano.tensor})
 
         # check if model is of correct type TODO
         n_layers = len(model.layers)
@@ -393,11 +401,12 @@ class Training(object):
                 model_info['input_dim'] = layer.get_config()['input_dim']
                 model_info['input_length'] = layer.get_config()['input_length']
 
-            elif layer_type in ['SimpleRNN', 'GRU', 'LSTM']:
-                assert 'type' not in model_info, 'Model has too many recurrent layers' 
+            elif layer_type in ['SimpleRNN', 'GRU', 'LSTM', 'GRU_output_gates']:
+                assert 'recurrent_layer' not in model_info, 'Model has too many recurrent layers' 
                 model_info['recurrent_layer'] = layer_type
                 model_info['weights_recurrent'] = weights
-                model_info['size_hidden'] = layer.output_dim
+                model_info['size_hidden'] = layer.units
+                model_info['recurrent_activation'] = layer.activation
 
             elif layer_type in ['Masking', 'Lamdba']:
                 pass
@@ -411,7 +420,7 @@ class Training(object):
     def visualise_embeddings(self):
         raise NotImplementedError()
 
-    def save_model(self, filename):
+    def save_model(self, filename, custom_objects=None):
         """
         Save model to file
         """
@@ -427,6 +436,22 @@ class Training(object):
         # save file
         self.model.save(filename)
 
+    def save_weights(self, filename):
+        """
+        Save model weights to file
+        """
+        # check if filename exists
+        exists = os.path.exists(filename+'.h5')
+        while exists:
+            overwrite = raw_input("Filename exists, overwrite? (y/n)")
+            if overwrite == 'y':
+                exists = False
+                continue
+            filename = raw_input("Provide filename (without extension)")
+              
+        # save file
+        self.model.save_weights(filename)
+
     def plot_loss(self, save_to_file=False):
         """
         Plot loss on the last training
@@ -440,7 +465,7 @@ class Training(object):
         plt.plot(self.trainings_history.val_losses, label='Validation set')
         plt.title("Loss during last training")
         plt.xlabel("Epoch")
-        plt.ylabel(self.loss_function)
+        plt.ylabel(self.loss_functions)
         plt.axhline(xmin=0)
         plt.legend()
         plt.show()
@@ -547,13 +572,14 @@ class ScalarPrediction(Training):
     """
     Give description.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], classifiers=None):
         # run superclass init
-        super(ScalarPrediction, self).__init__(digits=digits, operators=operators)
+        super(ScalarPrediction, self).__init__(digits=digits, operators=operators, classifier=None)
 
         # set loss and metric functions
-        self.loss_function = 'mean_squared_error'
-        self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+        self.loss_functions = {'output': self.loss_functions['output']}
+        self.metrics = {'output': self.metrics['output']}
+        self.activations = {'output': self.activations['output']}
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -570,12 +596,13 @@ class ScalarPrediction(Training):
                                mask_zero=self.mask_zero,
                                name='embeddings')(input_layer)
 
-
         # create recurrent layer
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
-                                         trainable=self.train_embeddings,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
+                                         trainable=self.train_recurrent,
+                                         activation=self.activations['recurrent_layer'],
+                                         recurrent_dropout=self.dropout_recurrent,
+                                         return_sequences=False)(embeddings)
 
         # create output layer
         if W_classifier is not None:
@@ -584,7 +611,7 @@ class ScalarPrediction(Training):
                              trainable=self.train_classifier, name='output')(recurrent)
 
         # create model
-        self.model = ArithmeticModel(input=input_layer, output=output_layer, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=output_layer, dmap=self.dmap)
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
@@ -628,15 +655,13 @@ class ComparisonTraining(Training):
     """
     Give description.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], classifiers=None):
         # run superclass init
         super(ComparisonTraining, self).__init__(digits=digits, operators=operators)
 
         # set loss and metric functions
-        self.loss_function = 'categorical_crossentropy'
-        # self.loss_function = 'mean_squared_error'
-
-        self.metrics = ['categorical_accuracy']
+        self.loss_functions = self.loss_functions['compare']
+        self.metrics = self.metrics['compare']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier={'output':None}):
         """
@@ -657,7 +682,8 @@ class ComparisonTraining(Training):
         recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=self.train_recurrent,
-                                         dropout_U=self.dropout_recurrent)
+                                         activation=self.activations['recurrent_layer'],
+                                         recurrent_dropout=self.dropout_recurrent)
 
         embeddings1 = embeddings(input1)
         embeddings2 = embeddings(input2)
@@ -665,17 +691,17 @@ class ComparisonTraining(Training):
         recurrent1 = recurrent(embeddings1)
         recurrent2 = recurrent(embeddings2)
 
-        concat = merge([recurrent1, recurrent2], mode='concat', concat_axis=-1)
+        concat = concatenate([recurrent1, recurrent2], axis=-1)
 
         # create output layer
         if W_classifier is not None:
-            W_classifier = W_classifier['output']
-        output_layer = Dense(3, activation='softmax', 
+            W_classifier = W_classifier['compare']
+        output_layer = Dense(3, activation=self.activations['compare'], 
                              trainable=self.train_recurrent,
-                             weights=W_classifier, name='output')(concat)
+                             weights=W_classifier, name='compare')(concat)
 
         # create model
-        self.model = ArithmeticModel(input=[input1, input2], output=output_layer, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=[input1, input2], outputs=output_layer, dmap=self.dmap)
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
@@ -701,7 +727,7 @@ class ComparisonTraining(Training):
         X2_padded = keras.preprocessing.sequence.pad_sequences(X2, dtype='int32', maxlen=pad_to)
 
         X_padded = {'input1':X1_padded, 'input2': X2_padded}
-        Y = {'output': np.array(Y)}
+        Y = {'compare': np.array(Y)}
 
         return X_padded, Y
 
@@ -722,18 +748,20 @@ class ComparisonTraining(Training):
         """
         return 3
 
+
 class Seq2Seq(Training):
     """
-    Class to do sequence to sequence training.
+    Class to do sequence to sequence training, primarily used
+    for recasting diagnostic models to test them.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], classifiers=None):
         # run superclass init
         super(Seq2Seq, self).__init__(digits=digits, operators=operators)
 
         # set loss and metric functions
         # set loss function and metrics
-        self.loss_function = {'output': 'mean_squared_error'}
-        self.metrics = ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy']
+        self.loss_functions = self.loss_functions['output']
+        self.metrics = self.metrics['output']
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -755,15 +783,14 @@ class Seq2Seq(Training):
                                          weights=W_recurrent,
                                          trainable=True,
                                          return_sequences=True,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
-
-        mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
+                                         activation=self.activations['recurrent_layer'],
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         if W_classifier is not None:
             W_classifier = W_classifier['output']
-        output = TimeDistributed(Dense(1, activation='linear'), name='output')(mask)
+        output = TimeDistributed(Dense(1, activation='linear'), weights=W_classifier, name='output')(recurrent)
 
-        self.model = ArithmeticModel(input=input_layer, output=output, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=output, dmap=self.dmap)
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
         """
@@ -787,7 +814,6 @@ class Seq2Seq(Training):
 
         X = {'input': X_padded}
         Y = {'output': Y_padded}
-
 
         return X, Y
 
@@ -815,71 +841,16 @@ class DiagnosticClassifier(Training):
     test what information is extratable from the representations
     the model generates.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None, copy_weights=['recurrent', 'embeddings', 'classifiers']):
         # run superclass init
         super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
 
-        # set loss and metric functions
-        self.loss = {
-                'grammatical': 'binary_crossentropy',
-                'intermediate_locally': 'mean_squared_error',
-                'subtracting':'binary_crossentropy',
-                'minus1depth':'binary_crossentropy',
-                'minus2depth':'binary_crossentropy',
-                'minus3depth':'binary_crossentropy',
-                'minus4depth':'binary_crossentropy',
-                'intermediate_recursively':'mean_squared_error',
-                'intermediate_directly': 'mean_squared_error',
-                'minus1depth_count': 'mean_squared_error',
-                'depth': 'mse',
-                    }
-
-        self.metrics = {
-                'grammatical': ['binary_accuracy'], 
-                'intermediate_locally': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'subtracting': ['binary_accuracy'],
-                'minus1depth': ['binary_accuracy'],
-                'minus2depth': ['binary_accuracy'],
-                'minus3depth': ['binary_accuracy'],
-                'minus4depth': ['binary_accuracy'],
-                'minus1depth_count': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'intermediate_recursively': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'intermediate_directly': ['mean_absolute_error', 'mean_squared_error', 'binary_accuracy'],
-                'depth': ['mean_squared_error', 'binary_accuracy'],
-                    }  
-
-        self.activations = {
-                'grammatical':'sigmoid',
-                'intermediate_locally': 'linear',
-                'intermediate_directly': 'linear',
-                'subtracting': 'sigmoid',
-                'minus1depth': 'sigmoid',
-                'minus2depth': 'sigmoid',
-                'minus3depth': 'sigmoid',
-                'minus4depth': 'sigmoid',
-                'minus1depth_count':'linear',
-                'intermediate_recursively':'linear',
-                'depth': 'linear'}
-
-        self.output_size = {
-                'grammatical':1,
-                'intermediate_locally': 1,
-                'intermediate_directly': 1,
-                'subtracting':1,
-                'minus1depth':1,
-                'minus2depth':1,
-                'minus3depth':1,
-                'minus4depth':1,
-                'minus1depth_count':1,
-                'intermediate_recursively':1,
-                'depth':1}
-
-        # set classifiers and attributes
         self.classifiers = classifiers
-        self.set_attributes()
+        self.set_attributes(model=model)
 
         # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
+        if model:
+            self.add_pretrained_model(model, copy_weights=copy_weights, classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -888,7 +859,6 @@ class DiagnosticClassifier(Training):
 
         # create input layer
         input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
-
 
         # create embeddings
         embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
@@ -902,31 +872,31 @@ class DiagnosticClassifier(Training):
                                          weights=W_recurrent,
                                          trainable=False,
                                          return_sequences=True,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
+                                         activation=self.activations['recurrent_layer'],
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
 
-        mask = TimeDistributed(Masking(mask_value=0.0))(recurrent)
-        
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
             try:
                 weights = W_classifier[classifier]
-            except KeyError:
+            except KeyError: 
                 weights = None
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier)(mask))
-
+            except TypeError:
+                weights = None
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier)(recurrent))
+            
         # create model
-        self.model = ArithmeticModel(input=input_layer, output=classifiers, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
 
-    def set_attributes(self):
+    def set_attributes(self, **kwargs):
         """
         Set the classifiers that should be trained and their
         corresponding lossfunctions, metrics and output sizes
         as attributes to the class.
         """
-        self.loss_function = dict([(key, self.loss[key]) for key in self.classifiers])
+        self.loss_functions = dict([(key, self.loss_functions[key]) for key in self.classifiers])
         self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers])
-        self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
 
@@ -981,33 +951,9 @@ class DCgates(DiagnosticClassifier):
     Train simple classifiers to predict information from 
     the gates of an already trained model.
     """
-    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None, gates=['r', 'z', 'both']):
+    def __init__(self, digits=np.arange(-10,11), operators=['+', '-'], model=None, classifiers=None):
         # run superclass init
-        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators)
-
-        # set loss and metric functions
-        self.loss = {
-                'switch_mode': 'binary_crossentropy',
-                    }
-
-        self.metrics = {
-                'switch_mode': ['binary_accuracy'], 
-                    }  
-
-        self.activations = {
-                'switch_mode':'sigmoid',
-                    }
-
-        self.output_size = {
-                'switch_mode':1,
-                    }
-
-        # set classifiers and attributes
-        self.classifiers = classifiers
-        self.set_attributes(model)
-
-        # add model
-        self.add_pretrained_model(model, copy_weights=['recurrent', 'embeddings', 'classifier'], classifiers=classifiers)
+        super(DCgates, self).__init__(digits=digits, operators=operators, model=model, classifiers=classifiers)
 
     def _build(self, W_embeddings, W_recurrent, W_classifier):
         """
@@ -1028,63 +974,73 @@ class DCgates(DiagnosticClassifier):
                                name='embeddings')(input_layer)
 
         # create recurrent layer
-        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+        recurrent = self.recurrent_layer(units=self.size_hidden, name='recurrent_layer',
                                          weights=W_recurrent,
                                          trainable=False,
                                          return_sequences=True,
-                                         dropout_U=self.dropout_recurrent)(embeddings)
-
-        # get gate shape values
-        def gate_shape(input_shape):
-            shape = list(input_shape)
-            shape[-1] /= 3
-            return tuple(shape)
-
-        # function to get update gate
-        def get_update_gate(state_concatenations):
-            s = self.size_hidden
-            return T.split(state_concatenations, [s, s, s], 3, axis=-1)[1]
-
-        # function to get reset gate
-        def get_reset_gate(state_concatenations):
-            s = self.size_hidden
-            return T.split(state_concatenations, [s, s, s], 3, axis=-1)[2]
+                                         activation=self.activations['recurrent_layer'],
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
 
         # create gate layers
-        update_gate = Lambda(get_update_gate, output_shape=gate_shape)(recurrent)
-        reset_gate = Lambda(get_reset_gate, output_shape=gate_shape)(recurrent)
+        update_gate = TimeDistributed(Lambda(function=DCgates.get_update_gate, output_shape=DCgates.gate_shape))(recurrent)
+        reset_gate = TimeDistributed(Lambda(function=DCgates.get_reset_gate, output_shape=DCgates.gate_shape))(recurrent)
 
         # add classifier layers
         classifiers = []
         for classifier in self.classifiers:
             try:
                 weights = W_classifier[classifier]
+            except KeyError:
+                weights = None
             except TypeError:
                 weights = None
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'update_gate')(update_gate))
-            classifiers.append(TimeDistributed(Dense(self.output_size[classifier], activation=self.activations[classifier], weights=weights), name=classifier+'reset_gate')(reset_gate))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier+'_update_gate')(update_gate))
+            classifiers.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier+'_reset_gate')(reset_gate))
 
         # create model
-        self.model = ArithmeticModel(input=input_layer, output=classifiers, dmap=self.dmap)
+        self.model = ArithmeticModel(inputs=input_layer, outputs=classifiers, dmap=self.dmap)
 
-    def set_attributes(self, model):
+    # function to get update gate
+    @staticmethod
+    def get_update_gate(state_concatenations):
+        s = state_concatenations.shape[-1]/3
+        update_gate = T.split(state_concatenations, [s, s, s], 3, axis=-1)[1]
+        return update_gate
+
+    # function to get reset gate
+    @staticmethod
+    def get_reset_gate(state_concatenations):
+        s = state_concatenations.shape[-1]/3
+        reset_gate = T.split(state_concatenations, [s, s, s], 3, axis=-1)[2]
+        return reset_gate
+
+    # get gate shape values
+    @staticmethod
+    def gate_shape(input_shape):
+        shape = list(input_shape)
+        shape[-1] = shape[-1]/3
+        return tuple(shape)
+
+    def set_attributes(self, **kwargs):
         """
         Set the classifiers that should be trained and their
         corresponding lossfunctions, metrics and output sizes
         as attributes to the class.
         """
-        model_info = self.get_model_info(model)
+        try:
+            model_info = self.get_model_info(kwargs['model'])
+        except:
+            raise ValueError("Class should be initialised with model")
         self.recurrent_name = model_info['recurrent_layer']
         try:
             self.gates = {'GRU':['update_gate', 'reset_gate']}[self.recurrent_name]
         except KeyError:
             raise ValueError("output gates not implemented for %s" % self.recurrent_name)
 
-        self.loss_function = dict([(key+'_'+gate, self.loss[key])
+        self.loss_functions = dict([(key+'_'+gate, self.loss_functions[key])
             for key in self.classifiers for gate in self.gates])
-        self.metrics = dict([(key, self.metrics[key])
+        self.metrics = dict([(key+'_'+gate, self.metrics[key])
             for key in self.classifiers for gate in self.gates])
-        self.output_size = dict([(key, self.output_size[key]) for key in self.classifiers])
         self.activations = dict([(key, self.activations[key]) for key in self.classifiers])
 
     def data_from_treebank(self, treebank, format='infix', pad_to=None):
@@ -1092,19 +1048,18 @@ class DCgates(DiagnosticClassifier):
         Generate test data from a MathTreebank object.
         """
         # create dictionary with outputs
-        X, Y = [], dict([(classifier+'-'+gate, []) for classifier in self.classifiers for gate in self.gates]) 
+        X, Y = [], dict([(classifier+'_'+gate, []) for classifier in self.classifiers for gate in self.gates]) 
         pad_to = pad_to or self.input_length
-
-        classifiers = [clas+'_'+gate for clas in self.classifiers for gate in self.gates]
 
         # loop over examples
         for expression, answer in treebank.examples:
             expression.get_targets(format, *self.classifiers)
             input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
             X.append(input_seq)
-            for classifier in classifiers:
+            for classifier in self.classifiers:
                 target = expression.targets[classifier]
-                Y[classifier].append(target)
+                for gate in self.gates:
+                    Y[classifier+'_'+gate].append(target)
         # pad sequences to have the same length
         assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
         X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
@@ -1116,3 +1071,120 @@ class DCgates(DiagnosticClassifier):
         X = {'input': X_padded}
 
         return X, Y
+
+    def save_model(self, filename):
+        custom_objects = {'get_update_gate': self.get_update_gate, 'get_reset_gate': self.get_reset_gate, 'gate_shape': self.gate_shape, 'GRU_output_gates': GRU_output_gates}
+        super(DCgates, self).save_model(filename, custom_objects)
+
+
+class DiagnosticTrainer(DiagnosticClassifier):
+    """
+    Class do to sequence to sequence training but while
+    keeping the original scalar target.
+    """
+    def __init__(self, digits=np.arange(-10,11), operators=['+','-'], model=None, classifiers=None):
+        # run Training init
+        super(DiagnosticClassifier, self).__init__(digits=digits, operators=operators, model=model)
+
+        self.classifiers = classifiers
+        self.set_attributes()
+
+    def _build(self, W_embeddings, W_recurrent, W_classifier):
+        """
+        Build model with given embedding and recurrent weights.
+        """
+        # create input layer
+        input_layer = Input(shape=(self.input_length,), dtype='int32', name='input')
+
+        # create embeddings
+        embeddings = Embedding(input_dim=self.input_dim, output_dim=self.input_size,
+                               input_length=self.input_length, weights=W_embeddings,
+                               trainable=self.train_embeddings,
+                               mask_zero=self.mask_zero,
+                               name='embeddings')(input_layer)
+
+        # create recurrent layer
+        recurrent = self.recurrent_layer(self.size_hidden, name='recurrent_layer',
+                                         weights=W_recurrent,
+                                         trainable=True,
+                                         return_sequences=True,
+                                         activation=self.activations['recurrent_layer'],
+                                         recurrent_dropout=self.dropout_recurrent)(embeddings)
+
+
+        # add lambda layer to get also non sequential output for output classifier
+        def take_last(x):
+            return x[:,-1,:]
+
+        def take_last_output_shape(input_shape):
+            shape = list(input_shape)
+            assert len(shape) == 3 # input should be 3D tensor
+            return (shape[0], shape[2])
+
+        recurrent_last = Lambda(take_last, output_shape=take_last_output_shape)(recurrent)
+
+        # add classifier layers
+        outputs = []
+        for classifier in self.classifiers:
+            try:
+                weights = W_classifier[classifier]
+            except TypeError:
+                weights = None
+            outputs.append(TimeDistributed(Dense(1, activation=self.activations[classifier]), weights=weights, name=classifier)(recurrent))
+
+        # add original target output layer
+        try: output_classifier = W_classifier['output']
+        except TypeError: output_classifier = None
+
+        outputs.append(Dense(1, activation='linear', weights=output_classifier,
+                             trainable=self.train_classifier, name='output')(recurrent_last))
+          
+        # create model
+        self.model = ArithmeticModel(inputs=input_layer, outputs=outputs, dmap=self.dmap)
+
+    def data_from_treebank(self, treebank, format='infix', pad_to=None):
+        """
+        Generate test data from a MathTreebank object.
+        """
+        # create dictionary with outputs
+        X, Y = [], dict([(classifier, []) for classifier in self.classifiers]+[('output', [])]) 
+        pad_to = pad_to or self.input_length
+
+        # loop over examples
+        for expression, answer in treebank.examples:
+            expression.get_targets(format, *self.classifiers)
+            input_seq = [self.dmap[i] for i in expression.to_string(format).split()]
+            X.append(input_seq)
+            for classifier in self.classifiers:
+                target = expression.targets[classifier]
+                Y[classifier].append(target)
+            Y['output'].append(answer)
+
+        # pad sequences to have the same length
+        assert pad_to is None or len(X[0]) <= pad_to, 'length test is %i, max length is %i. Test sequences should not be truncated' % (len(X[0]), pad_to)
+        X_padded = keras.preprocessing.sequence.pad_sequences(X, dtype='int32', maxlen=pad_to)
+
+        # make numpy arrays from Y data
+        for output in Y:
+            try:
+                Y[output] = keras.preprocessing.sequence.pad_sequences(Y[output], maxlen=pad_to)
+            except ValueError:
+                Y[output] = np.array(Y[output])
+
+        X = {'input': X_padded}
+
+        return X, Y
+
+    def set_attributes(self, **kwargs):
+        """
+        Set the classifiers that should be trained and their
+        corresponding lossfunctions, metrics and output sizes
+        as attributes to the class.
+        """
+        self.loss_functions = dict([(key, self.loss_functions[key]) for key in self.classifiers+['output']])
+        self.metrics = dict([(key, self.metrics[key]) for key in self.classifiers+['output']])
+        self.activations = dict([(key, self.activations[key]) for key in self.classifiers+['output']])
+
+        self.loss_weights = dict([(key, 1/len(self.classifiers)) for key in self.classifiers])
+        if len(self.classifiers) == 0: self.loss_weights['output'] = 1
+        else: self.loss_weights['output'] = 0

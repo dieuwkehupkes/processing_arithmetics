@@ -13,7 +13,7 @@ def data():
 
 @pytest.fixture(params=[
     ScalarPrediction,
-    ComparisonTraining,
+    # ComparisonTraining,
     Seq2Seq
 ])
 def architecture(request, data):

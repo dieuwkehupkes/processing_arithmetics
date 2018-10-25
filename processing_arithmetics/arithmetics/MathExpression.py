@@ -2,27 +2,45 @@ from __future__ import print_function
 import numpy as np
 import operator
 import re
+import copy
 from collections import defaultdict, OrderedDict
 from nltk import Tree
 from numpy import random as random
 
 class MathExpression(Tree):
     @classmethod
-    def generateME(cls, length, operators, digits, branching=None):
+    def generateME(cls, length, operators, digits, branching=None, root_branching=None, root_operator=None):
+        """
+        Class method to generate MathExpression
+        :param length:          # of digits in the expression
+        :param operators:       allowed operators (at this point: + and/or -)
+        :param digits:          array with allowed digits
+        :param branching:       branching restrictions (left or right)
+        :param root_branching:  branching of root, set to None for random
+        :param root_operator:   operator of root, set to None for random
+        """
         if length < 1:
             print('This case should not happen')
         elif length == 1:
             this = cls(random.choice(digits), [])
         else:
-            if branching == 'left':
+            # choose branching
+            if root_branching == 'left':
                 left, right = length-1, 1
-            elif branching == 'right':
+            elif root_branching == 'right' or branching == 'right':
                 left, right = 1, length-1
+            elif branching == 'left':
+                left, right = length-1, 1
             else:
                 left = random.randint(1, length)
                 right = length - left
             children = [cls.generateME(length=l, operators=operators, digits=digits, branching=branching) for l in [left, right]]
-            children.insert(1, cls(np.random.choice(operators), []))
+
+            # choose operator
+            if root_operator:
+                children.insert(1, cls(root_operator, []))
+            else:
+                children.insert(1, cls(np.random.choice(operators), []))
             this = cls('dummy', children)
         return this
 
@@ -249,6 +267,69 @@ class MathExpression(Tree):
             return intermediate_results, stack_list, operator_list
 
         return result
+
+    def solve_count_minus_brackets(self, return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
+        """
+        Solve by counting minus brackets and keeping
+        track of their depth
+        """
+        symbols = self.iterate(format='infix', digit_noise=digit_noise, operator_noise=operator_noise)
+
+        result = 0
+        minus_stack = []
+        op = 1
+        expect_left = False
+
+        # return arrays
+        intermediate_results = []
+        minus_stack = []
+        operator_list = []
+        op_dict = {-1: operator.sub, 1: operator.add}
+
+        for symbol in symbols:
+            if stack_noise:
+                pass
+                # apply noise to stack
+                operator_stack = self.add_noise(operator_stack, stack_noise=stack_noise)
+                # apply noise to memory
+                op = op + np.random.normal(0, stack_noise)
+                result = result + np.random.normal(0, stack_noise)
+
+            if symbol[-1].isdigit():
+                digit = float(symbol)
+                result = op_dict[np.power(-1, np.floor(op/2))](result, digit)
+                expect_left = False
+
+            if symbol == '-':
+                minus_stack.append(0)
+                expect_left = True
+                op = - op
+
+            elif minus_stack:
+                if expect_left and symbol != '(':
+                    expect_left = False
+            
+                elif symbol == '(':
+                    minus_stack[-1] += 1
+
+                elif symbol == ')':
+                    if minus_stack[-1] == 0:
+                        minus_stack.pop(-1)
+                        op = - op
+
+                    if minus_stack:
+                        minus_stack[-1] -= 1
+
+            if return_sequences:
+                intermediate_results.append(result)
+                brackets.append(operator_stack[:])
+                operator_list.append({-1: 1, 1:0}[op])
+
+        if return_sequences:
+            return intermediate_results, brackets, operator_list
+        
+        else:
+            return result
                 
 
     def solve_locally(self, format='infix', return_sequences=False, digit_noise=None, operator_noise=None, stack_noise=None):
@@ -309,7 +390,7 @@ class MathExpression(Tree):
             if return_sequences:
                 intermediate_results.append(result)
                 brackets.append(operator_stack[:])
-                operator_list.append({-1: [1], 1:[0]}[op])
+                operator_list.append({-1: 1, 1:0}[op])
 
         if return_sequences:
             return intermediate_results, brackets, operator_list
@@ -352,7 +433,7 @@ class MathExpression(Tree):
 
             intermediate_results.append(result)
             operators.append(stack[:])
-            operator_list.append({1: [1], -1:[0]}[op])
+            operator_list.append({1:1, -1:0}[op])
 
         if return_sequences:
             return intermediate_results, operators, operator_list
@@ -559,14 +640,19 @@ class MathExpression(Tree):
         # create target dict
         self.targets = {}
 
-        if 'intermediate_locally' in classifiers or 'subtracting' in classifiers:
+        if 'intermediate_locally' in classifiers or 'subtracting' in classifiers or 'switch_mode' in classifiers:
             intermediate_locally, brackets_locally, subtracting = self.solve_locally(return_sequences=True)
+
+            switch_mode = np.array([0] + [0 if subtracting[i] == subtracting[i-1] else 1 for i in xrange(1, len(subtracting))])
 
             # intermediate outcomes incremental computation
             self.targets['intermediate_locally'] = [[val] for val in intermediate_locally]
 
             # subtracting
-            self.targets['subtracting'] = subtracting
+            self.targets['subtracting'] = [[val] for val in subtracting]
+            
+            # switch mode
+            self.targets['switch_mode'] = [[val] for val in switch_mode]
         
         if 'intermediate_recursively' in classifiers or 'grammatical' in classifiers:
             intermediate_recursively, stack_recursively, subtracting_recursively = self.solve_recursively(return_sequences=True, format=format)
@@ -595,8 +681,20 @@ class MathExpression(Tree):
             self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(4)]
 
         if 'minus1depth_count' in classifiers:
-            self.targets['minus4depth'] = [[val] for val in self.get_minus_depths(1, True)]
+            self.targets['minus1depth_count'] = [[val] for val in self.get_minus_depths(1, True)]
 
+        self.training_targets = copy.deepcopy(self.targets)
+        numerical = np.concatenate([np.array([[0]]), self.get_digit_positions(self.symbols)[:-1]], axis=0)
+        for target in self.targets:
+            if target == 'intermediate_locally' or target == 'intermediate_recursively':
+                self.training_targets[target] = numerical*self.targets[target]
+
+    def get_digit_positions(self, symbols):
+        """
+        Return an array with 1s at positions of
+        the digits in the expression and 0 otherwise.
+        """
+        return np.array([[symbol[-1].isdigit()] for symbol in symbols])
 
     def print_all_targets(self, format='infix'):
         """
@@ -611,6 +709,8 @@ class MathExpression(Tree):
         Iterate over symbols in expression.
         """
 
+        self.symbols = []
         for symbol in self.to_string(format=format, digit_noise=digit_noise, operator_noise=operator_noise).split():
+            self.symbols.append(symbol)
             yield symbol
 

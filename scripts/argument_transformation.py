@@ -1,10 +1,10 @@
 from keras.layers import SimpleRNN, GRU, LSTM
-from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq
+from processing_arithmetics.sequential.architectures import Training, ScalarPrediction, ComparisonTraining, DiagnosticClassifier, Seq2Seq, DiagnosticTrainer
 
 # file with transformation functions used by argparse
 
 def get_architecture(architecture):
-    arch_dict = {'ScalarPrediction':ScalarPrediction, 'ComparisonTraining':ComparisonTraining, 'DiagnosticClassifier':DiagnosticClassifier, 'DC':DiagnosticClassifier, 'Seq2Seq':Seq2Seq}
+    arch_dict = {'ScalarPrediction':ScalarPrediction, 'ComparisonTraining':ComparisonTraining, 'DiagnosticClassifier':DiagnosticClassifier, 'DC':DiagnosticClassifier, 'Seq2Seq':Seq2Seq, 'DT': DiagnosticTrainer, 'DiagnosticTrainer': DiagnosticTrainer}
     return arch_dict[architecture]
 
 def get_hidden_layer(hl_name):
