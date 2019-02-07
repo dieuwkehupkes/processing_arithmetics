@@ -1,0 +1,4 @@
+graft pa_demo/static
+graft pa_demo/templates
+graft pa_demo/models
+global-exclude *.pyc

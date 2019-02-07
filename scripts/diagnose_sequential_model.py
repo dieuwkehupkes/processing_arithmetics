@@ -95,7 +95,7 @@ for model in args.models:
 
 
 # dump all results
-output_name = args.output_name or args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results'
+output_name = args.target_folder+format+'_'+layer_type+'_dc'+str(args.seed)+'.results'
 
 pickle.dump(results_all, open(output_name, 'wb'))
 

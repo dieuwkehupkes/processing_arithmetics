@@ -1,0 +1,75 @@
+html { font-family: Lato; font-weight: 300; font-size: 1.2em; background: #eee; padding: 1rem; }
+body { max-width: 1260px; margin: 0 auto; background: white; }
+h1 { font-family: "Lato"; font-weight: 200; font-size: 2em; color: #377ba8; margin: 1rem 0; }
+h2 { font-family: "Lato"; font-weight: 200; font-size: 1.5em; color: #377ba8; margin: 1rem 0; }
+h3 { font-family: "Lato"; font-weight: 200; font-size: 1.2em; color: #377ba8; margin: 1rem 0; }
+figcaption { font-family: "Lato"; font-weight: 200; font-size: 1.1em; color: #377ba8; margin: 1rem 0; }
+figure p { margin-left: 2rem; }
+a { color: #377ba8; }
+hr { border: none; border-top: 1px solid lightgray; }
+nav { background: lightgray; display: flex; flex-direction: column; align-items: center; padding: 2rem 0.5rem; }
+nav h1 { flex: auto; margin: 2rem; }
+nav h1 a { text-decoration: none; padding: 0.25rem 0.5rem; }
+nav ul  { display: flex; list-style: none; margin: 0; padding: 0; }
+nav ul li a, nav ul li span, header .action { display: block; padding: 0.5rem; }
+.content { padding: 0 1rem 1rem; }
+.content > header { border-bottom: 3px solid lightgray; display: flex; align-items: flex-end; }
+.content > header h1 { flex: auto; margin: 1rem 0 0.25rem 0; }
+.flash { margin: 1em 0; padding: 1em; background: #cae6f6; border: 1px solid #377ba8; }
+.post > header { display: flex; align-items: flex-end; font-size: 0.85em; }
+.post > header > div:first-of-type { flex: auto; }
+.post > header h1 { font-size: 1.5em; margin-bottom: 0; }
+.post .about { color: slategray; font-style: italic; }
+.post .body { white-space: pre-line; }
+.content:last-child { margin-bottom: 0; border-bottom: 3px solid lightgray; }
+.content form { margin: 1em 0; display: flex; flex-direction: column; }
+.content label { font-weight: 200; font-size: 1.2em; margin-bottom: 0.5em; }
+.content input, .content textarea { margin-bottom: 1em; }
+.content textarea { min-height: 12em; resize: vertical; }
+input.danger { color: #cc2f2e; }
+input[type=submit] { align-self: start; min-width: 10em; }
+blockquote { border-left: 2px solid lightgray; padding: 0.5rem 2rem; }
+table { font-family: "Lato"; font-weight: 350; color: #222; border: 3px solid #BBB; background-color: #CCC;}
+table thead { text-decoration: underline; }
+table tbody { background-color: #EEE; }
+table tbody td { padding: 0.5rem 2rem; }
+table tbody th { padding: 0.5rem 1rem; }
+#classifier_selection {
+    display: flex;
+}
+
+#submit, #expression { padding: 1em; font-size: 1.2em; }
+.explanation { display: flex; justify-content: center; }
+.explanation img { height: auto; width: auto; max-height: 500px; max-width: 800px; }
+.expr { font-size: 1.1em; }
+dl { margin-left: 1em; width: 60%; }
+dt { font-family: "Lato"; font-weight: 300; font-size: 1.2em; margin-top: 1em; margin-bottom: 0.5em; color: #377ba8; }
+
+#postform { display: flex; flex-direction: row; align-items: flex-end; width: 100%}
+#expr_editor { flex-grow: 5; }
+#expr_editor input { width: 90%; }
+#button { flex-grow: 1; }
+p { margin-left: 2em; width: 85%; }
+.hidenote { margin-left: 0em; font-size: .7em; }
+#sel-intermediate_recursively~#fig-intermediate_recursively {display: none;}
+#sel-intermediate_recursively:checked~#fig-intermediate_recursively {display: block;}
+#sel-intermediate_locally~#fig-intermediate_locally {display: none;}
+#sel-intermediate_locally:checked~#fig-intermediate_locally {display: block;}
+#sel-grammatical~#fig-grammatical {display: none;}
+#sel-grammatical:checked~#fig-grammatical {display: block;}
+#sel-depth~#fig-depth {display: none;}
+#sel-depth:checked~#fig-depth {display: block;}
+#sel-subtracting~#fig-subtracting {display: none;}
+#sel-subtracting:checked~#fig-subtracting {display: block;}
+#sel-switch_mode~#fig-switch_mode {display: none;}
+#sel-switch_mode:checked~#fig-switch_mode {display: block;}
+#sel-minus1depth~#fig-minus1depth {display: none;}
+#sel-minus1depth:checked~#fig-minus1depth {display: block;}
+#sel-minus1depth_count~#fig-minus1depth_count {display: none;}
+#sel-minus1depth_count:checked~#fig-minus1depth_count {display: block;}
+#sel-minus2depth~#fig-minus2depth {display: none;}
+#sel-minus2depth:checked~#fig-minus2depth {display: block;}
+#sel-minus3depth~#fig-minus3depth {display: none;}
+#sel-minus3depth:checked~#fig-minus3depth {display: block;}
+#sel-minus4depth~#fig-minus4depth {display: none;}
+#sel-minus4depth:checked~#fig-minus4depth {display: block;}

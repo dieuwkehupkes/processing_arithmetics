@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Diagnostic Classifier Demo{% endblock %}</h1>
+{% endblock %}
+{% block content %}
+<p>
+&lsquo;Diagnostic classification&rsquo; is an approach to open the blackbox
+of deep learning algorithms, where classifiers are trained to
+&lsquo;read out&rsquo; hidden states of neural networks in order to
+investigate what type of information they represent.
+In this demo, you can test how a specific deep learning model,
+the Gated Recurrent Unit, is at solving simple arithmetic problems,
+and more importantly, what strategy the model is following.
+
+Type in expressions like <code class="expr">( ( 5 + 3 ) - ( 7 + -5) )</code>, hit process
+and see what happens.
+
+We will give you a short explanation of the arithmetic language
+and the model used in this demo <a href="#language">below</a>, or you can download
+the <a href="https://arxiv.org/abs/1711.10203">scientific article</a>
+</p>
+<h2>Demo</h2>
+<p>Enter an expression and click evaluate to see the model in action.</p>
+    <form method="post">
+        <div id="postform">
+        <div id="expr_editor">
+        <label for="expression">Expression</label>
+        <input name="expression" id="expression"
+            value="{{ request.form['expression'] }}" required>
+        </div>
+        <div id="button">
+            <input id="submit" type="submit" value="Evaluate">
+        </div>
+        </div>
+    </form>
+    {% if expression != "" %}
+        <h2>Results</h2>
+        <div>
+            <h3>Model predictions</h3>
+            <div>{{ predictions|safe }}</div>
+        </div>
+        <div>
+            <h3>Strategy Hypotheses</h3>
+            <p>These show the (selected) hypothesized outcome calculation strategies of the model. If you've selected both, you'll probably agree that the <em>&lsquo;Cumulative&rsquo;</em> hypothesis is closer to the true strategy the model employs than the <em>&lsquo;Recursive&rsquo;</em> hypothesis.
+            </p>
+            <p class="hidenote">Optionally deselect classifiers you want to hide to make side-by-side comparisons easier:</p>
+            {% for classifier in pred_map.keys() %}
+                <input type="checkbox" name="display_classifier" value="{{ classifier }}" id="sel-{{ classifier }}" checked >
+                <label for="sel-{{ classifier }}">{{ pred_map[classifier] }}</label>
+            {% endfor %}
+            {% for classifier in pred_map.keys() %}
+            <figure id="fig-{{ classifier }}" class="plot">
+                <figcaption>{{ pred_map[classifier] }}</figcaption>
+                <img src="{{ plots[classifier] }}">
+                <p>{{ comments[classifier]|safe }}</p>
+                <p>The mean absolute error of this diagnostic classifier for this expression is <code>{{errors.loc[classifier,'mae']}}</code></p>
+            </figure>
+            {% endfor %}
+        </div>
+        <div>
+            <h3>Supportive Hypotheses</h3>
+            <p>These classifiers try to figure out if the model keeps track of various things that would help it determine what to do with the next input, like whether it needs to add or substract, and how many open parenthesis there are at the current point in the expression
+            </p>
+            <p class="hidenote">Optionally deselect classifiers you want to hide to make side-by-side comparisons easier:</p>
+            {% for classifier in clas_map.keys() %}
+                <input type="checkbox" name="display_classifier" value="{{ classifier }}" id="sel-{{ classifier }}" checked >
+                <label for="sel-{{ classifier }}">{{ clas_map[classifier] }}</label>
+            {% endfor %}
+            {% for classifier in clas_map.keys() %}
+                <figure id="fig-{{ classifier }}" class="plot">
+                <figcaption>{{ clas_map[classifier] }}</figcaption>
+                <img src="{{ plots[classifier] }}">
+                <p>{{ comments[classifier]|safe }}</p>
+                <p>The mean absolute error of this diagnostic classifier for this expression is <code>{{errors.loc[classifier,'mae']}}</code></p>
+            </figure>
+            {% endfor %}
+        </div>
+    {% endif %}
+        <div>
+            <h2 id="language">The arithmetic language</h2>
+<p>
+The arithmetic language has words for all the numbers from -10 to +10,
+for brackets ( and ), and for the operators + and -. A sentence in
+the arithmetic language could for instance look like this:
+
+<blockquote><pre>( five minus ( two plus six ) )</pre></blockquote>
+
+<p>The meaning of the sentences in the arithmetic language corresponds
+to the outcome of the arithmetic expression. The meaning of the expression
+above is thus <code class="expr">-3</code>.</p>
+
+<p>The meaning of a sentence in the arithmetic language can be computed in
+different ways. One option is to first compute the meaning of the smallest
+units and then combine them. In the example above, this means first computing
+the meaning of <code class="expr">( two plus six )</code> then combining this with <code class="expr">five</code>
+to compute the meaning of the expression (<code>-3</code>).
+We call this strategy a <em>recursive strategy</em>.
+</p>
+<p>
+Recursively computing the meaning of a sentence that is read from left
+to right requires keeping track of the intermediate outcomes of all
+smaller units and the way they should be combined on a <em>stack</em>.
+
+<div class="explanation">
+<figure>
+    <img src="{{ url_for('static', filename='strategies.jpeg') }}" />
+    <figcaption>Computing the meaning of an arithmetic expression with two different strategies</figcaption>
+</figure>
+</div>
+
+
+<p>Another way to compute the meaning of an arithmetic expression is to keep a
+running prediction of the outcome and add or subtract numbers as they come in.
+For instance, to compute the meaning of the example sentence, <code class="expr">two</code> would
+be directly subtracted from the subtotal <code class="expr">5</code>, instead of first being
+integrated with <code class="expr">six</code>.
+This requires keeping a stack with operators to understand whether the next
+number should be added or subtracted.
+</p>
+<h2>GRU model</h2>
+<p>We trained a GRU model to compute the meaning of sentences in the arithmetic
+language. In this GRU model, the words (for instance <code class="expr">three</code> or <code class="expr">(</code>)
+are represented as 2-dimensional vectors.
+To investigate which strategy this model is following, we trained several
+<em>diagnostic classifiers</em> on its hidden layer activations.
+You can view the predictions of these diagnostic classifiers in the demo above
+by typing in an expression and indicate which diagnostic classifiers you would
+like to run.  Like this, you can investigate which information is represented
+in the hidden states and understand which sentences are more difficult to
+process than others.
+
+<p>We trained diagnostic classifiers for the following features:
+<dl>
+    <dt>subtotal_recursive</dt>
+    <dd>This real-valued feature represents the intermediate outcome at every point in time, assuming that this outcome is computed using the <em>recursive strategy</em>.</dd>
+    <dt>subtotal_cumulative</dt>
+    <dd>This real-valued feature represents the intermediate outcome of the <em>cumulative strategy</em>.</dd>
+    <dt>grammatical</dt>
+    <dd>This binary feature represents whether an expression is grammatical (this will thus only be the case at the end of the expression, when all brackets are closed)</dd>
+    <dt>mode</dt>
+    <dd>This binary feature is relevant for the <em>cumulative strategy</em>, it expresses whether the next feature should be added (1) or subtracted (0).</dd>
+    <dt>mode_switch</dt>
+    <dd>This binary feature describes whether the <cite>mode</cite> feature remains the same, or changes.</dd>
+    <dt>minus1depth</dt>
+    <dd>This binary feature represents whether the representation is within the scope of <em>at least 1 minus</em> (in other words, this feature is true when a leaf node has at least one ancestor node which is a minus).</dd>
+    <dt>minus2depth</dt>
+    <dd>Similar to <cite>minus1depth</cite>, but for <strong>2</strong> minusses</dd>
+    <dt>minus3depth</dt>
+    <dd>Similar to <cite>minus1depth</cite>, but for <strong>3</strong> minusses</dd>
+    <dt>minus4depth</dt>
+    <dd>Similar to <cite>minus1depth</cite>, but for <strong>4</strong> minusses</dd>
+    <dt>minus1depth_count</dt>
+    <dd>Keeping track of the minusdepth of a sentence requires <em>counting</em>, this real-valued feature stores how many brackets should still be closed for the minus1depth to go to 0.</dd>
+</dl>
+</p>
+<p>
+The figure below gives an example of the values that some of these features
+take for a long sentence. Use the demo to see how well they are predicted
+by the GRU model!
+<div class="explanation">
+<figure>
+    <img src="{{ url_for('static', filename='example_sentence.png') }}" />
+    <figcaption>Expected values of some classifiers for a long example expression</figcaption>
+</figure>
+</div>
+
+        </div>
+{% endblock %}
